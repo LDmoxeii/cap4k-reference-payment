@@ -1,0 +1,65 @@
+[
+  {
+    "tag": "command",
+    "package": "payment.attempt",
+    "name": "StartPaymentAttempt",
+    "description": "Select an eligible merchant channel and start a durable payment attempt",
+    "aggregates": ["Payment", "MerchantChannelConfiguration"],
+    "fields": [
+      { "name": "paymentId", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "paymentAttemptId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "paymentStatus", "type": "String" },
+      { "name": "attemptStatus", "type": "String" },
+      { "name": "diagnosticSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.create",
+    "name": "CreatePayment",
+    "description": "Create an idempotent payment intent for a merchant order",
+    "aggregates": ["Payment", "MerchantChannelConfiguration"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "merchantOrderNumber", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" },
+      { "name": "paymentMethod", "type": "String" },
+      { "name": "expiresAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "status", "type": "String" },
+      { "name": "idempotentReplay", "type": "Boolean" },
+      { "name": "rejectionCode", "type": "String?" },
+      { "name": "rejectionSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.result",
+    "name": "ConfirmPaymentResult",
+    "description": "Record, verify, deduplicate, and adjudicate a channel payment result",
+    "aggregates": ["Payment"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "notificationId", "type": "String" },
+      { "name": "paymentId", "type": "String" },
+      { "name": "paymentAttemptId", "type": "String" },
+      { "name": "channelTransactionId", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" },
+      { "name": "result", "type": "String" },
+      { "name": "occurredAt", "type": "java.time.Instant" },
+      { "name": "verificationMaterial", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome" }
+    ]
+  }
+]

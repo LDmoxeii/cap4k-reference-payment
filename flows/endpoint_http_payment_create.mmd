@@ -1,0 +1,4 @@
+flowchart TD
+  N1["CreatePaymentCmd.Request"]
+  N2["payment.create [POST /api/payments]"]
+  N2 -->|EndpointHttpBindingToCommand| N1

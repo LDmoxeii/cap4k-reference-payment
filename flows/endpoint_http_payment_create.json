@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:payment.create",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.payment.create.CreatePaymentCmd.Request",
+      "name": "CreatePaymentCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.payment.create.CreatePaymentCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:payment.create",
+      "name": "payment.create [POST /api/payments]",
+      "fullName": "endpoint-http:payment.create",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:payment.create",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.payment.create.CreatePaymentCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

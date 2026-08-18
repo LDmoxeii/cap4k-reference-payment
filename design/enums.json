@@ -1,0 +1,63 @@
+[
+  {
+    "name": "PaymentStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": ["Payment"],
+    "items": [
+      { "value": 0, "name": "PENDING", "desc": "Payment was accepted but no active attempt has completed" },
+      { "value": 1, "name": "PROCESSING", "desc": "At least one payment attempt is in progress" },
+      { "value": 2, "name": "SUCCEEDED", "desc": "A verified channel result completed the payment successfully" },
+      { "value": 3, "name": "FAILED", "desc": "The payment reached an accepted failure result" },
+      { "value": 4, "name": "CLOSED", "desc": "The payment was closed without success" },
+      { "value": 5, "name": "RESULT_UNKNOWN", "desc": "The final result requires reconciliation" }
+    ]
+  },
+  {
+    "name": "PaymentAttemptStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": ["Payment"],
+    "items": [
+      { "value": 0, "name": "PROCESSING", "desc": "The channel attempt is in progress" },
+      { "value": 1, "name": "SUCCEEDED", "desc": "The channel attempt completed successfully" },
+      { "value": 2, "name": "FAILED", "desc": "The channel attempt completed unsuccessfully" }
+    ]
+  },
+  {
+    "name": "PaymentAttemptFinalResult",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": ["Payment"],
+    "items": [
+      { "value": 0, "name": "SUCCESS", "desc": "The channel reported a verified successful result" },
+      { "value": 1, "name": "FAILED", "desc": "The channel reported a verified failed result" },
+      { "value": 2, "name": "GATEWAY_REJECTED", "desc": "The gateway rejected the attempt before a channel result" }
+    ]
+  },
+  {
+    "name": "ChannelResultDisposition",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": ["Payment"],
+    "fields": [
+      { "name": "group", "type": "String" },
+      { "name": "terminal", "type": "Boolean" }
+    ],
+    "items": [
+      { "value": 0, "name": "RECEIVED", "desc": "The channel notification was durably received before adjudication", "group": "pending", "terminal": false },
+      { "value": 1, "name": "REJECTED", "desc": "The channel notification failed verification or business matching", "group": "rejected", "terminal": true },
+      { "value": 2, "name": "SUCCESS_ACCEPTED", "desc": "A verified successful result was accepted", "group": "accepted", "terminal": true },
+      { "value": 3, "name": "FAILURE_ACCEPTED", "desc": "A verified failed result was accepted", "group": "accepted", "terminal": true },
+      { "value": 4, "name": "ACCEPTED_DUPLICATE", "desc": "A duplicate notification repeated an already accepted payload", "group": "accepted", "terminal": true },
+      { "value": 5, "name": "REJECTED_DUPLICATE", "desc": "A duplicate notification repeated an already rejected payload", "group": "rejected", "terminal": true },
+      { "value": 6, "name": "CONFLICT", "desc": "A notification identity was reused with conflicting facts", "group": "conflict", "terminal": true },
+      { "value": 7, "name": "ATTEMPT_NOT_FOUND", "desc": "The referenced attempt does not belong to the payment", "group": "rejected", "terminal": true }
+    ]
+  },
+  {
+    "name": "MerchantChannelConfigurationStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.enums",
+    "aggregates": ["MerchantChannelConfiguration"],
+    "items": [
+      { "value": 0, "name": "ACTIVE", "desc": "The merchant channel configuration is eligible for routing" },
+      { "value": 1, "name": "RETIRED", "desc": "The merchant channel configuration is no longer eligible" }
+    ]
+  }
+]

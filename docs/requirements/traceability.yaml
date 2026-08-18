@@ -7,8 +7,8 @@ projection_policy:
   compatibility_layers: false
   historical_projection_copies: false
   history_owner: git
-phase: requirements-shape
-build_authorized: false
+phase: build
+build_authorized: true
 
 status_vocabulary:
   planned: target mapping exists but implementation has not started
@@ -210,32 +210,32 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-001
     projection_ids: [PAY-CP-001, PAY-CP-005, PAY-CP-011]
     evidence_ids: [PAY-EV-002, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-002:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-002
     projection_ids: [PAY-CP-001, PAY-CP-011]
     evidence_ids: [PAY-EV-002, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-003:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-003
     projection_ids: [PAY-CP-001, PAY-CP-011]
     evidence_ids: [PAY-EV-002, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-004:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-004
     projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-010]
     evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
-    status: planned
+    status: verified
   PAY-AC-005:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-005
     projection_ids: [PAY-CP-001, PAY-CP-006]
     evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
-    status: planned
+    status: verified
   PAY-AC-006:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-006
     projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-011]
     evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-007:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-007
     projection_ids: [PAY-CP-001, PAY-CP-007]
@@ -265,12 +265,12 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-012
     projection_ids: [PAY-CP-001, PAY-CP-011]
     evidence_ids: [PAY-EV-002, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-013:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-013
     projection_ids: [PAY-CP-001]
     evidence_ids: [PAY-EV-002]
-    status: planned
+    status: verified
   PAY-AC-014:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-014
     projection_ids: [PAY-CP-001, PAY-CP-004, PAY-CP-005]
@@ -285,12 +285,12 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-016
     projection_ids: [PAY-CP-001, PAY-CP-006]
     evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
-    status: planned
+    status: verified
   PAY-AC-017:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-017
     projection_ids: [PAY-CP-001]
     evidence_ids: [PAY-EV-002]
-    status: planned
+    status: verified
   PAY-AC-020:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-020
     projection_ids: [PAY-CP-002, PAY-CP-010, PAY-CP-011]
@@ -587,19 +587,64 @@ projections:
     evidence_ids: [PAY-EV-024]
     status: planned
 
+build_slices:
+  B1:
+    title: create payment, start attempt, confirm channel result, and query payment
+    issue: https://github.com/LDmoxeii/cap4k-reference-payment/issues/3
+    status: verified
+    acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-012, PAY-AC-013, PAY-AC-016, PAY-AC-017]
+    evidence_ids: [PAY-EV-001, PAY-EV-002, PAY-EV-003, PAY-EV-011, PAY-EV-012, PAY-EV-019, PAY-EV-021, PAY-EV-023, PAY-EV-024]
+    cap4k_validation: explicit-local-composite
+    cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
+    repository_local_path: none
+    cap4k_commit: dcafcc43928aa47a0613bb839ba5f6010efa3414
+    cap4k_upstream_prs: [211, 212, 214]
+    published_coordinate_cold_start: deferred-to-B6
+
 evidence:
   PAY-EV-001:
     kind: generated-model
-    path: planned
-    status: not-built
+    path: design/schema.sql
+    related_paths:
+      - design/design.json
+      - design/enums.json
+      - design/value-objects.json
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api
+      - domain/build/generated/cap4k/main/kotlin
+      - adapter/build/generated/cap4k/main/kotlin
+    command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
+    result: 41 plan items generated from DB, Design JSON, enum manifest, and value-object manifest; 26 checked-in SKIP and 15 generated OVERWRITE items make contract, enum, VO, handler, and generated-source ownership explicit
+    status: verified
   PAY-EV-002:
     kind: aggregate-runtime-test
-    path: planned
-    status: not-built
+    path: domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/PaymentBehaviorTest.kt
+    related_paths:
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/ChannelResultRecordingOutcomeTest.kt
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/GeneratedEnumConverterTest.kt
+      - application/src/test/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/result/ConfirmPaymentResultCmdContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+      - start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    command: .\gradlew.bat clean build --no-daemon --console=plain
+    result: 19 tests across 8 suites pass with zero failures (8 domain, 1 application, 3 adapter, 2 contract, and 5 HTTP/JPA integration tests), covering domain behavior, Outcome invariants, enum converter round-trip, direct VO response, static Mediator and HTTP contracts, dependency-leaf architecture, JPA/UoW, callback rejection/duplicate/conflict, gateway failure, and optimistic locking
+    status: verified
   PAY-EV-003:
     kind: analyzer-flow
-    path: planned
-    status: not-built
+    path: flows/endpoint_http_payment_create.json
+    related_paths:
+      - flows/endpoint_http_payment_create.mmd
+      - flows/endpoint_http_payment_attempt_start.json
+      - flows/endpoint_http_payment_attempt_start.mmd
+      - flows/endpoint_http_payment_result_confirm.json
+      - flows/endpoint_http_payment_result_confirm.mmd
+      - design/drawing_board_command.json
+      - design/drawing_board_query.json
+      - design/drawing_board_endpoint.json
+      - design/drawing_board_aggregate_elements.json
+    command: .\gradlew.bat cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
+    result: 12 analysis items; 3 independent endpoint-http Actor-to-Command flows; all 6 Mermaid node labels are quoted with zero unsafe labels, preserving the Mermaid 11.16.1 parser-smoke result; Command, Query, Endpoint, and Aggregate Structure remain independent evidence; generated flows/index.json is intentionally ignored because its current inputDirs are machine-local locators rather than portable evidence (upstream cap4k#215); no cross-entry stitching and no fabricated Time root
+    status: verified
   PAY-EV-004:
     kind: generated-model
     path: planned
@@ -630,12 +675,25 @@ evidence:
     status: not-built
   PAY-EV-011:
     kind: callback-endpoint-contract
-    path: planned
-    status: not-built
+    path: contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/ConfirmPaymentResultEndpoint.kt
+    related_paths:
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/CreatePaymentEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/StartPaymentAttemptEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/GetPaymentEndpoint.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/ConfirmPaymentResultEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfiguration.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+    result: Endpoint contracts live in the independently tested contract leaf; adapter keeps one Handler per Endpoint, uses static Mediator, and retains handwritten HTTP binding
+    status: verified
   PAY-EV-012:
     kind: callback-integration-test
-    path: planned
-    status: not-built
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    command: .\gradlew.bat :start:test --no-daemon --console=plain
+    covers: [trusted-success, duplicate-success-three-times, untrusted-result, missing-attempt, channel-mismatch-domain, amount-mismatch, currency-mismatch, post-success-conflict, durable-notification-receipts, merchant-success-intent-once, gateway-exception-diagnostic, optimistic-lock-conflict]
+    result: five Spring Boot HTTP/JPA integration tests pass with zero failures and cover all listed callback, receipt, gateway, and optimistic-lock scenarios
+    status: verified
   PAY-EV-013:
     kind: timeout-flow-test
     path: planned
@@ -662,28 +720,66 @@ evidence:
     status: not-built
   PAY-EV-019:
     kind: endpoint-contract-tests
-    path: planned
-    status: not-built
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    related_paths:
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/CreatePaymentEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/StartPaymentAttemptEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/ConfirmPaymentResultEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/GetPaymentEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfiguration.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentHttpErrorAdvice.kt
+      - application/src/test/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/result/ConfirmPaymentResultCmdContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+    command: .\gradlew.bat :start:test --no-daemon --console=plain
+    result: four one-class-per-file Endpoint Handlers use static Mediator; focused adapter guards lock mapping, method, path, status, and handwritten binding semantics, while the full HTTP/JPA integration suite passes
+    status: verified
   PAY-EV-020:
     kind: runtime-capability-suite
     path: planned
     status: not-built
   PAY-EV-021:
     kind: generator-output-and-tests
-    path: planned
-    status: not-built
+    path: build/cap4k/plan.json
+    command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
+    result: 41 plan items; 26 checked-in SKIP; 15 generated OVERWRITE; generators include aggregate, command, query, capability, endpoint, enum, value object, and handlers
+    determinism:
+      files_compared: 26
+      differences: 0
+      plan_sha256: 744A50BF69044A79FBC873B40208AE7C97C071A5133EB45D77EC26EA42F9AEE4
+    status: verified
   PAY-EV-022:
     kind: analyzer-output-and-tests
     path: planned
     status: not-built
   PAY-EV-023:
     kind: pipeline-descriptor-and-task-facts
-    path: planned
-    status: not-built
+    path: build/cap4k/agent/manifest.json
+    related_paths:
+      - settings.gradle.kts
+      - build/cap4k/plan.json
+      - build/cap4k/analysis-plan.json
+      - build/cap4k/agent/ownership.json
+    command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
+    composite_resolution_checks:
+      user_gradle_property_with_environment_cleared: passed
+      command_line_property_over_invalid_environment: passed
+      blank_property_to_environment_fallback: passed
+      no_local_input: selected-released-2.0.1-and-reached-known-unpublished-dsl-boundary
+    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 41 items and analysis plan has 12 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and the machine-local Gradle property remains outside repository and Comet evidence
+    status: verified
   PAY-EV-024:
     kind: agent-facts-export-and-validation
-    path: planned
-    status: not-built
+    path: build/cap4k/agent/manifest.json
+    related_paths:
+      - build/cap4k/agent/ownership.json
+      - build/cap4k/agent/analysis.json
+      - build/cap4k/agent/diagnostics.json
+    command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
+    result: partial only because live DB input freshness is UNKNOWN; 41 ownership items; zero diagnostics, errors, INVALID entries, or plan-evidence-invalid warnings; Analyzer status ok with four IR input directories and 12 available outputs
+    status: verified
   PAY-EV-025:
     kind: merchant-notification-reliability-test
     path: planned
@@ -699,7 +795,9 @@ evidence:
 
 known_gaps:
   - Inbound reconciliation transport must be selected during Build shape: provider pull or bill-arrival Integration Event.
-  - Exact current cap4k generator outputs and fixed pipeline stage contracts must be re-read from production descriptors before Build.
-  - Endpoint authentication mechanism, external payment provider contract, and sensitive-data storage details remain implementation decisions.
+  - Published cap4k 2.0.1 does not expose the current mainline Pipeline DSL used by B1; published-coordinate cold start remains deferred to B6.
+  - Current Analyzer output intentionally proves three independent Endpoint HTTP Actor-to-Command causal flows. Command/Query anchors and Aggregate element structure are reviewed through their independent Drawing Board partitions; Query, hidden handlers/entity methods, runtime state transitions, and cross-entry process stitching are outside the default Flow contract.
+  - Agent Snapshot remains partial only because the DB source is live external input whose freshness is intentionally UNKNOWN; ordinary plan evidence is readable, ownership contains 41 items, Analyzer is ok, and there are zero diagnostics, errors, INVALID entries, or plan-evidence-invalid warnings.
+  - Production authentication, real payment provider protocols, cryptographic verification, and sensitive-data storage remain out of B1 scope.
   - Focused fixture ownership must be linked for ORM extreme graphs, provider conflicts, transport retries, and pathological concurrency.
   - Jimmer projection and only-engine addon verification remain explicitly out of scope for the first Build.
