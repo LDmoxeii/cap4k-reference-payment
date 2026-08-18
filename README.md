@@ -61,15 +61,33 @@ Fake Channel Gateway 的 `ACCEPTED` 只表示渠道受理，不代表支付成�
 - 默认声明 cap4k 2.0.1
 - base package：`com.only4.cap4k.reference.payment`
 
-当前 B1 使用了尚未随 2.0.1 发布的 mainline Pipeline DSL/Analyzer 合同，因此本轮验收通过显式 Composite Build 对 cap4k mainline 提交 `69c809eb50a76f04fc4de6a50c951e4965b6d64a` 执行。该基线包含 Mermaid quoted-label 修复（PR #211）与 Agent Snapshot plan ownership 修复（PR #212）。仓库默认仍只声明 Gradle Plugin Portal 与 Maven Central，且不提交 sibling path、绝对路径、`mavenLocal()`、Snapshot 或私服。published-coordinate cold start 属于后续 B6。
+当前 B1 使用了尚未随 2.0.1 发布的 mainline Pipeline DSL/Analyzer 合同，因此本轮验收通过显式 Composite Build 对 cap4k mainline 提交 `dcafcc43928aa47a0613bb839ba5f6010efa3414` 执行。该基线包含 Mermaid quoted-label 修复（PR #211）、Agent Snapshot plan ownership 修复（PR #212）与 checked-in extensible enum 修复（PR #214）。本地解析顺序为非空 Gradle property `cap4k.local.path`、非空环境变量 `CAP4K_LOCAL_PATH`、正式版 `2.0.1`；仓库默认仍只声明 Gradle Plugin Portal 与 Maven Central，且不提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 Gradle 配置。published-coordinate cold start 属于后续 B6。
 
 ## 本地运行
 
 PowerShell：
 
+推荐把以下属性写入用户级 Gradle 配置（实际 `GRADLE_USER_HOME/gradle.properties`，不提交到本仓库）：
+
+```properties
+cap4k.local.path=C:/path/to/cap4k
+```
+
+单次命令也可以显式传入同一 Gradle property：
+
+```powershell
+.\gradlew.bat build -Pcap4k.local.path='C:/path/to/cap4k' --no-daemon --console=plain
+```
+
+环境变量仅作为后备方式：
+
 ```powershell
 $env:CAP4K_LOCAL_PATH = 'C:/path/to/cap4k'
+```
 
+然后执行：
+
+```powershell
 .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
 .\gradlew.bat cap4kPlan --no-daemon --console=plain
 .\gradlew.bat cap4kGenerate cap4kGenerateSources --no-daemon --console=plain

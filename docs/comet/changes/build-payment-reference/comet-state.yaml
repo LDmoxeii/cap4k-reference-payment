@@ -3,7 +3,7 @@ name: build-payment-reference
 language: zh-CN
 phase: build
 status: active
-state_version: 21
+state_version: 25
 brief: brief.md
 spec_changes:
   - capability: payment-reference-build
@@ -17,7 +17,7 @@ workspace:
 loop:
   stage: repairing
   goal_cycle: 4
-  iteration: 2
+  iteration: 3
   attempt: 0
   retry_epoch: 0
   failed_iteration_count: 0
@@ -1242,6 +1242,36 @@ history:
         Build 刷新 Shape、上游实现和证据。
       truncated: false
     completed_at: 2026-08-18T02:40:19.312Z
+  - goal_cycle: 4
+    iteration: 2
+    attempt: 1
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: Independent read-only verification of candidate commit 1679e8e passed
+        A1-A202 exactly once. The five-module contract leaf, checked-in typed
+        enums with explicit extended fields, non-persistent Outcome VO, static
+        Mediator and handwritten HTTP binding, H2/JPA/UoW and optimistic
+        locking, 19 tests, deterministic 41-item plan (26 SKIP/15 OVERWRITE), 12
+        Analyzer outputs with three quoted-label flows, AgentFacts, and
+        current-only traceability are coherent.
+      truncated: false
+    completed_at: 2026-08-18T08:52:30.270Z
+  - goal_cycle: 4
+    iteration: 2
+    attempt: 1
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: "User invalidated the accepted candidate before Archive because
+        settings.gradle.kts now adds durable local Composite Build discovery:
+        prefer user Gradle property cap4k.local.path, fall back to
+        CAP4K_LOCAL_PATH, otherwise use released cap4k 2.0.1. Re-enter Build to
+        include this tracked change, refresh evidence/acceptance where needed,
+        rerun verification, and never commit the machine-local
+        gradle.properties."
+      truncated: false
+    completed_at: 2026-08-18T09:40:28.412Z
 history_overflow:
   dropped_entries: 0
   first_dropped_at: null

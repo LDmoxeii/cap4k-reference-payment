@@ -36,7 +36,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。四
 - Spring Boot：3.5.6。
 - 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
 - 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
-- B1 必须通过用户显式提供的属性或环境值启用本机 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收；仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot 或私服。published-coordinate cold start 不属于 B1 验收，保留给 B6。
+- B1 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1 验收，保留给 B6。
 
 ### 2.3 Pipeline ownership
 
@@ -291,7 +291,7 @@ HTTP method/path、request mapper、response policy、status code 和 error mapp
 - plan/generation deterministic evidence；
 - Analyzer plan、三个 Endpoint HTTP Actor-to-Command Flow JSON/Mermaid、Mermaid parse/render smoke，以及独立 Command/Query Drawing Board 和 Aggregate Structure outputs；
 - Agent manifest 与 diagnostics；
-- actual evidence path/command/cap4k commit/status 写回 traceability。
+- actual evidence path/command/cap4k commit/status 写回 traceability，并包含 tracked `settings.gradle.kts` 的 property > environment > released `2.0.1` 解析合同及“仓库无默认机器路径”的 smoke 证据。
 
 ## 10. 状态投影
 

@@ -595,6 +595,8 @@ build_slices:
     acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-012, PAY-AC-013, PAY-AC-016, PAY-AC-017]
     evidence_ids: [PAY-EV-001, PAY-EV-002, PAY-EV-003, PAY-EV-011, PAY-EV-012, PAY-EV-019, PAY-EV-021, PAY-EV-023, PAY-EV-024]
     cap4k_validation: explicit-local-composite
+    cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
+    repository_local_path: none
     cap4k_commit: dcafcc43928aa47a0613bb839ba5f6010efa3414
     cap4k_upstream_prs: [211, 212, 214]
     published_coordinate_cold_start: deferred-to-B6
@@ -757,11 +759,17 @@ evidence:
     kind: pipeline-descriptor-and-task-facts
     path: build/cap4k/agent/manifest.json
     related_paths:
+      - settings.gradle.kts
       - build/cap4k/plan.json
       - build/cap4k/analysis-plan.json
       - build/cap4k/agent/ownership.json
     command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
-    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 41 items and analysis plan has 12 items
+    composite_resolution_checks:
+      user_gradle_property_with_environment_cleared: passed
+      command_line_property_over_invalid_environment: passed
+      blank_property_to_environment_fallback: passed
+      no_local_input: selected-released-2.0.1-and-reached-known-unpublished-dsl-boundary
+    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 41 items and analysis plan has 12 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and the machine-local Gradle property remains outside repository and Comet evidence
     status: verified
   PAY-EV-024:
     kind: agent-facts-export-and-validation

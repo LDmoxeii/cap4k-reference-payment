@@ -7,7 +7,7 @@
 # Scope
 
 - 采用 `domain`、`application`、`adapter`、`start` 四个业务层模块，并增加独立 dependency-leaf `contract` 模块；JDK 17、Kotlin 2.2.20、Spring Boot 3.5.6，保留公开 cap4k 2.0.1 作为默认声明基线。
-- B1 使用显式参数启用本机 cap4k Composite Build 验证当前 mainline 合同；仓库不得提交 sibling 绝对路径、`mavenLocal()` 或 Snapshot 仓库。公开坐标 cold start 明确后置到 B6。
+- B1 使用显式本机配置启用 cap4k Composite Build 验证当前 mainline 合同：非空 Gradle property `cap4k.local.path` 优先，非空环境变量 `CAP4K_LOCAL_PATH` 作为后备，二者均未提供时继续使用正式版 `2.0.1`；仓库不得提交 sibling 绝对路径、`mavenLocal()` 或 Snapshot 仓库。公开坐标 cold start 明确后置到 B6。
 - base package 固定为 `com.only4.cap4k.reference.payment`。
 - 将四个 Endpoint contract 生成并归属到独立 `contract` 模块，保持现有 package/FQN；`adapter` 显式依赖 `contract`。
 - Endpoint Handler 采用一类一文件和静态 `Mediator` 作为本 reference 的默认 authoring preference；HTTP method/path、request mapper、response policy 与 error mapping 继续由 adapter 手写 binding/configuration 维护。
@@ -39,7 +39,7 @@
 
 # Acceptance examples
 
-- A1：项目包含四个业务层模块和独立 dependency-leaf `contract` 模块；`contract` 无项目内依赖，`application -> domain`、`adapter -> contract + application + domain`、`start -> adapter`，并可从干净工作区通过显式 Composite Build 完成编译、测试和 Spring Boot 启动。
+- A1：项目包含四个业务层模块和独立 dependency-leaf `contract` 模块；`contract` 无项目内依赖，`application -> domain`、`adapter -> contract + application + domain`、`start -> adapter`，并可从干净工作区通过显式 Composite Build 完成编译、测试和 Spring Boot 启动；本地解析遵循非空 Gradle property `cap4k.local.path` 优先、非空环境变量 `CAP4K_LOCAL_PATH` 后备，二者均无时保持正式版 `2.0.1`，仓库不保存机器路径。
 - A2：Pipeline 的 `contractModulePath` 解析到独立 `contract`；四个 Endpoint contract 位于该模块且保持现有 package/FQN，`adapter` 对 `contract` 有显式 Gradle dependency。
 - A3：每个 Endpoint Handler 独立成文件，通过 `Mediator.commands.send(...)` 或 `Mediator.queries.ask(...)` 调用应用入口；HTTP binding 保持手写且路由、状态码和 mapper 语义不漂移。
 - A4：`cap4kPlan` 与生成任务识别独立 contract、enum manifest、value-object manifest 及 generated/checked-in ownership；第二次生成不覆盖已演进的 checked-in source且无未解释差异。
@@ -57,7 +57,7 @@
 - A16：查询 API 返回持久化的 Payment 当前状态、金额、币种和全部 PaymentAttempt/渠道结果摘要，足以验证创建、尝试、回调和重复接收链路。
 - A17：自动化测试覆盖 PAY-AC-001、002、003、004、005、006、012、013、016、017；H2 集成测试执行完整 HTTP happy path，不以 controller/mock-only 测试代替。
 - A18：Analyzer 基于已修复的 cap4k mainline 重新生成创建支付、发起支付尝试和渠道回调三个 Endpoint HTTP Actor Flow；每份 JSON 保持预期节点/边语义，每份 Mermaid 使用安全的 quoted label 并通过语法解析或渲染 smoke，不再出现嵌套方括号 parse error。
-- A19：traceability 为本切片记录 contract/enum/VO/Flow 的实际 plan、路径、命令、cap4k commit 和验证结果；PAY-EV-001、002、011、012、019、021、023、024 只在真实证据存在时转为 verified，其余能力继续为 `not-built`。
+- A19：traceability 为本切片记录 contract/enum/VO/Flow、Composite 解析顺序的实际 plan、路径、命令、cap4k commit 和验证结果；PAY-EV-001、002、011、012、019、021、023、024 只在真实证据存在时转为 verified，其余能力继续为 `not-built`。
 
 # Constraints and invariants
 
@@ -86,17 +86,17 @@
 - 首个实现链为“创建 Payment → 显式发起 PaymentAttempt → 渠道回调确认 → 查询 Payment”。显式发起操作用于保持 PAY-AC-001 的 `PENDING` 创建结果，并避免首切片提前引入可靠 Command。
 - base package 使用 `com.only4.cap4k.reference.payment`。
 - MerchantChannelConfiguration 在首切片中采用真实持久化最小模型并通过 start fixture/seed 提供数据，不暴露管理 API。
-- 默认声明公开 cap4k 2.0.1；B1 对当前主线的验收使用显式 opt-in Composite Build，不把本机路径写入仓库；公开坐标 cold start 由 B6 验收。
+- 默认声明公开 cap4k 2.0.1；B1 对当前主线的验收使用显式 opt-in Composite Build，解析顺序为非空 Gradle property `cap4k.local.path`、非空环境变量 `CAP4K_LOCAL_PATH`、正式版 `2.0.1`，不把本机路径写入仓库；公开坐标 cold start 由 B6 验收。
 - Fake Channel Gateway 的“受理”结果与渠道最终结果严格分开；回调验证器仅用于可重复测试，不宣称生产安全。
 - current-only 投影继续成立，历史由 Git 保存。
 
 # Open questions
 
-- 无。用户于 2026-08-17 确认上述补充目标、范围、关键决定、验收项和非目标，并授权 B1 返回 Shape 后重新进入 Build。
+- 无。用户于 2026-08-17 确认上述补充目标、范围、关键决定、验收项和非目标，并授权 B1 返回 Shape 后重新进入 Build；用户于 2026-08-18 进一步确认本机 Composite 的 Gradle property 优先、环境变量后备和正式版回退合同。
 
 # Verification expectations
 
-- 执行 `:contract:compileKotlin`、`cap4kAgentSnapshot`、`cap4kPlan`、checked-in generation、generated-source generation、`test`、`build`、`cap4kAnalysisPlan` 和 `cap4kAnalysisGenerate`。
+- 先对 `settings.gradle.kts` 执行 Composite 解析 smoke：验证 Gradle property 优先、空白 property 可回退环境变量、环境变量缺失时可由用户级 Gradle property 驱动本机 Composite，并静态确认二者均无时仍声明正式版 `2.0.1`；机器本地 `gradle.properties` 不进入仓库或 Comet evidence。随后执行 `:contract:compileKotlin`、`cap4kAgentSnapshot`、`cap4kPlan`、checked-in generation、generated-source generation、`test`、`build`、`cap4kAnalysisPlan` 和 `cap4kAnalysisGenerate`。
 - 保存 plan、生成目录、测试报告、Analyzer JSON/Mermaid 输出和 Agent manifest 的实际路径，并在 traceability 中引用。
 - 对同一输入至少重复运行一次 plan/generation，确认确定性和 ownership 安全。
 - domain tests 验证 typed enum 与 `ChannelResultRecordingOutcome` 不变量；application/adapter tests 验证 VO 直用、contract mapping、静态 Mediator 与 HTTP 合同；start integration test 验证 H2/JPA 完整链路。
