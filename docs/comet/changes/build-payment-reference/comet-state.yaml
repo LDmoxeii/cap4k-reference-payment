@@ -1,9 +1,9 @@
 schema: comet.native.v4
 name: build-payment-reference
 language: zh-CN
-phase: build
+phase: archive
 status: active
-state_version: 30
+state_version: 37
 brief: brief.md
 spec_changes:
   - capability: payment-reference-build
@@ -13,22 +13,18 @@ workspace:
   isolation: worktree
   change_branch: comet/build-payment-reference
   target_branch: codex/payment-business-requirements
-  finish: null
+  finish: merge
 loop:
-  stage: repairing
+  stage: archive-ready
   goal_cycle: 5
   iteration: 2
-  attempt: 0
+  attempt: 2
   retry_epoch: 0
   failed_iteration_count: 1
   no_progress_count: 0
   execution_failure_count: 0
-  previous_unresolved_ids:
-    - A1
-    - A19
-    - A41
-    - A200
-  next_action: repair-failed-acceptance
+  previous_unresolved_ids: []
+  next_action: archive
 acceptance:
   - id: A1
     source: brief.md
@@ -37,11 +33,10 @@ acceptance:
       domain`、`start -> adapter`，并可从干净工作区通过显式 Composite Build 完成编译、测试和 Spring
       Boot 启动；本地解析遵循非空 Gradle property `cap4k.local.path` 优先、非空环境变量
       `CAP4K_LOCAL_PATH` 后备，二者均无时保持正式版 `2.0.1`，仓库不保存机器路径。
-    result: failed
+    result: passed
     reason:
-      text: Tracked flows/index.json embeds four workspace-specific absolute paths, so
-        the repository saves machine paths despite the corrected Composite
-        settings.
+      text: 五模块依赖、干净构建及 Composite 解析已验证；非空 property 优先、非空 env 后备、无本地输入时选择
+        2.0.1，仓库无机器路径或 tracked gradle.properties。
       truncated: false
   - id: A2
     source: brief.md
@@ -49,8 +44,7 @@ acceptance:
       位于该模块且保持现有 package/FQN，`adapter` 对 `contract` 有显式 Gradle dependency。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A3
     source: brief.md
@@ -58,8 +52,7 @@ acceptance:
       `Mediator.queries.ask(...)` 调用应用入口；HTTP binding 保持手写且路由、状态码和 mapper 语义不漂移。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A4
     source: brief.md
@@ -67,8 +60,7 @@ acceptance:
       generated/checked-in ownership；第二次生成不覆盖已演进的 checked-in source且无未解释差异。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A5
     source: brief.md
@@ -76,8 +68,7 @@ acceptance:
       Strong ID；Money 保持金额精度与币种不变量。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A6
     source: brief.md
@@ -86,8 +77,7 @@ acceptance:
       有界状态列使用整数存储与显式 `@Type` 绑定，领域行为不再依赖手写 enum 或 `.name` 写入。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A7
     source: brief.md
@@ -95,8 +85,7 @@ acceptance:
       generator 错误封闭。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A8
     source: brief.md
@@ -105,8 +94,7 @@ acceptance:
       disposition、计数、状态、摘要和成功事实组合。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A9
     source: brief.md
@@ -115,8 +103,7 @@ acceptance:
       在跨越独立 contract 边界时显式映射为 Endpoint Response。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A10
     source: brief.md
@@ -124,8 +111,7 @@ acceptance:
       状态，不产生支付成功事实；零金额、超精度金额、未支持币种或无有效渠道配置时不创建支付。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A11
     source: brief.md
@@ -133,8 +119,7 @@ acceptance:
       PaymentAttempt。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A12
     source: brief.md
@@ -142,8 +127,7 @@ acceptance:
       只返回“已受理”，Payment 进入 `PROCESSING`，不得因此形成成功收入或成功通知事实。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A13
     source: brief.md
@@ -151,8 +135,7 @@ acceptance:
       状态；接收事实、`ChannelResultDisposition` 与拒绝原因仍可查询。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A14
     source: brief.md
@@ -160,8 +143,7 @@ acceptance:
       duplicate disposition 并增加接收次数，不重复形成成功事实。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A15
     source: brief.md
@@ -169,8 +151,7 @@ acceptance:
       disposition 留痕。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A16
     source: brief.md
@@ -178,8 +159,7 @@ acceptance:
       PaymentAttempt/渠道结果摘要，足以验证创建、尝试、回调和重复接收链路。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A17
     source: brief.md
@@ -187,8 +167,7 @@ acceptance:
       HTTP happy path，不以 controller/mock-only 测试代替。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A18
     source: brief.md
@@ -197,19 +176,18 @@ acceptance:
       smoke，不再出现嵌套方括号 parse error。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 三组 per-entry Flow JSON/MMD 仍 tracked，节点边语义正确，quoted labels 通过 Mermaid
+        smoke；volatile index 不作为证据。
       truncated: false
   - id: A19
     source: brief.md
     text: A19：traceability 为本切片记录 contract/enum/VO/Flow、Composite 解析顺序的实际
       plan、路径、命令、cap4k commit 和验证结果；PAY-EV-001、002、011、012、019、021、023、024
       只在真实证据存在时转为 verified，其余能力继续为 `not-built`。
-    result: failed
+    result: passed
     reason:
-      text: "Traceability claims repository_local_path: none and machine-path guards
-        passed, but tracked flows/index.json contains workspace-specific
-        absolute inputDirs."
+      text: traceability 使用稳定路径和命令，记录 cap4k commit、Composite 顺序、验证结果及
+        cap4k#215；未实现能力保持 not-built。
       truncated: false
   - id: A20
     source: specs/payment-reference-build/spec.md
@@ -220,24 +198,21 @@ acceptance:
       HTTP binding、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A21
     source: specs/payment-reference-build/spec.md
     text: 该状态是完整支付引用项目的第一块实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称退款、对账或结算已经可用。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A22
     source: specs/payment-reference-build/spec.md
     text: 项目必须包含：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A23
     source: specs/payment-reference-build/spec.md
@@ -246,24 +221,21 @@ acceptance:
       或 transport 实现。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A24
     source: specs/payment-reference-build/spec.md
     text: "`domain`：Payment 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A25
     source: specs/payment-reference-build/spec.md
     text: "`application`：创建支付、发起尝试、确认渠道结果、查询支付的应用输入和处理器；渠道 Gateway/结果验证 Capability。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A26
     source: specs/payment-reference-build/spec.md
@@ -271,72 +243,63 @@ acceptance:
       JPA 适配。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A27
     source: specs/payment-reference-build/spec.md
     text: "`start`：Spring Boot 组装、H2 配置、最小渠道配置 seed 和端到端测试。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A28
     source: specs/payment-reference-build/spec.md
     text: 项目内依赖方向必须为：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A29
     source: specs/payment-reference-build/spec.md
     text: "`application -> domain`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A30
     source: specs/payment-reference-build/spec.md
     text: "`adapter -> contract + application + domain`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A31
     source: specs/payment-reference-build/spec.md
     text: "`start -> adapter`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A32
     source: specs/payment-reference-build/spec.md
     text: "`contract` 不依赖任何项目内模块；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A33
     source: specs/payment-reference-build/spec.md
     text: "`domain` 不依赖 contract/application/adapter/start；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A34
     source: specs/payment-reference-build/spec.md
     text: application/domain 不依赖 start 或具体 Web 配置。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A35
     source: specs/payment-reference-build/spec.md
@@ -346,48 +309,42 @@ acceptance:
       FQN。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A36
     source: specs/payment-reference-build/spec.md
     text: Java/Kotlin toolchain：17。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A37
     source: specs/payment-reference-build/spec.md
     text: Kotlin：2.2.20。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A38
     source: specs/payment-reference-build/spec.md
     text: Spring Boot：3.5.6。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A39
     source: specs/payment-reference-build/spec.md
     text: 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A40
     source: specs/payment-reference-build/spec.md
     text: 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A41
     source: specs/payment-reference-build/spec.md
@@ -397,19 +354,18 @@ acceptance:
       `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行
       `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地
       `gradle.properties`。published-coordinate cold start 不属于 B1 验收，保留给 B6。
-    result: failed
+    result: passed
     reason:
-      text: Tracked flows/index.json contains committed machine absolute paths,
-        violating the explicit no-absolute-path repository requirement;
-        settings.gradle.kts resolution itself is correct.
+      text: tracked settings 实现 property > env > 2.0.1；本地使用
+        999.0.0-local/includeBuild；仓库无机器路径、mavenLocal、Snapshot、私服或
+        gradle.properties。
       truncated: false
   - id: A42
     source: specs/payment-reference-build/spec.md
     text: cap4k 生成器产生的 generated source 由构建拥有，不进入手工编辑区。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A43
     source: specs/payment-reference-build/spec.md
@@ -417,8 +373,7 @@ acceptance:
       checked-in ownership，首次生成后由业务代码维护，重复 generation 必须 SKIP 已演进文件。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A44
     source: specs/payment-reference-build/spec.md
@@ -426,8 +381,7 @@ acceptance:
       Generator capability。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A45
     source: specs/payment-reference-build/spec.md
@@ -435,16 +389,14 @@ acceptance:
       root 和 conflict policy。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A46
     source: specs/payment-reference-build/spec.md
     text: 重复 plan/generation 在相同输入下保持确定性，不覆盖用户已修改的 checked-in source。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A47
     source: specs/payment-reference-build/spec.md
@@ -452,8 +404,7 @@ acceptance:
       `types.enumManifest` 注册。至少声明以下 aggregate-owned enum："
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A48
     source: specs/payment-reference-build/spec.md
@@ -461,16 +412,14 @@ acceptance:
       `CLOSED(4)`、`RESULT_UNKNOWN(5)`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A49
     source: specs/payment-reference-build/spec.md
     text: "`PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A50
     source: specs/payment-reference-build/spec.md
@@ -478,16 +427,14 @@ acceptance:
       )`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A51
     source: specs/payment-reference-build/spec.md
     text: "`MerchantChannelConfigurationStatus`：`ACTIVE(0)`、`RETIRED(1)`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A52
     source: specs/payment-reference-build/spec.md
@@ -496,56 +443,49 @@ acceptance:
       `、`CONFLICT(6)`、`ATTEMPT_NOT_FOUND(7)`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A53
     source: specs/payment-reference-build/spec.md
     text: 这些 numeric value 一经生成并进入持久化或可观察证据后保持稳定。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A54
     source: specs/payment-reference-build/spec.md
     text: 以下内部有界状态列必须使用整数存储，并通过完整 `@Type=<EnumName>;` metadata 绑定：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A55
     source: specs/payment-reference-build/spec.md
     text: "`payment.status -> PaymentStatus`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A56
     source: specs/payment-reference-build/spec.md
     text: "`payment_attempt.status -> PaymentAttemptStatus`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A57
     source: specs/payment-reference-build/spec.md
     text: "`payment_attempt.final_result -> PaymentAttemptFinalResult`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A58
     source: specs/payment-reference-build/spec.md
     text: "`payment_notification_receipt.decision -> ChannelResultDisposition`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A59
     source: specs/payment-reference-build/spec.md
@@ -553,48 +493,42 @@ acceptance:
       MerchantChannelConfigurationStatus`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A60
     source: specs/payment-reference-build/spec.md
     text: 领域代码直接读写生成 enum，不使用重复手写 enum，也不通过 `.name` 把 enum 写回实体状态列。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A61
     source: specs/payment-reference-build/spec.md
     text: 以下开放 vocabulary 或外部证据保持标量，不加入 enum manifest：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A62
     source: specs/payment-reference-build/spec.md
     text: inbound Endpoint/Command 的渠道 raw `result`；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A63
     source: specs/payment-reference-build/spec.md
     text: "`payment_notification_receipt.result` 原始/归一化渠道声明；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A64
     source: specs/payment-reference-build/spec.md
     text: currency 与 payment method；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A65
     source: specs/payment-reference-build/spec.md
@@ -602,16 +536,14 @@ acceptance:
       identity；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A66
     source: specs/payment-reference-build/spec.md
     text: verification material、snapshot 与诊断 summary。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A67
     source: specs/payment-reference-build/spec.md
@@ -620,88 +552,77 @@ acceptance:
       Domain Value Object，不生成 JPA converter、不绑定 schema 列、不拥有独立实体身份。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A68
     source: specs/payment-reference-build/spec.md
     text: 该 VO 至少包含：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A69
     source: specs/payment-reference-build/spec.md
     text: "`paymentStatus: PaymentStatus`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A70
     source: specs/payment-reference-build/spec.md
     text: "`attemptStatus: PaymentAttemptStatus?`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A71
     source: specs/payment-reference-build/spec.md
     text: "`notificationReceiveCount: Int`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A72
     source: specs/payment-reference-build/spec.md
     text: "`disposition: ChannelResultDisposition`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A73
     source: specs/payment-reference-build/spec.md
     text: "`rejectionSummary: String?`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A74
     source: specs/payment-reference-build/spec.md
     text: "`conflictSummary: String?`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A75
     source: specs/payment-reference-build/spec.md
     text: "`successFactFormedNow: Boolean`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A76
     source: specs/payment-reference-build/spec.md
     text: 生成后的 checked-in VO 必须补充派生属性：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A77
     source: specs/payment-reference-build/spec.md
     text: "`duplicate` 由 `ACCEPTED_DUPLICATE` 或 `REJECTED_DUPLICATE` 推导；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A78
     source: specs/payment-reference-build/spec.md
@@ -709,48 +630,42 @@ acceptance:
       推导；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A79
     source: specs/payment-reference-build/spec.md
     text: "`rejected` 由 `REJECTED`、`REJECTED_DUPLICATE` 或 `ATTEMPT_NOT_FOUND` 推导；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A80
     source: specs/payment-reference-build/spec.md
     text: "`conflicting` 由 `CONFLICT` 推导。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A81
     source: specs/payment-reference-build/spec.md
     text: VO 必须拒绝无效组合：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A82
     source: specs/payment-reference-build/spec.md
     text: "`notificationReceiveCount` 小于 1；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A83
     source: specs/payment-reference-build/spec.md
     text: 最终 Outcome 使用 `RECEIVED`；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A84
     source: specs/payment-reference-build/spec.md
@@ -758,8 +673,7 @@ acceptance:
       `ATTEMPT_NOT_FOUND` 配置非空 `attemptStatus`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A85
     source: specs/payment-reference-build/spec.md
@@ -767,32 +681,28 @@ acceptance:
       rejection summary；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A86
     source: specs/payment-reference-build/spec.md
     text: "`CONFLICT` 没有 conflict summary，或非 `CONFLICT` 携带 conflict summary；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A87
     source: specs/payment-reference-build/spec.md
     text: "`successFactFormedNow=true` 但 disposition 不是 `SUCCESS_ACCEPTED`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A88
     source: specs/payment-reference-build/spec.md
     text: duplicate outcome 再次形成成功事实；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A89
     source: specs/payment-reference-build/spec.md
@@ -800,184 +710,161 @@ acceptance:
       `PaymentAttemptStatus.SUCCEEDED`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A90
     source: specs/payment-reference-build/spec.md
     text: "`FAILURE_ACCEPTED` 未对应 `PaymentAttemptStatus.FAILED`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A91
     source: specs/payment-reference-build/spec.md
     text: Payment 是聚合根，至少包含：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A92
     source: specs/payment-reference-build/spec.md
     text: "`PaymentId`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A93
     source: specs/payment-reference-build/spec.md
     text: merchant identity；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A94
     source: specs/payment-reference-build/spec.md
     text: merchant order number；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A95
     source: specs/payment-reference-build/spec.md
     text: idempotency key；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A96
     source: specs/payment-reference-build/spec.md
     text: Money；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A97
     source: specs/payment-reference-build/spec.md
     text: payment method；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A98
     source: specs/payment-reference-build/spec.md
     text: typed `PaymentStatus`；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A99
     source: specs/payment-reference-build/spec.md
     text: createdAt、expiresAt；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A100
     source: specs/payment-reference-build/spec.md
     text: succeededAt、channelTransactionId（成功后）；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A101
     source: specs/payment-reference-build/spec.md
     text: PaymentAttempt 集合；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A102
     source: specs/payment-reference-build/spec.md
     text: 聚合版本和审计字段。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A103
     source: specs/payment-reference-build/spec.md
     text: 首切片只主动推进 `PENDING -> PROCESSING -> SUCCEEDED`，但模型不得允许成功回退。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A104
     source: specs/payment-reference-build/spec.md
     text: PaymentAttempt 是 Payment 的强引用 owned child，至少包含：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A105
     source: specs/payment-reference-build/spec.md
     text: "`PaymentAttemptId`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A106
     source: specs/payment-reference-build/spec.md
     text: channel identity 与渠道配置快照；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A107
     source: specs/payment-reference-build/spec.md
     text: request identity；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A108
     source: specs/payment-reference-build/spec.md
     text: typed `PaymentAttemptStatus`；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A109
     source: specs/payment-reference-build/spec.md
     text: initiatedAt；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A110
     source: specs/payment-reference-build/spec.md
     text: channelTransactionId；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A111
     source: specs/payment-reference-build/spec.md
     text: typed `PaymentAttemptFinalResult` 与业务发生时间；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A112
     source: specs/payment-reference-build/spec.md
@@ -985,16 +872,14 @@ acceptance:
       `ChannelResultDisposition` 和裁决摘要。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A113
     source: specs/payment-reference-build/spec.md
     text: 尝试之间不能覆盖。Payment 成功后不得创建新尝试。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A114
     source: specs/payment-reference-build/spec.md
@@ -1004,32 +889,28 @@ acceptance:
       `attemptStatus` 与 `ATTEMPT_NOT_FOUND` 表达。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A115
     source: specs/payment-reference-build/spec.md
     text: Money 使用精确十进制金额和 ISO 风格币种代码；拒绝非正数、超过币种精度或应用资格配置未支持的币种。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A116
     source: specs/payment-reference-build/spec.md
     text: PaymentId 和 PaymentAttemptId 使用 cap4k Strong ID，应用侧按当前 UUID7 合同分配。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A117
     source: specs/payment-reference-build/spec.md
     text: merchant identity、channel identity 和外部业务号保持稳定、可追踪，不把完整凭据放入聚合。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A118
     source: specs/payment-reference-build/spec.md
@@ -1037,16 +918,14 @@ acceptance:
       active/retired status 及必要审计信息。start 层建立一条 `M-001`、`CNY`、测试支付方式可用的配置。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A119
     source: specs/payment-reference-build/spec.md
     text: 配置只用于资格判断和渠道选择，不提供管理 API。PaymentAttempt 保存当时的渠道身份和规则摘要，因此以后配置退役不会改写交易历史。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A120
     source: specs/payment-reference-build/spec.md
@@ -1054,64 +933,56 @@ acceptance:
       key、amount、currency、payment method 和 expiresAt。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A121
     source: specs/payment-reference-build/spec.md
     text: 处理顺序：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A122
     source: specs/payment-reference-build/spec.md
     text: 验证格式、金额、币种和到期时间；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A123
     source: specs/payment-reference-build/spec.md
     text: 验证 merchant 至少存在一条合格的 active channel configuration；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A124
     source: specs/payment-reference-build/spec.md
     text: 按 merchant + idempotency key 查询既有 Payment；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A125
     source: specs/payment-reference-build/spec.md
     text: 内容相同则返回既有结果；关键内容不同则返回明确幂等冲突；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A126
     source: specs/payment-reference-build/spec.md
     text: 不存在时创建 `PENDING` Payment 并持久化。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A127
     source: specs/payment-reference-build/spec.md
     text: 创建成功不自动形成 PaymentAttempt，也不表示支付成功。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A128
     source: specs/payment-reference-build/spec.md
@@ -1119,8 +990,7 @@ acceptance:
       Channel Gateway。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A129
     source: specs/payment-reference-build/spec.md
@@ -1128,8 +998,7 @@ acceptance:
       进入处理中，不得形成成功事实。Gateway 调用失败的完整重试策略后置，但失败必须留下可诊断信息而不能伪造成功。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A130
     source: specs/payment-reference-build/spec.md
@@ -1138,8 +1007,7 @@ acceptance:
       result、occurredAt 和验证材料。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A131
     source: specs/payment-reference-build/spec.md
@@ -1147,72 +1015,63 @@ acceptance:
       Capability，再把验证结果交给聚合。聚合按以下顺序裁决：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A132
     source: specs/payment-reference-build/spec.md
     text: 记录接收时间和 notification identity；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A133
     source: specs/payment-reference-build/spec.md
     text: 识别重复通知并增加计数；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A134
     source: specs/payment-reference-build/spec.md
     text: 校验 attempt/channel/payment/amount/currency；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A135
     source: specs/payment-reference-build/spec.md
     text: 不可信或不匹配时保留拒绝原因，不推进 Payment 状态；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A136
     source: specs/payment-reference-build/spec.md
     text: 首次可信成功时把 attempt 和 Payment 确认为成功，记录渠道交易号和两个时间；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A137
     source: specs/payment-reference-build/spec.md
     text: 重复成功形成 accepted-duplicate disposition，不产生第二个成功事实；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A138
     source: specs/payment-reference-build/spec.md
     text: 重复未接受证据形成 rejected-duplicate disposition；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A139
     source: specs/payment-reference-build/spec.md
     text: 成功后的失败结果不回退状态，形成 conflict disposition 并留存；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A140
     source: specs/payment-reference-build/spec.md
@@ -1220,24 +1079,21 @@ acceptance:
       accepted/duplicate 真源。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A141
     source: specs/payment-reference-build/spec.md
     text: 首切片记录“商户成功通知意图”领域事实，但不发送真实 Integration Event 或网络通知。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A142
     source: specs/payment-reference-build/spec.md
     text: "`Payment.recordChannelResult(...)` 返回 `ChannelResultRecordingOutcome`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A143
     source: specs/payment-reference-build/spec.md
@@ -1246,8 +1102,7 @@ acceptance:
       wrapper 只包含 `outcome` 字段。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A144
     source: specs/payment-reference-build/spec.md
@@ -1256,48 +1111,42 @@ acceptance:
       中取得 Outcome，并在该发布边界显式映射 enum name、计数、派生布尔值和摘要。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A145
     source: specs/payment-reference-build/spec.md
     text: 按 PaymentId 返回：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A146
     source: specs/payment-reference-build/spec.md
     text: Payment 身份、商户订单号、Money、状态和关键时间；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A147
     source: specs/payment-reference-build/spec.md
     text: 所有 PaymentAttempt 的身份、渠道、状态、请求/交易号；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A148
     source: specs/payment-reference-build/spec.md
     text: 渠道结果的接收计数、typed disposition、验证/拒绝/冲突摘要；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A149
     source: specs/payment-reference-build/spec.md
     text: 成功事实是否已经形成。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A150
     source: specs/payment-reference-build/spec.md
@@ -1305,72 +1154,63 @@ acceptance:
       adapter 显式使用 enum name 映射，不把 contract 反向绑定到 domain enum。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A151
     source: specs/payment-reference-build/spec.md
     text: 首切片提供四个 transport-neutral Endpoint contract：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A152
     source: specs/payment-reference-build/spec.md
     text: "`CreatePaymentEndpoint`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A153
     source: specs/payment-reference-build/spec.md
     text: "`StartPaymentAttemptEndpoint`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A154
     source: specs/payment-reference-build/spec.md
     text: "`ConfirmPaymentResultEndpoint`；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A155
     source: specs/payment-reference-build/spec.md
     text: "`GetPaymentEndpoint`。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A156
     source: specs/payment-reference-build/spec.md
     text: 每个 Endpoint Handler 在 adapter 中独立成文件，并采用：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A157
     source: specs/payment-reference-build/spec.md
     text: 写操作：`Mediator.commands.send(...)`；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A158
     source: specs/payment-reference-build/spec.md
     text: 查询操作：`Mediator.queries.ask(...)`。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A159
     source: specs/payment-reference-build/spec.md
@@ -1378,48 +1218,42 @@ acceptance:
       对所有项目的强制规则。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A160
     source: specs/payment-reference-build/spec.md
     text: HTTP binding 保持手写，继续提供：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A161
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/payments`：创建 Payment；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A162
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/payments/{paymentId}/attempts`：发起一次 PaymentAttempt；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A163
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/channel/payment-results`：接收测试渠道最终结果；"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A164
     source: specs/payment-reference-build/spec.md
     text: "`GET /api/payments/{paymentId}`：查询 Payment 和尝试摘要。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A165
     source: specs/payment-reference-build/spec.md
@@ -1428,16 +1262,14 @@ acceptance:
       不存在、状态不允许、回调被拒绝和并发冲突。测试用验证器的可信凭据通过配置提供，任何凭据不得提交为生产秘密。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A166
     source: specs/payment-reference-build/spec.md
     text: 所有写操作通过 cap4k Command/UoW 边界运行。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A167
     source: specs/payment-reference-build/spec.md
@@ -1445,8 +1277,7 @@ acceptance:
       dirty checking，新聚合/删除遵循 cap4k persistence intents。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A168
     source: specs/payment-reference-build/spec.md
@@ -1454,32 +1285,28 @@ acceptance:
       cascade/orphan 语义与 owned graph 一致。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A169
     source: specs/payment-reference-build/spec.md
     text: enum converter 与整数 schema 列必须一致，H2/JPA round-trip 后仍得到相同 enum value。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A170
     source: specs/payment-reference-build/spec.md
     text: 使用乐观版本防止并发回调静默覆盖；典型并发由集成测试证明，极端 ORM/并发压力仍由 cap4k focused fixtures 负责。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A171
     source: specs/payment-reference-build/spec.md
     text: H2 用于 reference 的可重复执行，不宣称生产数据库兼容矩阵。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A172
     source: specs/payment-reference-build/spec.md
@@ -1487,8 +1314,7 @@ acceptance:
       canonical input，不接受纯手写项目冒充 Generator 证据。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A173
     source: specs/payment-reference-build/spec.md
@@ -1496,8 +1322,7 @@ acceptance:
       Object、Command/Query/Endpoint 等本切片实际采用的能力；未采用能力不得仅为覆盖率制造空壳。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A174
     source: specs/payment-reference-build/spec.md
@@ -1505,8 +1330,7 @@ acceptance:
       Endpoint contract 后不得丢失 design metadata。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A175
     source: specs/payment-reference-build/spec.md
@@ -1514,8 +1338,7 @@ acceptance:
       mainline，重新运行 `cap4kAnalysisPlan` 与 `cap4kAnalysisGenerate`。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A176
     source: specs/payment-reference-build/spec.md
@@ -1525,8 +1348,7 @@ acceptance:
       element 由独立 Aggregate Structure output 提供。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A177
     source: specs/payment-reference-build/spec.md
@@ -1534,8 +1356,7 @@ acceptance:
       Mermaid parser 或 renderer smoke，不再出现内部 `[...]` 触发的 parse error。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A178
     source: specs/payment-reference-build/spec.md
@@ -1543,8 +1364,7 @@ acceptance:
       Flow 验收；不把支付超时伪造成已实现 Time 根。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A179
     source: specs/payment-reference-build/spec.md
@@ -1552,112 +1372,98 @@ acceptance:
       planned/not-built。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A180
     source: specs/payment-reference-build/spec.md
     text: 必须覆盖以下业务场景：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A181
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-001：首次创建支付；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A182
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-002：相同内容重复创建；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A183
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-003：幂等键冲突；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A184
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-004：可信成功通知；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A185
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-005：重复成功通知；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A186
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-006：未验证、attempt/channel/amount/currency 不匹配通知；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A187
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-012：无效金额/币种拒绝；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A188
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-013：已创建金额不可修改；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A189
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-016：渠道受理不等于成功；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A190
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-017：成功后不再发起尝试。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A191
     source: specs/payment-reference-build/spec.md
     text: 证据至少包括：
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A192
     source: specs/payment-reference-build/spec.md
     text: contract leaf 的依赖与编译证据；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A193
     source: specs/payment-reference-build/spec.md
@@ -1665,16 +1471,14 @@ acceptance:
       invariant tests；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A194
     source: specs/payment-reference-build/spec.md
     text: H2/JPA Repository/UoW integration tests；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A195
     source: specs/payment-reference-build/spec.md
@@ -1682,24 +1486,21 @@ acceptance:
       tests；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A196
     source: specs/payment-reference-build/spec.md
     text: HTTP happy path 与错误/重复/冲突 integration tests；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A197
     source: specs/payment-reference-build/spec.md
     text: plan/generation deterministic evidence；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A198
     source: specs/payment-reference-build/spec.md
@@ -1708,26 +1509,26 @@ acceptance:
       outputs；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 12-item Analyzer plan、三组 tracked per-entry JSON/MMD、Mermaid smoke、Drawing
+        Boards 和 Aggregate Structure 完整；flows/index.json 精确忽略且未跟踪。
       truncated: false
   - id: A199
     source: specs/payment-reference-build/spec.md
     text: Agent manifest 与 diagnostics；
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: Agent manifest 为 PARTIAL 仅因 live DB freshness UNKNOWN；ownership
+        41、analysis OK、diagnostics 为空。
       truncated: false
   - id: A200
     source: specs/payment-reference-build/spec.md
     text: actual evidence path/command/cap4k commit/status 写回 traceability，并包含
       tracked `settings.gradle.kts` 的 property > environment > released `2.0.1`
       解析合同及“仓库无默认机器路径”的 smoke 证据。
-    result: failed
+    result: passed
     reason:
-      text: Composite resolution evidence is present, but the repository-wide
-        no-machine-path smoke is contradicted by tracked flows/index.json.
+      text: traceability 记录稳定 evidence path、命令、cap4k commit/status、property > env >
+        2.0.1 合同和无机器路径 smoke，并记录 cap4k#215。
       truncated: false
   - id: A201
     source: specs/payment-reference-build/spec.md
@@ -1737,8 +1538,7 @@ acceptance:
       item 数量、hash、Analyzer/AgentFacts 结果和旧 Verify pass 均不得继续作为当前候选证据。"
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
   - id: A202
     source: specs/payment-reference-build/spec.md
@@ -1748,22 +1548,22 @@ acceptance:
       change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
     result: passed
     reason:
-      text: Independent implementation, evidence, and corrected absolute-wrapper
-        Runtime checks satisfy this acceptance item.
+      text: 独立只读 Verifier 已复核当前 brief、完整 Spec、候选实现和 Runtime checks，确认该验收项满足。
       truncated: false
 builder_handoff:
-  candidate_id: 871459ed-c12e-4b77-8a09-56f9d6ada5e6
+  candidate_id: 3d5e782f-0893-405b-b250-e6d954443b7e
   identity_provider: skill-coordinated
-  builder_execution_ref: skill-coordinated:builder:4d134062-e7ac-40ec-9d1d-e7888b9c0d3b
-  iteration: 1
+  builder_execution_ref: skill-coordinated:builder:409ff13a-a227-4ef9-9f90-460c4c3bf689
+  iteration: 2
   summary:
-    text: Candidate 4da3ce3 includes the B1 Composite Build reproducibility repair
-      and the Runtime-refreshed A1-A202 acceptance snapshot. Non-blank Gradle
-      property cap4k.local.path takes precedence, non-blank CAP4K_LOCAL_PATH is
-      the fallback, and absent local inputs select released cap4k 2.0.1. Blank
-      values are treated as absent. The repository contains no machine-local
-      gradle.properties, default absolute machine path, mavenLocal, snapshot or
-      private repository.
+    text: Candidate 81635b4 repairs the four failed portability acceptances. The
+      tracked Composite resolution remains Gradle property > environment >
+      released 2.0.1 with no repository-local machine configuration. Analyzer
+      per-entry Flow JSON/Mermaid evidence remains tracked, while
+      flows/index.json is now an explicitly ignored local artifact because
+      current cap4k serializes machine-local IR input locators there.
+      Traceability and README point only to stable evidence and record upstream
+      cap4k#215.
     truncated: false
   addressed_acceptance_ids:
     - A1
@@ -1970,155 +1770,65 @@ builder_handoff:
     - A202
   checks:
     - name:
-        text: local-user-property-env-cleared
-        truncated: false
-      result: passed
-      note:
-        text: With CAP4K_LOCAL_PATH explicitly removed, Gradle help succeeded and loaded
-          the local cap4k included build through the user-level Gradle property;
-          the machine file itself was not read into or recorded as Comet
-          evidence.
-        truncated: false
-    - name:
-        text: property-precedence-over-environment
-        truncated: false
-      result: passed
-      note:
-        text: A valid -Pcap4k.local.path overrode an intentionally invalid
-          CAP4K_LOCAL_PATH.
-        truncated: false
-    - name:
-        text: blank-property-environment-fallback
-        truncated: false
-      result: passed
-      note:
-        text: A blank -Pcap4k.local.path was normalized as absent and a valid
-          CAP4K_LOCAL_PATH was used.
-        truncated: false
-    - name:
-        text: released-2.0.1-selection
-        truncated: false
-      result: passed
-      note:
-        text: With both local inputs absent, settings selected cap4k 2.0.1 and reached
-          the known B6 unpublished-current-DSL boundary; full
-          published-coordinate cold start remains B6.
-        truncated: false
-    - name:
         text: clean-build
         truncated: false
       result: passed
       note:
-        text: clean build succeeded; 8 test suites, 19 tests, 0 failures/errors/skips.
+        text: "Absolute Windows wrapper with CAP4K_LOCAL_PATH cleared: clean build
+          succeeded; all B1 module and HTTP/JPA tests passed."
         truncated: false
     - name:
-        text: generation-determinism
+        text: pipeline-analysis-agent
         truncated: false
       result: passed
       note:
-        text: Two plan/generate/generated-source rounds succeeded with 41 items (26
-          CHECKED_IN_SOURCE/SKIP, 15 GENERATED_SOURCE/OVERWRITE), 26 checked-in
-          files unchanged, plan SHA-256
-          744A50BF69044A79FBC873B40208AE7C97C071A5133EB45D77EC26EA42F9AEE4.
+        text: "cap4kPlan, cap4kGenerate, cap4kGenerateSources, cap4kAnalysisPlan,
+          cap4kAnalysisGenerate and cap4kAgentSnapshot succeeded: 41 plan items,
+          12 analysis items, 41 ownership items, zero diagnostics."
         truncated: false
     - name:
-        text: analysis-agent-facts
+        text: composite-user-property-env-cleared
         truncated: false
       result: passed
       note:
-        text: Analysis produced 12 items and three quoted-label flows; AgentFacts
-          retained 41 ownership items, analysis status ok, diagnostics empty.
-          Manifest partial is solely the accepted live DB freshness UNKNOWN
-          boundary.
+        text: With CAP4K_LOCAL_PATH cleared, absolute wrapper help --info resolved
+          plugin 999.0.0-local and loaded the local cap4k included build from
+          the user Gradle property.
         truncated: false
     - name:
-        text: repository-local-path-guard
+        text: repository-portability-guards
         truncated: false
       result: passed
       note:
-        text: No gradle.properties is tracked, no default absolute machine path or
-          mavenLocal is present, YAML and git diff guards passed.
+        text: git-tracked files contain no user/workspace machine path;
+          gradle.properties and flows/index.json are not tracked;
+          /flows/index.json is precisely ignored; stable six per-entry Flow
+          JSON/Mermaid artifacts remain tracked.
         truncated: false
   checks_truncated: false
   known_limits:
-    - text: Released cap4k 2.0.1 does not compile the current B1 DSL; fallback
-        selection is proven and full published-coordinate cold start remains B6
-        scope.
+    - text: Current cap4k Flow index inputDirs contain machine-local locators. B1
+        keeps that regenerable index local and tracks stable entry artifacts;
+        upstream repair is tracked by cap4k#215.
       truncated: false
-    - text: Agent ownership freshness is PARTIAL solely because the DB source is live
-        external input; all 41 ownership items remain present and diagnostics
-        are empty.
+    - text: Released cap4k 2.0.1 fallback selection is proven; full
+        published-coordinate cold start remains B6.
+      truncated: false
+    - text: AgentFacts manifest remains PARTIAL solely because live DB input freshness
+        is UNKNOWN; ownership retains 41 items and diagnostics are empty.
       truncated: false
   known_limits_truncated: false
-  submitted_at: 2026-08-18T09:57:56.524Z
+  submitted_at: 2026-08-18T10:27:51.833Z
 blockers: []
 verification:
-  candidate_id: 871459ed-c12e-4b77-8a09-56f9d6ada5e6
+  candidate_id: 3d5e782f-0893-405b-b250-e6d954443b7e
   identity_provider: skill-coordinated
-  verifier_execution_ref: skill-coordinated:verifier:eb87b312-56a9-4ca8-b730-199cca323570
-  iteration: 1
-  attempt: 1
+  verifier_execution_ref: skill-coordinated:verifier:1ae1c59f-7246-405f-8aee-7f76b51d0ba6
+  iteration: 2
+  attempt: 2
   assurance: skill-coordinated
-  verdict: fail
+  verdict: pass
   checks:
-    - id: b1-build
-      name:
-        text: B1 Gradle build and tests
-        truncated: false
-      argv_display:
-        - text: build
-          truncated: false
-        - text: --no-daemon
-          truncated: false
-        - text: --console=plain
-          truncated: false
-      argv_truncated: false
-      cwd_ref: .
-      status: failed
-      exit_code: 1
-      duration_ms: 1806
-    - id: b1-pipeline-evidence
-      name:
-        text: B1 plan generation analysis plan and AgentFacts
-        truncated: false
-      argv_display:
-        - text: cap4kPlan
-          truncated: false
-        - text: cap4kGenerate
-          truncated: false
-        - text: cap4kGenerateSources
-          truncated: false
-        - text: cap4kAnalysisPlan
-          truncated: false
-        - text: cap4kAgentSnapshot
-          truncated: false
-        - text: --no-daemon
-          truncated: false
-        - text: --console=plain
-          truncated: false
-      argv_truncated: false
-      cwd_ref: .
-      status: failed
-      exit_code: 1
-      duration_ms: 684
-    - id: b1-composite-user-property
-      name:
-        text: B1 local Composite discovery from user Gradle property
-        truncated: false
-      argv_display:
-        - text: help
-          truncated: false
-        - text: --no-daemon
-          truncated: false
-        - text: --console=plain
-          truncated: false
-        - text: --info
-          truncated: false
-      argv_truncated: false
-      cwd_ref: .
-      status: failed
-      exit_code: 1
-      duration_ms: 682
     - id: b1-build-absolute-wrapper
       name:
         text: B1 Gradle build and tests via absolute Windows wrapper
@@ -2134,11 +1844,10 @@ verification:
       cwd_ref: .
       status: passed
       exit_code: 0
-      duration_ms: 44938
+      duration_ms: 16391
     - id: b1-readonly-pipeline-evidence-absolute-wrapper
       name:
-        text: B1 read-only plan analysis plan and AgentFacts via absolute Windows
-          wrapper
+        text: B1 plan analysis plan and AgentFacts via absolute Windows wrapper
         truncated: false
       argv_display:
         - text: cap4kPlan
@@ -2155,45 +1864,50 @@ verification:
       cwd_ref: .
       status: passed
       exit_code: 0
-      duration_ms: 26368
-    - id: b1-composite-user-property-absolute-wrapper
+      duration_ms: 28709
+    - id: b1-composite-and-portability-guard
       name:
-        text: B1 local Composite discovery from user Gradle property via absolute
-          Windows wrapper
+        text: B1 user property Composite and tracked machine path guard
         truncated: false
       argv_display:
-        - text: help
+        - text: -NoProfile
           truncated: false
-        - text: --no-daemon
+        - text: -Command
           truncated: false
-        - text: --console=plain
-          truncated: false
-        - text: --info
+        - text: $env:CAP4K_LOCAL_PATH=$null; &
+            'C:\Users\LD_moxeii\Documents\code\only-workspace\cap4k-reference-payment\.worktrees\build-payment-reference\gradlew.bat'
+            help --no-daemon --console=plain --info; if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE }; git grep -n -E
+            'C:\\\\Users\\\\|LD_moxeii|C:/Users/|/Users/|/home/' -- . *> $null;
+            if ($LASTEXITCODE -eq 0) { exit 21 }; git ls-files --error-unmatch
+            gradle.properties *> $null; if ($LASTEXITCODE -eq 0) { exit 22 };
+            git ls-files --error-unmatch flows/index.json *> $null; if
+            ($LASTEXITCODE -eq 0) { exit 23 }; git check-ignore -q
+            flows/index.json; if ($LASTEXITCODE -ne 0) { exit 24 }; if
+            ((Get-ChildItem flows/endpoint_http_*.json).Count -ne 3) { exit 25
+            }; if ((Get-ChildItem flows/endpoint_http_*.mmd).Count -ne 3) { exit
+            26 }; exit 0
           truncated: false
       argv_truncated: false
       cwd_ref: .
       status: passed
       exit_code: 0
-      duration_ms: 25197
+      duration_ms: 13668
   summary:
-    text: A1, A19, A41, and A200 fail because tracked flows/index.json commits
-      workspace-specific absolute paths while traceability claims the repository
-      is machine-path-free. All other A1-A202 items pass; corrected Runtime
-      checks passed.
+    text: 独立只读验收 candidate 81635b4：A1-A202 各覆盖一次且全部 passed。前轮失败的 A1、A19、A41、A200
+      已修复，三个 Runtime checks 均已 passed。
     truncated: false
   risks:
-    - text: The initial bare-gradlew Runtime checks were Windows invocation defects;
-        same-attempt absolute-wrapper replacements all passed and are not
-        candidate failures.
+    - text: 当前 cap4k 生成的 flows/index.json 仍包含机器本地 IR input locator；本候选将其作为可再生产物精确忽略，并以
+        cap4k#215 跟踪上游稳定 identity 修复。
       truncated: false
-    - text: Tracked Analyzer flows/index.json contains machine-specific absolute paths
-        and contradicts the repository portability evidence.
+    - text: 正式版 cap4k 2.0.1 回退选择已验证，但 published-coordinate cold start 按规格后置到 B6。
       truncated: false
-    - text: Released-coordinate cold start remains B6; AgentFacts freshness remains
-        PARTIAL only for live DB UNKNOWN.
+    - text: AgentFacts manifest 仍为 PARTIAL，唯一原因是 live DB input freshness 为
+        UNKNOWN；ownership 41、Analyzer 状态 OK 且 diagnostics 为空。
       truncated: false
   risks_truncated: false
-  completed_at: 2026-08-18T10:17:29.477Z
+  completed_at: 2026-08-18T10:41:00.753Z
 history:
   - goal_cycle: 1
     iteration: 1
@@ -2356,6 +2070,26 @@ history:
         Runtime checks passed.
       truncated: false
     completed_at: 2026-08-18T10:17:29.477Z
+  - goal_cycle: 5
+    iteration: 2
+    attempt: 1
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: "Native Verifier response was invalid: Native Verifier risks must be text
+        entries"
+      truncated: false
+    completed_at: 2026-08-18T10:35:52.083Z
+  - goal_cycle: 5
+    iteration: 2
+    attempt: 2
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: 独立只读验收 candidate 81635b4：A1-A202 各覆盖一次且全部 passed。前轮失败的 A1、A19、A41、A200
+        已修复，三个 Runtime checks 均已 passed。
+      truncated: false
+    completed_at: 2026-08-18T10:41:00.753Z
 history_overflow:
   dropped_entries: 0
   first_dropped_at: null
@@ -2366,7 +2100,7 @@ history_overflow:
     blocked: 0
     execution-error: 0
     recovery: 0
-verification_result: fail
+verification_result: pass
 verification_report: verification.md
 archived: false
 created_at: 2026-08-17T06:21:31.318Z
