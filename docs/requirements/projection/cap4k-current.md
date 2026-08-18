@@ -4,14 +4,12 @@
 
 本文是支付业务需求到 **当前 cap4k 能力面** 的计划投影，不是业务真源，也不是已经完成的实现说明。
 
-当前状态：`not-built`。
+当前状态：B1 支付首链已完成 Build 证据并标记为 `verified`；其余长期投影仍为 `planned / not-built`。精确状态以 `docs/requirements/traceability.yaml` 为准。
 
-以下内容均表示预期采用的建模与验证方向：
+本文同时保存已验证切片与后续预期建模方向：
 
-- 不代表代码已经生成；
-- 不代表 Runtime 已经运行；
-- 不代表 Analyzer 已经产生事实；
-- 不代表 Pipeline 或 AgentFacts 已经验证；
+- `verified` 条目必须有实际代码、测试、Pipeline、Analyzer 或 AgentFacts 证据；
+- `planned / not-built` 条目不代表代码已经生成或 Runtime 已经运行；
 - 不构成对历史 cap4k 版本的兼容承诺。
 
 本项目只维护这一份 current-only 投影，不建立 `<baseline>` 目录、不保留旧投影副本、不实现兼容层。历史由 Git 保存。
@@ -24,7 +22,7 @@
 | `not-built` | 没有实现、运行结果或可引用证据 |
 | `verified` | 后续 Build 完成并有可复核证据后才能使用 |
 
-本文所有投影当前均为 `planned`，所有对应证据当前均为 `not-built`。
+B1 只验证首条支付链对应的验收与证据；范围更大的 PAY-CP 投影仍保持 `planned`，未实施证据继续保持 `not-built`。
 
 ## 3. 领域模型投影
 
@@ -211,4 +209,4 @@ Build 后只接受由 cap4k 当前生产契约和项目实际观察生成的 Age
 - Pipeline 任务/descriptor 事实；
 - AgentFacts 导出和一致性验证结果。
 
-在这些证据产生之前，`docs/requirements/traceability.yaml` 中所有 `PAY-EV-*` 必须保持 `not-built`。
+只有在对应证据真实产生并可由自动化测试、生成计划、Analyzer 输出或 AgentFacts 复核后，才可将相应 `PAY-EV-*` 标记为 `verified`；其余未实现证据继续保持 `not-built`。
