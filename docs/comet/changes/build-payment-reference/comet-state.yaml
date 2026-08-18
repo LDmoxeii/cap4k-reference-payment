@@ -3,7 +3,7 @@ name: build-payment-reference
 language: zh-CN
 phase: build
 status: active
-state_version: 25
+state_version: 27
 brief: brief.md
 spec_changes:
   - capability: payment-reference-build
@@ -15,9 +15,9 @@ workspace:
   target_branch: codex/payment-business-requirements
   finish: null
 loop:
-  stage: repairing
-  goal_cycle: 4
-  iteration: 3
+  stage: building
+  goal_cycle: 5
+  iteration: 1
   attempt: 0
   retry_epoch: 0
   failed_iteration_count: 0
@@ -31,7 +31,8 @@ acceptance:
     text: A1：项目包含四个业务层模块和独立 dependency-leaf `contract` 模块；`contract`
       无项目内依赖，`application -> domain`、`adapter -> contract + application +
       domain`、`start -> adapter`，并可从干净工作区通过显式 Composite Build 完成编译、测试和 Spring
-      Boot 启动。
+      Boot 启动；本地解析遵循非空 Gradle property `cap4k.local.path` 优先、非空环境变量
+      `CAP4K_LOCAL_PATH` 后备，二者均无时保持正式版 `2.0.1`，仓库不保存机器路径。
     result: pending
     reason: null
   - id: A2
@@ -142,9 +143,9 @@ acceptance:
     reason: null
   - id: A19
     source: brief.md
-    text: A19：traceability 为本切片记录 contract/enum/VO/Flow 的实际 plan、路径、命令、cap4k commit
-      和验证结果；PAY-EV-001、002、011、012、019、021、023、024 只在真实证据存在时转为 verified，其余能力继续为
-      `not-built`。
+    text: A19：traceability 为本切片记录 contract/enum/VO/Flow、Composite 解析顺序的实际
+      plan、路径、命令、cap4k commit 和验证结果；PAY-EV-001、002、011、012、019、021、023、024
+      只在真实证据存在时转为 verified，其余能力继续为 `not-built`。
     result: pending
     reason: null
   - id: A20
@@ -264,9 +265,12 @@ acceptance:
     reason: null
   - id: A41
     source: specs/payment-reference-build/spec.md
-    text: B1 必须通过用户显式提供的属性或环境值启用本机 Composite Build，对当前 cap4k mainline
-      完成构建、测试和分析验收；仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot
-      或私服。published-coordinate cold start 不属于 B1 验收，保留给 B6。
+    text: B1 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline
+      完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property
+      `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版
+      `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行
+      `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地
+      `gradle.properties`。published-coordinate cold start 不属于 B1 验收，保留给 B6。
     result: pending
     reason: null
   - id: A42
@@ -1113,7 +1117,9 @@ acceptance:
     reason: null
   - id: A200
     source: specs/payment-reference-build/spec.md
-    text: actual evidence path/command/cap4k commit/status 写回 traceability。
+    text: actual evidence path/command/cap4k commit/status 写回 traceability，并包含
+      tracked `settings.gradle.kts` 的 property > environment > released `2.0.1`
+      解析合同及“仓库无默认机器路径”的 smoke 证据。
     result: pending
     reason: null
   - id: A201
@@ -1272,6 +1278,15 @@ history:
         gradle.properties."
       truncated: false
     completed_at: 2026-08-18T09:40:28.412Z
+  - goal_cycle: 4
+    iteration: 3
+    attempt: 0
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: Native confirmed acceptance criteria changed
+      truncated: false
+    completed_at: 2026-08-18T09:57:04.437Z
 history_overflow:
   dropped_entries: 0
   first_dropped_at: null
