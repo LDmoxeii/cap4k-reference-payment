@@ -114,7 +114,8 @@ $env:CAP4K_LOCAL_PATH = 'C:/path/to/cap4k'
 - domain tests：`domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/`（7 tests）；
 - HTTP/JPA integration test：`start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt`（5 tests）；
 - Analyzer plan：`build/cap4k/analysis-plan.json`（12 items）；
-- Actor flows：`flows/`；
+- Actor flows：`flows/endpoint_http_*.json` 与 `flows/endpoint_http_*.mmd`；
+- Analyzer 的 `flows/index.json` 目前包含本机 IR input locator，仅作为本地可再生产物并被精确忽略，不作为提交证据；上游稳定 identity 修复由 `cap4k#215` 跟踪；
 - Drawing Board：`design/drawing_board_*.json`；
 - Agent Snapshot：`build/cap4k/agent/manifest.json`、`ownership.json`、`analysis.json` 与 `diagnostics.json`。
 

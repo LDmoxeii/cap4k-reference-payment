@@ -8,6 +8,10 @@ out/
 
 *.log
 
+# Analyzer flow index currently contains machine-local input locators.
+# Keep stable per-entry JSON/Mermaid evidence tracked, but never commit the volatile index.
+/flows/index.json
+
 .DS_Store
 Thumbs.db
 

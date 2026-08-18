@@ -631,9 +631,8 @@ evidence:
     status: verified
   PAY-EV-003:
     kind: analyzer-flow
-    path: flows/index.json
+    path: flows/endpoint_http_payment_create.json
     related_paths:
-      - flows/endpoint_http_payment_create.json
       - flows/endpoint_http_payment_create.mmd
       - flows/endpoint_http_payment_attempt_start.json
       - flows/endpoint_http_payment_attempt_start.mmd
@@ -644,7 +643,7 @@ evidence:
       - design/drawing_board_endpoint.json
       - design/drawing_board_aggregate_elements.json
     command: .\gradlew.bat cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
-    result: 12 analysis items; 3 independent endpoint-http Actor-to-Command flows; all 6 Mermaid node labels are quoted with zero unsafe labels, preserving the Mermaid 11.16.1 parser-smoke result; Command, Query, Endpoint, and Aggregate Structure remain independent evidence; no cross-entry stitching and no fabricated Time root
+    result: 12 analysis items; 3 independent endpoint-http Actor-to-Command flows; all 6 Mermaid node labels are quoted with zero unsafe labels, preserving the Mermaid 11.16.1 parser-smoke result; Command, Query, Endpoint, and Aggregate Structure remain independent evidence; generated flows/index.json is intentionally ignored because its current inputDirs are machine-local locators rather than portable evidence (upstream cap4k#215); no cross-entry stitching and no fabricated Time root
     status: verified
   PAY-EV-004:
     kind: generated-model
