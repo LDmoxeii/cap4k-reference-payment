@@ -1,0 +1,146 @@
+[
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.MerchantChannelConfigurationJpaRepositoryAdapter",
+    "aggregate": "MerchantChannelConfiguration",
+    "name": "MerchantChannelConfigurationRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.PaymentJpaRepositoryAdapter",
+    "aggregate": "Payment",
+    "name": "PaymentRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration.SMerchantChannelConfiguration",
+    "aggregate": "MerchantChannelConfiguration",
+    "name": "SMerchantChannelConfiguration",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment",
+    "aggregate": "Payment",
+    "name": "SPayment",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment.SPaymentAttempt",
+    "aggregate": "Payment",
+    "name": "SPaymentAttempt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment.SPaymentNotificationReceipt",
+    "aggregate": "Payment",
+    "name": "SPaymentNotificationReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfiguration",
+    "aggregate": "MerchantChannelConfiguration",
+    "name": "MerchantChannelConfiguration",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration",
+    "description": "",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfigurationId",
+    "aggregate": "MerchantChannelConfiguration",
+    "name": "MerchantChannelConfigurationId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.factory.MerchantChannelConfigurationFactory",
+    "aggregate": "MerchantChannelConfiguration",
+    "name": "MerchantChannelConfigurationFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment",
+    "aggregate": "Payment",
+    "name": "Payment",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttempt",
+    "aggregate": "Payment",
+    "name": "PaymentAttempt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId",
+    "aggregate": "Payment",
+    "name": "PaymentAttemptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId",
+    "aggregate": "Payment",
+    "name": "PaymentId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentNotificationReceipt",
+    "aggregate": "Payment",
+    "name": "PaymentNotificationReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentNotificationReceiptId",
+    "aggregate": "Payment",
+    "name": "PaymentNotificationReceiptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.factory.PaymentFactory",
+    "aggregate": "Payment",
+    "name": "PaymentFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  }
+]

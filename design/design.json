@@ -1,0 +1,930 @@
+[
+  {
+    "tag": "command",
+    "package": "payment.create",
+    "name": "CreatePayment",
+    "description": "Create an idempotent payment intent for a merchant order",
+    "aggregates": [
+      "Payment",
+      "MerchantChannelConfiguration"
+    ],
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "merchantOrderNumber",
+        "type": "String"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "paymentMethod",
+        "type": "String"
+      },
+      {
+        "name": "expiresAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "idempotentReplay",
+        "type": "Boolean"
+      },
+      {
+        "name": "rejectionCode",
+        "type": "String?"
+      },
+      {
+        "name": "rejectionSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.attempt",
+    "name": "StartPaymentAttempt",
+    "description": "Select an eligible merchant channel and start a durable payment attempt",
+    "aggregates": [
+      "Payment",
+      "MerchantChannelConfiguration"
+    ],
+    "fields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "paymentStatus",
+        "type": "String"
+      },
+      {
+        "name": "attemptStatus",
+        "type": "String"
+      },
+      {
+        "name": "diagnosticSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.result",
+    "name": "ConfirmPaymentResult",
+    "description": "Record, verify, deduplicate, and adjudicate a channel payment result",
+    "aggregates": [
+      "Payment"
+    ],
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "notificationId",
+        "type": "String"
+      },
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "channelTransactionId",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "result",
+        "type": "String"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "verificationMaterial",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "outcome",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome"
+      }
+    ]
+  },
+  {
+    "tag": "query",
+    "package": "payment.read",
+    "name": "GetPayment",
+    "description": "Read a persisted payment and all payment-attempt adjudication summaries",
+    "aggregates": [
+      "Payment"
+    ],
+    "fields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "merchantOrderNumber",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "paymentMethod",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "createdAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "expiresAt",
+        "type": "Instant"
+      },
+      {
+        "name": "succeededAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "channelTransactionId",
+        "type": "String?"
+      },
+      {
+        "name": "attemptCount",
+        "type": "Int"
+      },
+      {
+        "name": "notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "rejectedNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "conflictingNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "lastNotificationIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "lastNotificationReceivedAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "lastRejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lastConflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "successFactFormed",
+        "type": "Boolean"
+      },
+      {
+        "name": "merchantSuccessNotificationIntentCount",
+        "type": "Int"
+      },
+      {
+        "name": "settlementBlocked",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts",
+        "type": "List<PaymentAttemptSummary>"
+      },
+      {
+        "name": "attempts[].paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].status",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].initiatedAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].channelTransactionId",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].finalResult",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].resultOccurredAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "attempts[].notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].notificationFirstReceivedAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "attempts[].notificationLastReceivedAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "attempts[].verifiedNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].rejectedNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].conflictingNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].verdictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts",
+        "type": "List<NotificationReceiptSummary>"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].notificationIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].channelTransactionId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].currency",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].result",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].occurredAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].firstReceivedAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].lastReceivedAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].receiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].verified",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].decision",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].verdictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].conflictSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "payment.channel",
+    "name": "VerifyPaymentResult",
+    "description": "Verify channel authenticity without placing credentials in the aggregate",
+    "aggregates": [
+      "Payment"
+    ],
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "notificationId",
+        "type": "String"
+      },
+      {
+        "name": "payload",
+        "type": "String"
+      },
+      {
+        "name": "verificationMaterial",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "verified",
+        "type": "Boolean"
+      },
+      {
+        "name": "verificationSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "payment.gateway",
+    "name": "StartChannelPayment",
+    "description": "Submit a payment attempt to the selected external channel",
+    "aggregates": [
+      "Payment"
+    ],
+    "fields": [
+      {
+        "name": "paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "channelReference",
+        "type": "String?"
+      },
+      {
+        "name": "failureCode",
+        "type": "String?"
+      },
+      {
+        "name": "diagnosticSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "payment.api",
+    "name": "CreatePaymentEndpoint",
+    "operationName": "payment.create",
+    "description": "POST /api/payments",
+    "aggregates": [],
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "merchantOrderNumber",
+        "type": "String"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "paymentMethod",
+        "type": "String"
+      },
+      {
+        "name": "expiresAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "idempotentReplay",
+        "type": "Boolean"
+      },
+      {
+        "name": "rejectionCode",
+        "type": "String?"
+      },
+      {
+        "name": "rejectionSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "payment.api",
+    "name": "StartPaymentAttemptEndpoint",
+    "operationName": "payment.attempt.start",
+    "description": "POST /api/payments/{paymentId}/attempts",
+    "aggregates": [],
+    "fields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "paymentStatus",
+        "type": "String"
+      },
+      {
+        "name": "attemptStatus",
+        "type": "String"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "payment.api",
+    "name": "ConfirmPaymentResultEndpoint",
+    "operationName": "payment.result.confirm",
+    "description": "POST /api/channel/payment-results",
+    "aggregates": [],
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "notificationId",
+        "type": "String"
+      },
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "channelTransactionId",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "result",
+        "type": "String"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "verificationMaterial",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentStatus",
+        "type": "String"
+      },
+      {
+        "name": "attemptStatus",
+        "type": "String?"
+      },
+      {
+        "name": "notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "disposition",
+        "type": "String"
+      },
+      {
+        "name": "duplicate",
+        "type": "Boolean"
+      },
+      {
+        "name": "accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "rejected",
+        "type": "Boolean"
+      },
+      {
+        "name": "conflicting",
+        "type": "Boolean"
+      },
+      {
+        "name": "rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "successFactFormedNow",
+        "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "payment.api",
+    "name": "GetPaymentEndpoint",
+    "operationName": "payment.get",
+    "description": "GET /api/payments/{paymentId}",
+    "aggregates": [],
+    "fields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "merchantOrderNumber",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "paymentMethod",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "createdAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "expiresAt",
+        "type": "Instant"
+      },
+      {
+        "name": "succeededAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "channelTransactionId",
+        "type": "String?"
+      },
+      {
+        "name": "attemptCount",
+        "type": "Int"
+      },
+      {
+        "name": "notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "rejectedNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "conflictingNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "lastNotificationIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "lastNotificationReceivedAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "lastRejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lastConflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "successFactFormed",
+        "type": "Boolean"
+      },
+      {
+        "name": "merchantSuccessNotificationIntentCount",
+        "type": "Int"
+      },
+      {
+        "name": "settlementBlocked",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts",
+        "type": "List<PaymentAttemptSummary>"
+      },
+      {
+        "name": "attempts[].paymentAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].status",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].initiatedAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].channelTransactionId",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].finalResult",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].resultOccurredAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "attempts[].notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].notificationFirstReceivedAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "attempts[].notificationLastReceivedAt",
+        "type": "Instant?"
+      },
+      {
+        "name": "attempts[].verifiedNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].rejectedNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].conflictingNotificationCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].verdictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts",
+        "type": "List<NotificationReceiptSummary>"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].notificationIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].channelTransactionId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].currency",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].result",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].occurredAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].firstReceivedAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].lastReceivedAt",
+        "type": "Instant"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].receiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].verified",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].decision",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].verdictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].conflictSummary",
+        "type": "String?"
+      }
+    ]
+  }
+]

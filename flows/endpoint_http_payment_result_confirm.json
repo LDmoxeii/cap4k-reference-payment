@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:payment.result.confirm",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.payment.result.ConfirmPaymentResultCmd.Request",
+      "name": "ConfirmPaymentResultCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.payment.result.ConfirmPaymentResultCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:payment.result.confirm",
+      "name": "payment.result.confirm [POST /api/channel/payment-results]",
+      "fullName": "endpoint-http:payment.result.confirm",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:payment.result.confirm",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.payment.result.ConfirmPaymentResultCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

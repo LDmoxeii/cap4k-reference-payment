@@ -1,0 +1,803 @@
+schema_version: 1
+project: cap4k-reference-payment
+projection: cap4k-current
+projection_policy:
+  mode: current-only
+  version_directories: false
+  compatibility_layers: false
+  historical_projection_copies: false
+  history_owner: git
+phase: build
+build_authorized: true
+
+status_vocabulary:
+  planned: target mapping exists but implementation has not started
+  not-built: no implementation or verifiable evidence exists
+  verified: implementation evidence has been produced and reviewed
+
+requirements:
+  PAY-BR-001:
+    source: docs/requirements/business/payment-rules.md#pay-br-001
+    acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003]
+    status: planned
+  PAY-BR-002:
+    source: docs/requirements/business/payment-rules.md#pay-br-002
+    acceptance_ids: [PAY-AC-002, PAY-AC-003]
+    status: planned
+  PAY-BR-003:
+    source: docs/requirements/business/payment-rules.md#pay-br-003
+    acceptance_ids: [PAY-AC-011]
+    status: planned
+  PAY-BR-004:
+    source: docs/requirements/business/payment-rules.md#pay-br-004
+    acceptance_ids: [PAY-AC-005]
+    status: planned
+  PAY-BR-005:
+    source: docs/requirements/business/payment-rules.md#pay-br-005
+    acceptance_ids: [PAY-AC-026]
+    status: planned
+  PAY-BR-006:
+    source: docs/requirements/business/payment-rules.md#pay-br-006
+    acceptance_ids: [PAY-AC-068]
+    status: planned
+  PAY-BR-010:
+    source: docs/requirements/business/payment-rules.md#pay-br-010
+    acceptance_ids: [PAY-AC-012]
+    status: planned
+  PAY-BR-011:
+    source: docs/requirements/business/payment-rules.md#pay-br-011
+    acceptance_ids: [PAY-AC-013]
+    status: planned
+  PAY-BR-012:
+    source: docs/requirements/business/payment-rules.md#pay-br-012
+    acceptance_ids: [PAY-AC-012, PAY-AC-020, PAY-AC-027, PAY-AC-040, PAY-AC-060]
+    status: planned
+  PAY-BR-013:
+    source: docs/requirements/business/payment-rules.md#pay-br-013
+    acceptance_ids: [PAY-AC-060]
+    status: planned
+  PAY-BR-014:
+    source: docs/requirements/business/payment-rules.md#pay-br-014
+    acceptance_ids: [PAY-AC-014, PAY-AC-060]
+    status: planned
+  PAY-BR-015:
+    source: docs/requirements/business/payment-rules.md#pay-br-015
+    acceptance_ids: [PAY-AC-060]
+    status: planned
+  PAY-BR-020:
+    source: docs/requirements/business/payment-rules.md#pay-br-020
+    acceptance_ids: [PAY-AC-001, PAY-AC-084]
+    status: planned
+  PAY-BR-021:
+    source: docs/requirements/business/payment-rules.md#pay-br-021
+    acceptance_ids: [PAY-AC-004, PAY-AC-010, PAY-AC-083]
+    status: planned
+  PAY-BR-022:
+    source: docs/requirements/business/payment-rules.md#pay-br-022
+    acceptance_ids: [PAY-AC-010]
+    status: planned
+  PAY-BR-023:
+    source: docs/requirements/business/payment-rules.md#pay-br-023
+    acceptance_ids: [PAY-AC-005, PAY-AC-015]
+    status: planned
+  PAY-BR-024:
+    source: docs/requirements/business/payment-rules.md#pay-br-024
+    acceptance_ids: [PAY-AC-006]
+    status: planned
+  PAY-BR-025:
+    source: docs/requirements/business/payment-rules.md#pay-br-025
+    acceptance_ids: [PAY-AC-016]
+    status: planned
+  PAY-BR-026:
+    source: docs/requirements/business/payment-rules.md#pay-br-026
+    acceptance_ids: [PAY-AC-007, PAY-AC-008]
+    status: planned
+  PAY-BR-027:
+    source: docs/requirements/business/payment-rules.md#pay-br-027
+    acceptance_ids: [PAY-AC-009]
+    status: planned
+  PAY-BR-028:
+    source: docs/requirements/business/payment-rules.md#pay-br-028
+    acceptance_ids: [PAY-AC-017]
+    status: planned
+  PAY-BR-030:
+    source: docs/requirements/business/payment-rules.md#pay-br-030
+    acceptance_ids: [PAY-AC-020, PAY-AC-027]
+    status: planned
+  PAY-BR-031:
+    source: docs/requirements/business/payment-rules.md#pay-br-031
+    acceptance_ids: [PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023]
+    status: planned
+  PAY-BR-032:
+    source: docs/requirements/business/payment-rules.md#pay-br-032
+    acceptance_ids: [PAY-AC-023]
+    status: planned
+  PAY-BR-033:
+    source: docs/requirements/business/payment-rules.md#pay-br-033
+    acceptance_ids: [PAY-AC-028]
+    status: planned
+  PAY-BR-034:
+    source: docs/requirements/business/payment-rules.md#pay-br-034
+    acceptance_ids: [PAY-AC-024, PAY-AC-025]
+    status: planned
+  PAY-BR-035:
+    source: docs/requirements/business/payment-rules.md#pay-br-035
+    acceptance_ids: [PAY-AC-029]
+    status: planned
+  PAY-BR-036:
+    source: docs/requirements/business/payment-rules.md#pay-br-036
+    acceptance_ids: [PAY-AC-082]
+    status: planned
+  PAY-BR-040:
+    source: docs/requirements/business/payment-rules.md#pay-br-040
+    acceptance_ids: [PAY-AC-040, PAY-AC-045]
+    status: planned
+  PAY-BR-041:
+    source: docs/requirements/business/payment-rules.md#pay-br-041
+    acceptance_ids: [PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-047, PAY-AC-082]
+    status: planned
+  PAY-BR-042:
+    source: docs/requirements/business/payment-rules.md#pay-br-042
+    acceptance_ids: [PAY-AC-040, PAY-AC-043, PAY-AC-044]
+    status: planned
+  PAY-BR-043:
+    source: docs/requirements/business/payment-rules.md#pay-br-043
+    acceptance_ids: [PAY-AC-041, PAY-AC-042, PAY-AC-043]
+    status: planned
+  PAY-BR-044:
+    source: docs/requirements/business/payment-rules.md#pay-br-044
+    acceptance_ids: [PAY-AC-044, PAY-AC-045, PAY-AC-047, PAY-AC-082]
+    status: planned
+  PAY-BR-045:
+    source: docs/requirements/business/payment-rules.md#pay-br-045
+    acceptance_ids: [PAY-AC-041, PAY-AC-043, PAY-AC-061]
+    status: planned
+  PAY-BR-046:
+    source: docs/requirements/business/payment-rules.md#pay-br-046
+    acceptance_ids: [PAY-AC-046]
+    status: planned
+  PAY-BR-050:
+    source: docs/requirements/business/payment-rules.md#pay-br-050
+    acceptance_ids: [PAY-AC-060, PAY-AC-068]
+    status: planned
+  PAY-BR-051:
+    source: docs/requirements/business/payment-rules.md#pay-br-051
+    acceptance_ids: [PAY-AC-062]
+    status: planned
+  PAY-BR-052:
+    source: docs/requirements/business/payment-rules.md#pay-br-052
+    acceptance_ids: [PAY-AC-060, PAY-AC-083]
+    status: planned
+  PAY-BR-053:
+    source: docs/requirements/business/payment-rules.md#pay-br-053
+    acceptance_ids: [PAY-AC-067]
+    status: planned
+  PAY-BR-054:
+    source: docs/requirements/business/payment-rules.md#pay-br-054
+    acceptance_ids: [PAY-AC-064]
+    status: planned
+  PAY-BR-055:
+    source: docs/requirements/business/payment-rules.md#pay-br-055
+    acceptance_ids: [PAY-AC-065]
+    status: planned
+  PAY-BR-056:
+    source: docs/requirements/business/payment-rules.md#pay-br-056
+    acceptance_ids: [PAY-AC-066]
+    status: planned
+  PAY-BR-060:
+    source: docs/requirements/business/payment-rules.md#pay-br-060
+    acceptance_ids: [PAY-AC-080]
+    status: planned
+  PAY-BR-061:
+    source: docs/requirements/business/payment-rules.md#pay-br-061
+    acceptance_ids: [PAY-AC-044, PAY-AC-082, PAY-AC-086]
+    status: planned
+  PAY-BR-062:
+    source: docs/requirements/business/payment-rules.md#pay-br-062
+    acceptance_ids: [PAY-AC-047, PAY-AC-082]
+    status: planned
+  PAY-BR-063:
+    source: docs/requirements/business/payment-rules.md#pay-br-063
+    acceptance_ids: [PAY-AC-007, PAY-AC-040, PAY-AC-060, PAY-AC-085]
+    status: planned
+  PAY-BR-064:
+    source: docs/requirements/business/payment-rules.md#pay-br-064
+    acceptance_ids: [PAY-AC-084]
+    status: planned
+
+acceptance:
+  PAY-AC-001:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-001
+    projection_ids: [PAY-CP-001, PAY-CP-005, PAY-CP-011]
+    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    status: verified
+  PAY-AC-002:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-002
+    projection_ids: [PAY-CP-001, PAY-CP-011]
+    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    status: verified
+  PAY-AC-003:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-003
+    projection_ids: [PAY-CP-001, PAY-CP-011]
+    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    status: verified
+  PAY-AC-004:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-004
+    projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-010]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    status: verified
+  PAY-AC-005:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-005
+    projection_ids: [PAY-CP-001, PAY-CP-006]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    status: verified
+  PAY-AC-006:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-006
+    projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-011]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-019]
+    status: verified
+  PAY-AC-007:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-007
+    projection_ids: [PAY-CP-001, PAY-CP-007]
+    evidence_ids: [PAY-EV-002, PAY-EV-013]
+    status: planned
+  PAY-AC-008:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-008
+    projection_ids: [PAY-CP-001, PAY-CP-007]
+    evidence_ids: [PAY-EV-002, PAY-EV-013]
+    status: planned
+  PAY-AC-009:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-009
+    projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-007, PAY-CP-008]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-013]
+    status: planned
+  PAY-AC-010:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-010
+    projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-008]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    status: planned
+  PAY-AC-011:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-011
+    projection_ids: [PAY-CP-001, PAY-CP-011]
+    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    status: planned
+  PAY-AC-012:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-012
+    projection_ids: [PAY-CP-001, PAY-CP-011]
+    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    status: verified
+  PAY-AC-013:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-013
+    projection_ids: [PAY-CP-001]
+    evidence_ids: [PAY-EV-002]
+    status: verified
+  PAY-AC-014:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-014
+    projection_ids: [PAY-CP-001, PAY-CP-004, PAY-CP-005]
+    evidence_ids: [PAY-EV-002, PAY-EV-009, PAY-EV-010]
+    status: planned
+  PAY-AC-015:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-015
+    projection_ids: [PAY-CP-001, PAY-CP-006]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    status: planned
+  PAY-AC-016:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-016
+    projection_ids: [PAY-CP-001, PAY-CP-006]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    status: verified
+  PAY-AC-017:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-017
+    projection_ids: [PAY-CP-001]
+    evidence_ids: [PAY-EV-002]
+    status: verified
+  PAY-AC-020:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-020
+    projection_ids: [PAY-CP-002, PAY-CP-010, PAY-CP-011]
+    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    status: planned
+  PAY-AC-021:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-021
+    projection_ids: [PAY-CP-002]
+    evidence_ids: [PAY-EV-005]
+    status: planned
+  PAY-AC-022:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-022
+    projection_ids: [PAY-CP-002, PAY-CP-011]
+    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    status: planned
+  PAY-AC-023:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-023
+    projection_ids: [PAY-CP-002]
+    evidence_ids: [PAY-EV-005]
+    status: planned
+  PAY-AC-024:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-024
+    projection_ids: [PAY-CP-002, PAY-CP-010]
+    evidence_ids: [PAY-EV-005, PAY-EV-018]
+    status: planned
+  PAY-AC-025:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-025
+    projection_ids: [PAY-CP-002, PAY-CP-010]
+    evidence_ids: [PAY-EV-005, PAY-EV-018]
+    status: planned
+  PAY-AC-026:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-026
+    projection_ids: [PAY-CP-002, PAY-CP-011]
+    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    status: planned
+  PAY-AC-027:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-027
+    projection_ids: [PAY-CP-002, PAY-CP-011]
+    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    status: planned
+  PAY-AC-028:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-028
+    projection_ids: [PAY-CP-002, PAY-CP-011]
+    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    status: planned
+  PAY-AC-029:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-029
+    projection_ids: [PAY-CP-002, PAY-CP-010]
+    evidence_ids: [PAY-EV-005, PAY-EV-018]
+    status: planned
+  PAY-AC-040:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-040
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-AC-041:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-041
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-AC-042:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-042
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-AC-043:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-043
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-AC-044:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-044
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-020]
+    status: planned
+  PAY-AC-045:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-045
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-AC-046:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-046
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-AC-047:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-047
+    projection_ids: [PAY-CP-003, PAY-CP-008]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-020]
+    status: planned
+  PAY-AC-060:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-060
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    status: planned
+  PAY-AC-061:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-061
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    status: planned
+  PAY-AC-062:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-062
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    status: planned
+  PAY-AC-063:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-063
+    projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
+    status: planned
+  PAY-AC-064:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-064
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
+    status: planned
+  PAY-AC-065:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-065
+    projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
+    status: planned
+  PAY-AC-066:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-066
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    status: planned
+  PAY-AC-067:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-067
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    status: planned
+  PAY-AC-068:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-068
+    projection_ids: [PAY-CP-004, PAY-CP-009]
+    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    status: planned
+  PAY-AC-080:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-080
+    projection_ids: [PAY-CP-011, PAY-CP-012]
+    evidence_ids: [PAY-EV-019, PAY-EV-026]
+    status: planned
+  PAY-AC-081:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-081
+    projection_ids: [PAY-CP-006, PAY-CP-010, PAY-CP-012]
+    evidence_ids: [PAY-EV-020, PAY-EV-025]
+    status: planned
+  PAY-AC-082:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-082
+    projection_ids: [PAY-CP-003, PAY-CP-008, PAY-CP-012]
+    evidence_ids: [PAY-EV-007, PAY-EV-020, PAY-EV-027]
+    status: planned
+  PAY-AC-083:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-083
+    projection_ids: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-014]
+    evidence_ids: [PAY-EV-022, PAY-EV-027]
+    status: planned
+  PAY-AC-084:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-084
+    projection_ids: [PAY-CP-005, PAY-CP-011]
+    evidence_ids: [PAY-EV-010, PAY-EV-026]
+    status: planned
+  PAY-AC-085:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-085
+    projection_ids: [PAY-CP-007, PAY-CP-008, PAY-CP-009, PAY-CP-014]
+    evidence_ids: [PAY-EV-013, PAY-EV-014, PAY-EV-016]
+    status: planned
+  PAY-AC-086:
+    source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-086
+    projection_ids: [PAY-CP-005, PAY-CP-011, PAY-CP-012]
+    evidence_ids: [PAY-EV-026]
+    status: planned
+
+projections:
+  PAY-CP-001:
+    title: Payment and PaymentAttempt aggregate
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-001
+    business_requirement_ids: [PAY-BR-001, PAY-BR-002, PAY-BR-003, PAY-BR-004, PAY-BR-010, PAY-BR-011, PAY-BR-012, PAY-BR-014, PAY-BR-020, PAY-BR-021, PAY-BR-022, PAY-BR-023, PAY-BR-024, PAY-BR-025, PAY-BR-026, PAY-BR-027, PAY-BR-028, PAY-BR-052, PAY-BR-063]
+    acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-007, PAY-AC-008, PAY-AC-009, PAY-AC-010, PAY-AC-011, PAY-AC-012, PAY-AC-013, PAY-AC-014, PAY-AC-015, PAY-AC-016, PAY-AC-017, PAY-AC-083]
+    target_surfaces: [Runtime, Generator, Analyzer]
+    evidence_ids: [PAY-EV-001, PAY-EV-002, PAY-EV-003]
+    status: planned
+  PAY-CP-002:
+    title: Refund aggregate and partial refund lifecycle
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-002
+    business_requirement_ids: [PAY-BR-005, PAY-BR-012, PAY-BR-021, PAY-BR-030, PAY-BR-031, PAY-BR-032, PAY-BR-033, PAY-BR-034, PAY-BR-035, PAY-BR-052]
+    acceptance_ids: [PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023, PAY-AC-024, PAY-AC-025, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-029, PAY-AC-083]
+    target_surfaces: [Runtime, Generator, Analyzer]
+    evidence_ids: [PAY-EV-004, PAY-EV-005]
+    status: planned
+  PAY-CP-003:
+    title: ReconciliationBatch and ReconciliationItem aggregate
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-003
+    business_requirement_ids: [PAY-BR-012, PAY-BR-021, PAY-BR-036, PAY-BR-040, PAY-BR-041, PAY-BR-042, PAY-BR-043, PAY-BR-044, PAY-BR-045, PAY-BR-046, PAY-BR-052, PAY-BR-061, PAY-BR-062, PAY-BR-063]
+    acceptance_ids: [PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-046, PAY-AC-047, PAY-AC-082, PAY-AC-083]
+    target_surfaces: [Runtime, Generator, Analyzer]
+    evidence_ids: [PAY-EV-006, PAY-EV-007]
+    status: planned
+  PAY-CP-004:
+    title: MerchantSettlement and SettlementLine aggregate
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-004
+    business_requirement_ids: [PAY-BR-006, PAY-BR-012, PAY-BR-013, PAY-BR-014, PAY-BR-015, PAY-BR-021, PAY-BR-045, PAY-BR-050, PAY-BR-051, PAY-BR-052, PAY-BR-053, PAY-BR-054, PAY-BR-055, PAY-BR-056, PAY-BR-063]
+    acceptance_ids: [PAY-AC-014, PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-083]
+    target_surfaces: [Runtime, Generator, Analyzer]
+    evidence_ids: [PAY-EV-008, PAY-EV-009]
+    status: planned
+  PAY-CP-005:
+    title: MerchantChannelConfiguration aggregate
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-005
+    business_requirement_ids: [PAY-BR-001, PAY-BR-014, PAY-BR-020, PAY-BR-061, PAY-BR-064]
+    acceptance_ids: [PAY-AC-001, PAY-AC-014, PAY-AC-084, PAY-AC-086]
+    target_surfaces: [Runtime, Generator, Analyzer]
+    evidence_ids: [PAY-EV-010]
+    status: planned
+  PAY-CP-006:
+    title: Payment callback flow
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-006
+    business_requirement_ids: [PAY-BR-004, PAY-BR-021, PAY-BR-022, PAY-BR-023, PAY-BR-024, PAY-BR-025, PAY-BR-027]
+    acceptance_ids: [PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-009, PAY-AC-010, PAY-AC-015, PAY-AC-016, PAY-AC-081]
+    target_surfaces: [Runtime, Analyzer, IntegrationEvent, Endpoint]
+    evidence_ids: [PAY-EV-011, PAY-EV-012]
+    status: planned
+  PAY-CP-007:
+    title: Payment timeout continuation
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-007
+    business_requirement_ids: [PAY-BR-026, PAY-BR-027, PAY-BR-063]
+    acceptance_ids: [PAY-AC-007, PAY-AC-008, PAY-AC-009, PAY-AC-085]
+    target_surfaces: [Runtime, Analyzer]
+    evidence_ids: [PAY-EV-013]
+    status: planned
+  PAY-CP-008:
+    title: End-of-day reconciliation flow
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-008
+    business_requirement_ids: [PAY-BR-012, PAY-BR-021, PAY-BR-022, PAY-BR-027, PAY-BR-036, PAY-BR-040, PAY-BR-041, PAY-BR-042, PAY-BR-043, PAY-BR-044, PAY-BR-045, PAY-BR-046, PAY-BR-061, PAY-BR-062, PAY-BR-063]
+    acceptance_ids: [PAY-AC-009, PAY-AC-010, PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-046, PAY-AC-047, PAY-AC-082, PAY-AC-085]
+    target_surfaces: [Runtime, Analyzer, IntegrationEvent]
+    evidence_ids: [PAY-EV-014, PAY-EV-015]
+    status: planned
+  PAY-CP-009:
+    title: Merchant settlement flow
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-009
+    business_requirement_ids: [PAY-BR-006, PAY-BR-012, PAY-BR-013, PAY-BR-014, PAY-BR-015, PAY-BR-045, PAY-BR-050, PAY-BR-051, PAY-BR-052, PAY-BR-053, PAY-BR-054, PAY-BR-055, PAY-BR-056, PAY-BR-063]
+    acceptance_ids: [PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-085]
+    target_surfaces: [Runtime, Analyzer, IntegrationEvent]
+    evidence_ids: [PAY-EV-016, PAY-EV-017]
+    status: planned
+  PAY-CP-010:
+    title: Integration Event boundary
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-010
+    business_requirement_ids: [PAY-BR-012, PAY-BR-021, PAY-BR-030, PAY-BR-031, PAY-BR-034, PAY-BR-035, PAY-BR-055]
+    acceptance_ids: [PAY-AC-004, PAY-AC-020, PAY-AC-024, PAY-AC-025, PAY-AC-029, PAY-AC-063, PAY-AC-065, PAY-AC-081]
+    target_surfaces: [Runtime, IntegrationEvent]
+    evidence_ids: [PAY-EV-018]
+    status: planned
+  PAY-CP-011:
+    title: Endpoint boundary
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-011
+    business_requirement_ids: [PAY-BR-001, PAY-BR-002, PAY-BR-003, PAY-BR-005, PAY-BR-010, PAY-BR-012, PAY-BR-020, PAY-BR-024, PAY-BR-030, PAY-BR-031, PAY-BR-033, PAY-BR-060, PAY-BR-061, PAY-BR-064]
+    acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-006, PAY-AC-011, PAY-AC-012, PAY-AC-020, PAY-AC-022, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-080, PAY-AC-084, PAY-AC-086]
+    target_surfaces: [Runtime, Endpoint]
+    evidence_ids: [PAY-EV-019]
+    status: planned
+  PAY-CP-012:
+    title: Runtime capability closure
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-012
+    depends_on: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-005, PAY-CP-006, PAY-CP-007, PAY-CP-008, PAY-CP-009, PAY-CP-010, PAY-CP-011]
+    target_surfaces: [Runtime]
+    evidence_ids: [PAY-EV-020, PAY-EV-025, PAY-EV-026, PAY-EV-027]
+    status: planned
+  PAY-CP-013:
+    title: Generator capability closure
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-013
+    depends_on: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-005, PAY-CP-010, PAY-CP-011]
+    target_surfaces: [Generator]
+    evidence_ids: [PAY-EV-021]
+    status: planned
+  PAY-CP-014:
+    title: Analyzer capability closure
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-014
+    depends_on: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-005, PAY-CP-006, PAY-CP-007, PAY-CP-008, PAY-CP-009, PAY-CP-010, PAY-CP-011]
+    target_surfaces: [Analyzer]
+    evidence_ids: [PAY-EV-022]
+    status: planned
+  PAY-CP-015:
+    title: Pipeline capability closure
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-015
+    depends_on: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-005, PAY-CP-006, PAY-CP-007, PAY-CP-008, PAY-CP-009, PAY-CP-010, PAY-CP-011, PAY-CP-012, PAY-CP-013, PAY-CP-014]
+    target_surfaces: [Pipeline]
+    evidence_ids: [PAY-EV-023]
+    status: planned
+  PAY-CP-016:
+    title: AgentFacts capability closure
+    source: docs/requirements/projection/cap4k-current.md#pay-cp-016
+    depends_on: [PAY-CP-012, PAY-CP-013, PAY-CP-014, PAY-CP-015]
+    target_surfaces: [AgentFacts]
+    evidence_ids: [PAY-EV-024]
+    status: planned
+
+build_slices:
+  B1:
+    title: create payment, start attempt, confirm channel result, and query payment
+    issue: https://github.com/LDmoxeii/cap4k-reference-payment/issues/3
+    status: verified
+    acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-012, PAY-AC-013, PAY-AC-016, PAY-AC-017]
+    evidence_ids: [PAY-EV-001, PAY-EV-002, PAY-EV-003, PAY-EV-011, PAY-EV-012, PAY-EV-019, PAY-EV-021, PAY-EV-023, PAY-EV-024]
+    cap4k_validation: explicit-local-composite
+    cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
+    repository_local_path: none
+    cap4k_commit: dcafcc43928aa47a0613bb839ba5f6010efa3414
+    cap4k_upstream_prs: [211, 212, 214]
+    published_coordinate_cold_start: deferred-to-B6
+
+evidence:
+  PAY-EV-001:
+    kind: generated-model
+    path: design/schema.sql
+    related_paths:
+      - design/design.json
+      - design/enums.json
+      - design/value-objects.json
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api
+      - domain/build/generated/cap4k/main/kotlin
+      - adapter/build/generated/cap4k/main/kotlin
+    command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
+    result: 41 plan items generated from DB, Design JSON, enum manifest, and value-object manifest; 26 checked-in SKIP and 15 generated OVERWRITE items make contract, enum, VO, handler, and generated-source ownership explicit
+    status: verified
+  PAY-EV-002:
+    kind: aggregate-runtime-test
+    path: domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/PaymentBehaviorTest.kt
+    related_paths:
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/ChannelResultRecordingOutcomeTest.kt
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/GeneratedEnumConverterTest.kt
+      - application/src/test/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/result/ConfirmPaymentResultCmdContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+      - start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    command: .\gradlew.bat clean build --no-daemon --console=plain
+    result: 19 tests across 8 suites pass with zero failures (8 domain, 1 application, 3 adapter, 2 contract, and 5 HTTP/JPA integration tests), covering domain behavior, Outcome invariants, enum converter round-trip, direct VO response, static Mediator and HTTP contracts, dependency-leaf architecture, JPA/UoW, callback rejection/duplicate/conflict, gateway failure, and optimistic locking
+    status: verified
+  PAY-EV-003:
+    kind: analyzer-flow
+    path: flows/endpoint_http_payment_create.json
+    related_paths:
+      - flows/endpoint_http_payment_create.mmd
+      - flows/endpoint_http_payment_attempt_start.json
+      - flows/endpoint_http_payment_attempt_start.mmd
+      - flows/endpoint_http_payment_result_confirm.json
+      - flows/endpoint_http_payment_result_confirm.mmd
+      - design/drawing_board_command.json
+      - design/drawing_board_query.json
+      - design/drawing_board_endpoint.json
+      - design/drawing_board_aggregate_elements.json
+    command: .\gradlew.bat cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
+    result: 12 analysis items; 3 independent endpoint-http Actor-to-Command flows; all 6 Mermaid node labels are quoted with zero unsafe labels, preserving the Mermaid 11.16.1 parser-smoke result; Command, Query, Endpoint, and Aggregate Structure remain independent evidence; generated flows/index.json is intentionally ignored because its current inputDirs are machine-local locators rather than portable evidence (upstream cap4k#215); no cross-entry stitching and no fabricated Time root
+    status: verified
+  PAY-EV-004:
+    kind: generated-model
+    path: planned
+    status: not-built
+  PAY-EV-005:
+    kind: refund-runtime-test
+    path: planned
+    status: not-built
+  PAY-EV-006:
+    kind: generated-model
+    path: planned
+    status: not-built
+  PAY-EV-007:
+    kind: reconciliation-runtime-test
+    path: planned
+    status: not-built
+  PAY-EV-008:
+    kind: generated-model
+    path: planned
+    status: not-built
+  PAY-EV-009:
+    kind: settlement-runtime-test
+    path: planned
+    status: not-built
+  PAY-EV-010:
+    kind: channel-configuration-test
+    path: planned
+    status: not-built
+  PAY-EV-011:
+    kind: callback-endpoint-contract
+    path: contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/ConfirmPaymentResultEndpoint.kt
+    related_paths:
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/CreatePaymentEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/StartPaymentAttemptEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/GetPaymentEndpoint.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/ConfirmPaymentResultEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfiguration.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+    result: Endpoint contracts live in the independently tested contract leaf; adapter keeps one Handler per Endpoint, uses static Mediator, and retains handwritten HTTP binding
+    status: verified
+  PAY-EV-012:
+    kind: callback-integration-test
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    command: .\gradlew.bat :start:test --no-daemon --console=plain
+    covers: [trusted-success, duplicate-success-three-times, untrusted-result, missing-attempt, channel-mismatch-domain, amount-mismatch, currency-mismatch, post-success-conflict, durable-notification-receipts, merchant-success-intent-once, gateway-exception-diagnostic, optimistic-lock-conflict]
+    result: five Spring Boot HTTP/JPA integration tests pass with zero failures and cover all listed callback, receipt, gateway, and optimistic-lock scenarios
+    status: verified
+  PAY-EV-013:
+    kind: timeout-flow-test
+    path: planned
+    status: not-built
+  PAY-EV-014:
+    kind: reconciliation-schedule-test
+    path: planned
+    status: not-built
+  PAY-EV-015:
+    kind: reconciliation-analyzer-flow
+    path: planned
+    status: not-built
+  PAY-EV-016:
+    kind: settlement-schedule-test
+    path: planned
+    status: not-built
+  PAY-EV-017:
+    kind: settlement-outbound-event-test
+    path: planned
+    status: not-built
+  PAY-EV-018:
+    kind: integration-event-contracts
+    path: planned
+    status: not-built
+  PAY-EV-019:
+    kind: endpoint-contract-tests
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    related_paths:
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/CreatePaymentEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/StartPaymentAttemptEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/ConfirmPaymentResultEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/GetPaymentEndpointHandler.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfiguration.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentHttpErrorAdvice.kt
+      - application/src/test/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/result/ConfirmPaymentResultCmdContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+    command: .\gradlew.bat :start:test --no-daemon --console=plain
+    result: four one-class-per-file Endpoint Handlers use static Mediator; focused adapter guards lock mapping, method, path, status, and handwritten binding semantics, while the full HTTP/JPA integration suite passes
+    status: verified
+  PAY-EV-020:
+    kind: runtime-capability-suite
+    path: planned
+    status: not-built
+  PAY-EV-021:
+    kind: generator-output-and-tests
+    path: build/cap4k/plan.json
+    command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
+    result: 41 plan items; 26 checked-in SKIP; 15 generated OVERWRITE; generators include aggregate, command, query, capability, endpoint, enum, value object, and handlers
+    determinism:
+      files_compared: 26
+      differences: 0
+      plan_sha256: 744A50BF69044A79FBC873B40208AE7C97C071A5133EB45D77EC26EA42F9AEE4
+    status: verified
+  PAY-EV-022:
+    kind: analyzer-output-and-tests
+    path: planned
+    status: not-built
+  PAY-EV-023:
+    kind: pipeline-descriptor-and-task-facts
+    path: build/cap4k/agent/manifest.json
+    related_paths:
+      - settings.gradle.kts
+      - build/cap4k/plan.json
+      - build/cap4k/analysis-plan.json
+      - build/cap4k/agent/ownership.json
+    command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
+    composite_resolution_checks:
+      user_gradle_property_with_environment_cleared: passed
+      command_line_property_over_invalid_environment: passed
+      blank_property_to_environment_fallback: passed
+      no_local_input: selected-released-2.0.1-and-reached-known-unpublished-dsl-boundary
+    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 41 items and analysis plan has 12 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and the machine-local Gradle property remains outside repository and Comet evidence
+    status: verified
+  PAY-EV-024:
+    kind: agent-facts-export-and-validation
+    path: build/cap4k/agent/manifest.json
+    related_paths:
+      - build/cap4k/agent/ownership.json
+      - build/cap4k/agent/analysis.json
+      - build/cap4k/agent/diagnostics.json
+    command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
+    result: partial only because live DB input freshness is UNKNOWN; 41 ownership items; zero diagnostics, errors, INVALID entries, or plan-evidence-invalid warnings; Analyzer status ok with four IR input directories and 12 available outputs
+    status: verified
+  PAY-EV-025:
+    kind: merchant-notification-reliability-test
+    path: planned
+    status: not-built
+  PAY-EV-026:
+    kind: authorization-and-tenant-isolation-test
+    path: planned
+    status: not-built
+  PAY-EV-027:
+    kind: end-to-end-business-traceability-test
+    path: planned
+    status: not-built
+
+known_gaps:
+  - Inbound reconciliation transport must be selected during Build shape: provider pull or bill-arrival Integration Event.
+  - Published cap4k 2.0.1 does not expose the current mainline Pipeline DSL used by B1; published-coordinate cold start remains deferred to B6.
+  - Current Analyzer output intentionally proves three independent Endpoint HTTP Actor-to-Command causal flows. Command/Query anchors and Aggregate element structure are reviewed through their independent Drawing Board partitions; Query, hidden handlers/entity methods, runtime state transitions, and cross-entry process stitching are outside the default Flow contract.
+  - Agent Snapshot remains partial only because the DB source is live external input whose freshness is intentionally UNKNOWN; ordinary plan evidence is readable, ownership contains 41 items, Analyzer is ok, and there are zero diagnostics, errors, INVALID entries, or plan-evidence-invalid warnings.
+  - Production authentication, real payment provider protocols, cryptographic verification, and sensitive-data storage remain out of B1 scope.
+  - Focused fixture ownership must be linked for ORM extreme graphs, provider conflicts, transport retries, and pathological concurrency.
+  - Jimmer projection and only-engine addon verification remain explicitly out of scope for the first Build.
