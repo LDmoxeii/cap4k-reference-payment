@@ -1,10 +1,10 @@
-# Payment Reference 首个可运行实现规格
+# Payment Reference B1+B2 可运行实现规格
 
 ## 1. 目标状态
 
-`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的最小可运行支付系统。它证明四个业务层模块加独立 contract leaf、Aggregate/owned child/Strong ID/Value Object、生成并类型化的业务枚举、Repository/UoW、Command/Query/Capability/Endpoint、手写 HTTP binding、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
+`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付与退款系统。它在 B1 支付闭环上增加 B2 退款与部分退款闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate Root、owned child、Strong ID、Value Object、生成并类型化的业务枚举、Repository/UoW、跨聚合事务不变量、Command/Query/Capability/Endpoint、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
 
-该状态是完整支付引用项目的第一块实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称退款、对账或结算已经可用。
+该状态是完整支付引用项目的前两个实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称日终对账、商户结算、可靠异步、大额退款审批或超期人工例外已经可用。
 
 ## 2. 工程与依赖合同
 
@@ -13,10 +13,10 @@
 项目必须包含：
 
 - `contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request 与 Response，只依赖轻量 `cap4k-contract-api` 及编译期分析 metadata，不依赖任何项目内模块、Spring、JPA 或 transport 实现。
-- `domain`：Payment 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
-- `application`：创建支付、发起尝试、确认渠道结果、查询支付的应用输入和处理器；渠道 Gateway/结果验证 Capability。
-- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Channel Gateway、渠道结果验证器和 JPA 适配。
-- `start`：Spring Boot 组装、H2 配置、最小渠道配置 seed 和端到端测试。
+- `domain`：Payment 与 Refund 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
+- `application`：支付与退款创建、渠道请求、结果确认、超时核对扫描和查询的应用输入/处理器；支付与退款 Gateway/结果验证 Capability。
+- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund Gateway、渠道结果验证器、普通 scheduled reaction 和 JPA 适配。
+- `start`：Spring Boot 组装、H2 配置、包含退款规则的最小渠道配置 seed 和端到端测试。
 
 项目内依赖方向必须为：
 
@@ -36,7 +36,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。四
 - Spring Boot：3.5.6。
 - 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
 - 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
-- B1 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1 验收，保留给 B6。
+- B1/B2 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2 验收，保留给 B6。
 
 ### 2.3 Pipeline ownership
 
@@ -50,7 +50,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。四
 
 ### 3.1 Enum manifest
 
-`design/enums.json` 是 B1 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
+`design/enums.json` 是 B1/B2 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
 
 - `PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、`CLOSED(4)`、`RESULT_UNKNOWN(5)`。
 - `PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。
@@ -131,7 +131,7 @@ Payment 是聚合根，至少包含：
 - PaymentAttempt 集合；
 - 聚合版本和审计字段。
 
-首切片只主动推进 `PENDING -> PROCESSING -> SUCCEEDED`，但模型不得允许成功回退。
+B1 支付路径只主动推进 `PENDING -> PROCESSING -> SUCCEEDED`，但模型不得允许成功回退。B2 在成功 Payment 上增加退款预算字段，不改变支付成功事实。
 
 ### 4.2 PaymentAttempt 与通知记录
 
@@ -158,7 +158,7 @@ PaymentAttempt 是 Payment 的强引用 owned child，至少包含：
 
 ### 4.4 MerchantChannelConfiguration
 
-首切片提供最小持久化模型：merchant、channel、currency、payment method、amount range、typed active/retired status 及必要审计信息。start 层建立一条 `M-001`、`CNY`、测试支付方式可用的配置。
+B1/B2 提供最小持久化模型：merchant、channel、currency、payment method、amount range、typed active/retired status、refundWindowDays、refundResultReviewAfterMinutes 及必要审计信息。start 层建立一条 M-001、CNY、测试支付方式可用、退款期限 180 天、退款结果核对阈值 30 分钟的配置。
 
 配置只用于资格判断和渠道选择，不提供管理 API。PaymentAttempt 保存当时的渠道身份和规则摘要，因此以后配置退役不会改写交易历史。
 
@@ -200,7 +200,7 @@ Fake Gateway 返回稳定 request identity 和 `ACCEPTED`。`ACCEPTED` 只让尝
 8. 成功后的失败结果不回退状态，形成 conflict disposition 并留存；
 9. 返回 `ChannelResultRecordingOutcome`，其字段和派生属性来自最终持久化裁决，不建立第二套 accepted/duplicate 真源。
 
-首切片记录“商户成功通知意图”领域事实，但不发送真实 Integration Event 或网络通知。
+B1 记录“商户成功通知意图”领域事实，但不发送真实 Integration Event 或网络通知。
 
 ### 5.4 Command 与 Endpoint 结果边界
 
@@ -223,7 +223,7 @@ Fake Gateway 返回稳定 request identity 和 `ACCEPTED`。`ACCEPTED` 只让尝
 
 ## 6. Endpoint 与 HTTP authoring 合同
 
-首切片提供四个 transport-neutral Endpoint contract：
+B1 提供四个 transport-neutral Endpoint contract：
 
 - `CreatePaymentEndpoint`；
 - `StartPaymentAttemptEndpoint`；
@@ -260,7 +260,7 @@ HTTP method/path、request mapper、response policy、status code 和 error mapp
 - DB/schema、Design JSON、enum manifest 和 value-object manifest 共同提供真实 canonical input，不接受纯手写项目冒充 Generator 证据。
 - plan 和输出必须展示 Aggregate、Strong ID、Repository、Behavior、Enum、Value Object、Command/Query/Endpoint 等本切片实际采用的能力；未采用能力不得仅为覆盖率制造空壳。
 - contract module 必须启用 analysis compiler，并加入 root `irAnalysis.inputDirs`；移动 Endpoint contract 后不得丢失 design metadata。
-- B1 必须通过显式 Composite Build 消费包含 Mermaid quoted-label 修复的 cap4k mainline，重新运行 `cap4kAnalysisPlan` 与 `cap4kAnalysisGenerate`。
+- B1/B2 必须通过显式 Composite Build 消费包含 Mermaid quoted-label 修复的 cap4k mainline，重新运行 `cap4kAnalysisPlan` 与 `cap4kAnalysisGenerate`。
 - Analyzer 为创建支付、发起支付尝试和渠道回调的真实 Endpoint HTTP Actor 入口分别生成 entry-centered Flow，展示入口到对应 Command 的静态 causal reachability；Command 与 Query anchors 由 Drawing Board Design Projection 提供，Payment/PaymentAttempt 的 Aggregate element 由独立 Aggregate Structure output 提供。
 - 三份 Flow JSON 保持预期 entry、node 与 edge 语义；三份 Mermaid 节点 label 必须被安全引用，并通过 Mermaid parser 或 renderer smoke，不再出现内部 `[...]` 触发的 parse error。
 - Query、CommandHandler、Entity Method、聚合运行时状态推进和跨真实入口 process stitching 不属于默认 Flow 验收；不把支付超时伪造成已实现 Time 根。
@@ -295,8 +295,84 @@ HTTP method/path、request mapper、response policy、status code 和 error mapp
 
 ## 10. 状态投影
 
-仓库业务 phase 保持 `build` 且 `build_authorized: true`。由于用户可见架构、类型输入和验收标准发生变化，B1 必须先刷新 Shape 和 acceptance；只有新实现与新证据验证通过时，才把对应 acceptance/evidence 状态更新为 verified。旧 plan item 数量、hash、Analyzer/AgentFacts 结果和旧 Verify pass 均不得继续作为当前候选证据。
+仓库业务 phase 保持 build 且 build_authorized: true。B1 已在 mainline 验收并保持回归基线。B2 的新增聚合、配置、Endpoint、scheduled reaction、类型输入和验收必须使用本 change 的新证据；只有新实现与新证据验证通过时，才把 PAY-AC-020..029 及对应 evidence 更新为 verified。B1 的旧证据不能替代 B2 当前候选验证。
+
+## 10A. B2 退款与部分退款目标合同
+
+### 10A.1 聚合边界与预算权威
+
+- Refund 是独立 Aggregate Root，以 Strong RefundId 标识，通过 Strong PaymentId 弱引用 Payment；Refund 不持有 Payment 对象、ORM relation、lazy proxy 或可导航聚合图。
+- Payment 继续是支付成功事实和退款预算的并发裁决权威。Payment 至少增加 reservedRefundAmount、successfulRefundAmount，并派生 refundableAmount。
+- 原子不变量为：reservedRefundAmount >= 0、successfulRefundAmount >= 0，且 reservedRefundAmount + successfulRefundAmount <= paymentAmount。
+- 只有 SUCCEEDED Payment 可以占用退款额度。创建 Refund 时先在 Payment 聚合内占用额度，再在同一 cap4k Command/UoW 与同一 Hibernate/JPA persistence context 中创建 Refund；任一步失败必须整体回滚。
+- Refund 明确失败或拒绝时释放占用；结果未知或进入待核对时继续占用；成功时将对应占用原子转换为 successfulRefundAmount。Refund 成功事实不可回退。
+
+### 10A.2 Refund 结构与证据
+
+Refund 至少保存 RefundId、PaymentId、merchant identity、merchant refund number、Money、原渠道/支付方式/配置快照、typed RefundStatus、请求/受理/最终/核对时间、渠道 request/refund identity、额度裁决和成功事实。
+
+Refund 使用 RefundAttempt 与 RefundNotificationReceipt owned child 保存渠道请求、notification identity、首次/最近接收时间、重复次数、raw result、typed disposition、验证/拒绝/冲突摘要。查询必须能够观察这些持久化事实，不能只返回最后一条瞬时摘要。
+
+### 10A.3 退款期限与待核对阈值
+
+MerchantChannelConfiguration 是规则配置真源：
+
+- refundWindowDays：B2 seed/default fixture 固定为 180；申请最后期限从 Payment.succeededAt 起算，而不是 Payment.createdAt 或渠道受理时间。
+- refundResultReviewAfterMinutes：B2 seed/default fixture 固定为 30；渠道已经受理但超过该阈值仍无最终结果时，Refund 转为 REVIEW_REQUIRED 并继续保留占用。
+
+B2 不实现大额退款人工审批，也不实现超期退款人工例外或 override；二者保留为后续独立 change。
+
+### 10A.4 生成类型与 Domain Outcome
+
+设计输入必须新增并生成/类型绑定 Refund 有限业务枚举，至少包括 RefundStatus、RefundAttemptStatus、RefundAttemptFinalResult 与 RefundResultDisposition。内部有限状态使用整数列和完整 @Type 绑定；外部 raw code、message、identity 继续保持开放标量。numeric value 一经用于持久化或证据后保持稳定。
+
+value-objects.json 必须声明不配置 persistence 的 RefundResultRecordingOutcome。它是聚合行为产生的瞬时 Domain Value Object，可直接成为 Command Response 的字段；独立 contract leaf 不依赖 domain，因此 Endpoint Response 由 adapter 在发布边界显式投影。Outcome 至少表达最终 Refund/attempt 状态、notification 接收计数、typed disposition、额度是否释放或转成功、是否进入待核对及拒绝/冲突摘要，并拒绝互相矛盾的组合。
+
+checked-in enum、VO、Endpoint contract、Behavior 和手写 adapter 重复 generation 必须 SKIP；build-owned Entity、Schema、Repository 可重建。
+
+### 10A.5 应用行为
+
+创建退款输入至少包括 merchant、merchant refund number、PaymentId、退款金额、币种和请求时间：
+
+1. merchant + merchant refund number 相同内容重复提交返回同一 RefundId；关键内容冲突明确失败。
+2. 装载 Payment，确认 SUCCEEDED、merchant/币种匹配，且请求时间不晚于 succeededAt + refundWindowDays。
+3. 在 Payment 内原子占用退款额度；超出 refundableAmount 时不创建渠道请求。
+4. 在同一事务创建 Refund/RefundAttempt 并保存规则快照。
+5. Fake Refund Gateway 受理只进入处理中；明确拒绝或失败释放占用；未知结果继续占用并留痕。
+
+退款结果 callback 至少携带 channel、notificationId、RefundId/RefundAttemptId、channelRefundId、amount、currency、raw result、occurredAt 和验证材料。Handler 在 UoW 内调用验证 Capability，并按首次成功、首次失败、可信未知、重复、冲突、不可信或不匹配进行幂等裁决。成功后的失败或未知不得回退成功事实。
+
+B2 提供普通 @Scheduled reaction。scheduled method 只通过 Mediator.commands.send(...) 发送扫描 Command，不直接操作 Repository。扫描将已受理、超过 refundResultReviewAfterMinutes 且仍无最终结果的 Refund 转为 REVIEW_REQUIRED，并保留 Payment 占用。该入口证明 Analyzer Time root，不承诺 B5 的可靠 enqueue、持久化调度、lease/retry 或跨实例 exactly-once。
+
+### 10A.6 Endpoint、Handler 与查询
+
+B2 至少增加 CreateRefundEndpoint、ConfirmRefundResultEndpoint 与 GetRefundEndpoint，继续位于独立 contract module。对应 HTTP binding 保持手写：
+
+- POST /api/refunds；
+- POST /api/channel/refund-results；
+- GET /api/refunds/{refundId}。
+
+每个 Endpoint Handler 一类一文件并使用静态 Mediator；这是 reference authoring preference，不是 cap4k 强制规则。scheduled scan 不是 HTTP Endpoint，不为覆盖率伪造 transport contract。
+
+Payment 查询增加 reservedRefundAmount、successfulRefundAmount 与 refundableAmount。Refund 查询返回身份、PaymentId、merchant refund number、Money、状态、关键时间、渠道 identity、额度裁决、attempt 与 notification 摘要；不得把 JPA aggregate 或 proxy 暴露给 contract/HTTP。
+
+### 10A.7 并发、错误与运行时边界
+
+- 两笔并发 Refund 对同一 Payment 的额度占用必须由真实双事务、H2/JPA、乐观锁测试证明不会超退。
+- 典型乐观冲突映射为稳定 409 CONCURRENT_MODIFICATION，而不是静默覆盖或 500。
+- Payment 与 Refund 的预算变更和状态推进必须共用 cap4k JPA UoW；不引入跨 ORM bridge、detached merge 或补偿事务来伪造原子性。
+- B2 使用 Fake Gateway 与 HTTP callback，不引入真实渠道 SDK、Outbox、Integration Event transport、Saga 或 only-engine gate。
+
+### 10A.8 Analyzer、AgentFacts 与证据
+
+Analyzer 必须生成退款申请与退款渠道结果的 Endpoint HTTP Actor-to-Command Flow，并为普通 @Scheduled 到 Mediator.commands.send(...) 的超时核对入口生成独立 Time root。Command/Query anchors 与 Refund Aggregate Structure 分别由 Drawing Board 和 Aggregate Structure output 证明；不把跨入口流程拼接或运行时状态变化伪造成默认 Flow 能力。
+
+Agent Snapshot 必须保留 B2 plan ownership、analysis 与 diagnostics。live DB freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或 plan-evidence-invalid。
+
+B2 验收必须覆盖 PAY-AC-020..029：全额退款、多次部分退款、超额拒绝、并发防超退、失败释放、未知或 30 分钟后待核对仍占用、merchant refund number 幂等、非成功支付拒绝、180 天 seed/default 期限拒绝、成功后失败通知不回退。证据至少包括 domain invariant tests、H2/JPA/UoW 跨聚合测试、双事务并发测试、HTTP 集成测试、scheduled review test、enum/converter/Outcome tests、plan/generation determinism、Analyzer Flow/Time root、AgentFacts 与 traceability 实际路径。
+
+B1 的 PAY-AC-001..017 已验收行为是回归基线，B2 不得破坏既有支付创建、支付尝试、支付回调、查询、contract leaf、Mermaid flow 和 Composite Build 解析合同。
 
 ## 11. 后续边界
 
-退款、日终对账、商户结算、可靠异步、Integration Event transport、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
+日终对账、商户结算、可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
