@@ -1,3 +1,6 @@
+drop table if exists refund_notification_receipt;
+drop table if exists refund_attempt;
+drop table if exists refund;
 drop table if exists payment_notification_receipt;
 drop table if exists payment_attempt;
 drop table if exists merchant_channel_configuration;
@@ -31,6 +34,8 @@ create table payment (
     last_conflict_summary varchar(1024),
     merchant_success_notification_intent_count integer not null default 0,
     settlement_blocked boolean not null default false,
+    reserved_refund_amount decimal(19, 4) not null,
+    successful_refund_amount decimal(19, 4) not null,
     constraint uk_payment_merchant_idempotency unique (merchant_id, idempotency_key)
 );
 
@@ -63,9 +68,7 @@ create table payment_attempt (
     updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
     constraint uk_payment_attempt_request unique (channel_id, request_identity)
 );
-
 comment on table payment_attempt is '@Parent=payment;';
-
 
 create table payment_notification_receipt (
     id varchar(36) primary key comment '@Managed=identifier.uuid7;',
@@ -93,8 +96,106 @@ create table payment_notification_receipt (
     updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
     constraint uk_payment_notification_receipt unique (payment_attempt_id, notification_identity)
 );
-
 comment on table payment_notification_receipt is '@Parent=payment_attempt;';
+
+create table refund (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    payment_id varchar(36) not null comment '@RefAggregate=Payment;',
+    merchant_id varchar(64) not null,
+    merchant_refund_number varchar(128) not null,
+    amount decimal(19, 4) not null,
+    currency varchar(3) not null,
+    payment_method varchar(64) not null,
+    status integer not null comment '@Type=RefundStatus;',
+    requested_at timestamp with time zone not null,
+    refund_deadline_at timestamp with time zone not null,
+    channel_accepted_at timestamp with time zone,
+    finalized_at timestamp with time zone,
+    review_required_at timestamp with time zone,
+    channel_id varchar(64) not null,
+    channel_configuration_id varchar(36) not null,
+    channel_configuration_snapshot varchar(2048) not null,
+    request_identity varchar(128) not null,
+    channel_refund_id varchar(128),
+    reservation_active boolean not null default true,
+    reservation_released boolean not null default false,
+    reservation_converted_to_success boolean not null default false,
+    success_fact_formed boolean not null default false,
+    notification_receive_count integer not null default 0,
+    rejected_notification_count integer not null default 0,
+    conflicting_notification_count integer not null default 0,
+    last_notification_identity varchar(128),
+    last_notification_received_at timestamp with time zone,
+    last_rejection_summary varchar(1024),
+    last_conflict_summary varchar(1024),
+    settlement_blocked boolean not null default false,
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_refund_merchant_number unique (merchant_id, merchant_refund_number)
+);
+
+create table refund_attempt (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    refund_id varchar(36) not null comment '@ParentRef;',
+    channel_id varchar(64) not null,
+    channel_configuration_id varchar(36) not null,
+    channel_configuration_snapshot varchar(2048) not null,
+    request_identity varchar(128) not null,
+    status integer not null comment '@Type=RefundAttemptStatus;',
+    initiated_at timestamp with time zone not null,
+    accepted_at timestamp with time zone,
+    review_after_at timestamp with time zone not null,
+    channel_refund_id varchar(128),
+    final_result integer comment '@Type=RefundAttemptFinalResult;',
+    result_occurred_at timestamp with time zone,
+    notification_receive_count integer not null default 0,
+    notification_first_received_at timestamp with time zone,
+    notification_last_received_at timestamp with time zone,
+    verified_notification_count integer not null default 0,
+    rejected_notification_count integer not null default 0,
+    conflicting_notification_count integer not null default 0,
+    verdict_summary varchar(1024),
+    rejection_summary varchar(1024),
+    conflict_summary varchar(1024),
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_refund_attempt_request unique (channel_id, request_identity)
+);
+comment on table refund_attempt is '@Parent=refund;';
+
+create table refund_notification_receipt (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    refund_attempt_id varchar(36) not null comment '@ParentRef;',
+    notification_identity varchar(128) not null,
+    channel_id varchar(64) not null,
+    channel_refund_id varchar(128) not null,
+    amount decimal(19, 4) not null,
+    currency varchar(3) not null,
+    result varchar(32) not null,
+    occurred_at timestamp with time zone not null,
+    first_received_at timestamp with time zone not null,
+    last_received_at timestamp with time zone not null,
+    receive_count integer not null default 1,
+    verified boolean not null default false,
+    accepted boolean not null default false,
+    decision integer not null comment '@Type=RefundResultDisposition;',
+    verdict_summary varchar(1024),
+    rejection_summary varchar(1024),
+    conflict_summary varchar(1024),
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_refund_notification_receipt unique (refund_attempt_id, notification_identity)
+);
+comment on table refund_notification_receipt is '@Parent=refund_attempt;';
 
 create table merchant_channel_configuration (
     id varchar(36) primary key comment '@Managed=identifier.uuid7;',
@@ -108,6 +209,8 @@ create table merchant_channel_configuration (
     status integer not null comment '@Type=MerchantChannelConfigurationStatus;',
     routing_priority integer not null default 100,
     channel_rule_summary varchar(2048) not null,
+    refund_window_days integer not null default 180,
+    refund_result_review_after_minutes integer not null default 30,
     activated_at timestamp with time zone not null,
     retired_at timestamp with time zone,
     created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',

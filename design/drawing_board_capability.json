@@ -35,5 +35,42 @@
       { "name": "failureCode", "type": "String?" },
       { "name": "diagnosticSummary", "type": "String?" }
     ]
+  },
+  {
+    "tag": "capability",
+    "package": "refund.channel",
+    "name": "VerifyRefundResult",
+    "description": "Verify refund-channel authenticity without placing credentials in the aggregate",
+    "aggregates": ["Refund"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "notificationId", "type": "String" },
+      { "name": "payload", "type": "String" },
+      { "name": "verificationMaterial", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "verified", "type": "Boolean" },
+      { "name": "verificationSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "refund.gateway",
+    "name": "StartChannelRefund",
+    "description": "Submit a refund attempt to the selected external channel",
+    "aggregates": ["Refund"],
+    "fields": [
+      { "name": "refundAttemptId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "accepted", "type": "Boolean" },
+      { "name": "channelRefundId", "type": "String?" },
+      { "name": "failureCode", "type": "String?" },
+      { "name": "diagnosticSummary", "type": "String?" }
+    ]
   }
 ]

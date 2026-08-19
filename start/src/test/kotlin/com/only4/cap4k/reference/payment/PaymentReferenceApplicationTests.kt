@@ -2,10 +2,12 @@ package com.only4.cap4k.reference.payment
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.recordChannelResult
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.reserveRefund
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.ChannelResultDisposition
 import jakarta.persistence.EntityManager
 import jakarta.persistence.OptimisticLockException
@@ -39,6 +41,7 @@ class PaymentReferenceApplicationTests(
     @param:Autowired private val entityManager: EntityManager,
     @param:Autowired private val transactionManager: PlatformTransactionManager,
     @param:Autowired private val jdbcTemplate: JdbcTemplate,
+    @param:Autowired private val refundReviewScheduler: RefundReviewScheduler,
 ) {
 
     @Test
@@ -411,6 +414,452 @@ class PaymentReferenceApplicationTests(
         assertThat(payment["merchantSuccessNotificationIntentCount"].asInt()).isEqualTo(1)
     }
 
+
+    @Test
+    fun `refund accepted callback is idempotent and queryable`() {
+        val paymentId = createSucceededPayment("REFUND-HAPPY", "80.00")
+        val create = postJson("/api/refunds", mapOf("merchantId" to "M-001", "merchantRefundNumber" to "R-001", "paymentId" to paymentId, "amount" to BigDecimal("30.00"), "currency" to "CNY", "requestedAt" to Instant.parse("2026-08-17T11:00:00Z")), 201)
+        val refundId = create.requiredText("refundId"); val attemptId = create.requiredText("refundAttemptId")
+        assertThat(create.requiredText("status")).isEqualTo("PROCESSING")
+        assertThat(postJson("/api/refunds", mapOf("merchantId" to "M-001", "merchantRefundNumber" to "R-001", "paymentId" to paymentId, "amount" to BigDecimal("30.00"), "currency" to "CNY", "requestedAt" to Instant.parse("2026-08-17T11:00:00Z")), 201)["idempotentReplay"].asBoolean()).isTrue()
+        val callback = mapOf("channelId" to "C-001", "notificationId" to "R-N-001", "refundId" to refundId, "refundAttemptId" to attemptId, "channelRefundId" to "fake-refund-${paymentId}:R-001:1", "amount" to BigDecimal("30.00"), "currency" to "CNY", "result" to "SUCCESS", "occurredAt" to Instant.parse("2026-08-17T11:05:00Z"), "verificationMaterial" to "test-secret")
+        assertThat(postJson("/api/channel/refund-results", callback, 200).requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(postJson("/api/channel/refund-results", callback, 200).requiredText("disposition")).isEqualTo("ACCEPTED_DUPLICATE")
+        val mismatch = postJson("/api/channel/refund-results", callback + mapOf("notificationId" to "R-N-002", "amount" to BigDecimal("29.99")), 200)
+        assertThat(mismatch.requiredText("disposition")).isEqualTo("CONFLICT")
+        val conflictingFailure = postJson(
+            "/api/channel/refund-results",
+            callback + mapOf("notificationId" to "R-N-003", "result" to "FAILED"),
+            200,
+        )
+        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(getJson("/api/refunds/$refundId").requiredText("status")).isEqualTo("SUCCEEDED")
+    }
+
+    @Test
+    fun `a successful payment can be refunded in full`() {
+        val paymentId = createSucceededPayment("REFUND-FULL", "100.00")
+        val refund = createRefund(paymentId, "R-FULL", "100.00", "2026-08-17T11:00:00Z")
+        val result = confirmRefund(refund, "100.00", "R-FULL-N-1", "SUCCESS", "2026-08-17T11:05:00Z")
+
+        assertThat(result.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(result.requiredText("refundStatus")).isEqualTo("SUCCEEDED")
+        val persistedRefund = getJson("/api/refunds/${refund.requiredText("refundId")}")
+        assertThat(persistedRefund.requiredText("status")).isEqualTo("SUCCEEDED")
+        assertThat(persistedRefund["reservationActive"].asBoolean()).isFalse()
+        assertThat(persistedRefund["reservationConvertedToSuccess"].asBoolean()).isTrue()
+
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("100.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("0.00")
+    }
+
+    @Test
+    fun `merchant refund number replay rejects changed critical content without a second refund`() {
+        val paymentId = createSucceededPayment("REFUND-IDEMPOTENCY", "80.00")
+        val original = createRefund(paymentId, "R-IDEMPOTENT", "20.00", "2026-08-17T11:00:00Z")
+
+        val conflict = postJson(
+            "/api/refunds",
+            refundRequest(paymentId, "R-IDEMPOTENT", "21.00", "2026-08-17T11:01:00Z"),
+            409,
+        )
+        assertThat(conflict.requiredText("code")).isEqualTo("REFUND_IDEMPOTENCY_CONFLICT")
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refund where merchant_id = ? and merchant_refund_number = ?",
+                Long::class.java,
+                "M-001",
+                "R-IDEMPOTENT",
+            )
+        ).isEqualTo(1L)
+        val persisted = getJson("/api/refunds/${original.requiredText("refundId")}")
+        assertThat(persisted["attempts"]).hasSize(1)
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("20.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("60.00")
+    }
+
+    @Test
+    fun `refund application rejects merchant currency and channel eligibility mismatches without reservation`() {
+        val merchantMismatchPayment = createSucceededPayment("REFUND-MERCHANT-MISMATCH", "40.00")
+        val merchantMismatch = postJson(
+            "/api/refunds",
+            refundRequest(merchantMismatchPayment, "R-MERCHANT-MISMATCH", "10.00", "2026-08-17T11:00:00Z") +
+                ("merchantId" to "M-OTHER"),
+            400,
+        )
+        assertThat(merchantMismatch.requiredText("code")).isEqualTo("INVALID_REQUEST")
+        assertThat(getJson("/api/payments/$merchantMismatchPayment")["reservedRefundAmount"].decimalValue())
+            .isEqualByComparingTo("0.00")
+
+        val currencyMismatchPayment = createSucceededPayment("REFUND-CURRENCY-MISMATCH", "40.00")
+        jdbcTemplate.update("update payment set currency = ? where id = ?", "USD", currencyMismatchPayment)
+        val currencyMismatch = postJson(
+            "/api/refunds",
+            refundRequest(currencyMismatchPayment, "R-CURRENCY-MISMATCH", "10.00", "2026-08-17T11:00:00Z"),
+            400,
+        )
+        assertThat(currencyMismatch.requiredText("code")).isEqualTo("INVALID_REQUEST")
+        assertThat(getJson("/api/payments/$currencyMismatchPayment")["reservedRefundAmount"].decimalValue())
+            .isEqualByComparingTo("0.00")
+
+        val noChannelPayment = createSucceededPayment("REFUND-NO-CHANNEL", "40.00")
+        jdbcTemplate.update(
+            "update merchant_channel_configuration set status = 1 where merchant_id = ? and channel_id = ?",
+            "M-001",
+            "C-001",
+        )
+        try {
+            val noChannel = postJson(
+                "/api/refunds",
+                refundRequest(noChannelPayment, "R-NO-CHANNEL", "10.00", "2026-08-17T11:00:00Z"),
+                409,
+            )
+            assertThat(noChannel.requiredText("code")).isEqualTo("NO_ELIGIBLE_CHANNEL")
+        } finally {
+            jdbcTemplate.update(
+                "update merchant_channel_configuration set status = 0 where merchant_id = ? and channel_id = ?",
+                "M-001",
+                "C-001",
+            )
+        }
+        assertThat(getJson("/api/payments/$noChannelPayment")["reservedRefundAmount"].decimalValue())
+            .isEqualByComparingTo("0.00")
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refund where merchant_refund_number in (?, ?, ?)",
+                Long::class.java,
+                "R-MERCHANT-MISMATCH",
+                "R-CURRENCY-MISMATCH",
+                "R-NO-CHANNEL",
+            )
+        ).isEqualTo(0L)
+    }
+    @Test
+    fun `multiple partial refunds remain independently queryable and update payment budget`() {
+        val paymentId = createSucceededPayment("REFUND-PARTIAL", "100.00")
+        val first = createRefund(paymentId, "R-PARTIAL-1", "30.00", "2026-08-17T11:00:00Z")
+        confirmRefund(first, "30.00", "R-PARTIAL-N-1", "SUCCESS", "2026-08-17T11:05:00Z")
+        val second = createRefund(paymentId, "R-PARTIAL-2", "20.00", "2026-08-17T11:10:00Z")
+        confirmRefund(second, "20.00", "R-PARTIAL-N-2", "SUCCESS", "2026-08-17T11:15:00Z")
+
+        assertThat(getJson("/api/refunds/${first.requiredText("refundId")}").requiredText("status"))
+            .isEqualTo("SUCCEEDED")
+        assertThat(getJson("/api/refunds/${second.requiredText("refundId")}").requiredText("status"))
+            .isEqualTo("SUCCEEDED")
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("50.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("50.00")
+    }
+
+    @Test
+    fun `refund beyond the exact remaining amount is rejected without a channel request`() {
+        val paymentId = createSucceededPayment("REFUND-OVER", "100.00")
+        val successful = createRefund(paymentId, "R-OVER-SUCCESS", "60.00", "2026-08-17T11:00:00Z")
+        confirmRefund(successful, "60.00", "R-OVER-N-1", "SUCCESS", "2026-08-17T11:05:00Z")
+
+        val overRefund = postJson(
+            "/api/refunds",
+            refundRequest(paymentId, "R-OVER-REJECTED", "50.00", "2026-08-17T11:10:00Z"),
+            409,
+        )
+        assertThat(overRefund.requiredText("code")).isEqualTo("CONCURRENT_MODIFICATION")
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("60.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("40.00")
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refund where merchant_refund_number = ?",
+                Long::class.java,
+                "R-OVER-REJECTED",
+            )
+        ).isEqualTo(0L)
+    }
+
+    @Test
+    fun `trusted failed refund result releases its payment reservation`() {
+        val paymentId = createSucceededPayment("REFUND-FAILURE", "100.00")
+        val refund = createRefund(paymentId, "R-FAILURE", "40.00", "2026-08-17T11:00:00Z")
+        assertThat(getJson("/api/payments/$paymentId")["reservedRefundAmount"].decimalValue())
+            .isEqualByComparingTo("40.00")
+
+        val failed = confirmRefund(refund, "40.00", "R-FAILURE-N-1", "FAILED", "2026-08-17T11:05:00Z")
+        assertThat(failed.requiredText("disposition")).isEqualTo("FAILURE_ACCEPTED")
+        assertThat(failed.requiredText("refundStatus")).isEqualTo("FAILED")
+        assertThat(failed["reservationReleasedNow"].asBoolean()).isTrue()
+        val persistedRefund = getJson("/api/refunds/${refund.requiredText("refundId")}")
+        assertThat(persistedRefund.requiredText("status")).isEqualTo("FAILED")
+        assertThat(persistedRefund["reservationActive"].asBoolean()).isFalse()
+        assertThat(persistedRefund["reservationReleased"].asBoolean()).isTrue()
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("100.00")
+    }
+    @Test
+    fun `unknown refund result remains reserved and scheduled review marks it`() {
+        val paymentId = createSucceededPayment("REFUND-UNKNOWN", "60.00")
+        val refund = createRefund(paymentId, "R-UNKNOWN", "20.00", "2026-08-17T11:00:00Z")
+        val unknown = confirmRefund(refund, "20.00", "R-UNKNOWN-N-1", "UNKNOWN", "2026-08-17T11:05:00Z")
+        assertThat(unknown.requiredText("disposition")).isEqualTo("UNKNOWN_ACCEPTED")
+        assertThat(unknown.requiredText("refundStatus")).isEqualTo("RESULT_UNKNOWN")
+
+        refundReviewScheduler.review()
+
+        val persistedRefund = getJson("/api/refunds/${refund.requiredText("refundId")}")
+        assertThat(persistedRefund.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
+        assertThat(persistedRefund["reservationActive"].asBoolean()).isTrue()
+        assertThat(getJson("/api/payments/$paymentId")["reservedRefundAmount"].decimalValue())
+            .isEqualByComparingTo("20.00")
+    }
+
+    @Test
+    fun `refund rejects non-success payments and requests after the refund window`() {
+        mapOf(
+            "PENDING" to 0,
+            "PROCESSING" to 1,
+            "FAILED" to 3,
+            "CLOSED" to 4,
+            "RESULT_UNKNOWN" to 5,
+        ).forEach { (statusName, statusValue) ->
+            val paymentId = postJson(
+                "/api/payments",
+                paymentRequest("REFUND-$statusName", "K-REFUND-$statusName", "40.00"),
+                201,
+            ).requiredText("paymentId")
+            jdbcTemplate.update("update payment set status = ? where id = ?", statusValue, paymentId)
+            val rejected = postJson(
+                "/api/refunds",
+                refundRequest(paymentId, "R-$statusName", "10.00", "2026-08-17T11:00:00Z"),
+                400,
+            )
+            assertThat(rejected.requiredText("code")).isEqualTo("INVALID_REQUEST")
+            assertThat(getJson("/api/payments/$paymentId")["reservedRefundAmount"].decimalValue())
+                .isEqualByComparingTo("0.00")
+            assertThat(
+                jdbcTemplate.queryForObject(
+                    "select count(*) from refund where payment_id = ?",
+                    Long::class.java,
+                    paymentId,
+                )
+            ).isEqualTo(0L)
+        }
+
+        val succeeded = createSucceededPayment("REFUND-EXPIRED", "40.00")
+        val expiredRefund = postJson(
+            "/api/refunds",
+            refundRequest(succeeded, "R-EXPIRED", "10.00", "2027-02-14T00:00:00Z"),
+            400,
+        )
+        assertThat(expiredRefund.requiredText("code")).isEqualTo("INVALID_REQUEST")
+        assertThat(getJson("/api/payments/$succeeded")["reservedRefundAmount"].decimalValue())
+            .isEqualByComparingTo("0.00")
+    }
+
+    @Test
+    fun `two concurrent refund HTTP applications persist one refund and return stable conflict`() {
+        val paymentId = createSucceededPayment("REFUND-HTTP-CONCURRENT", "60.00")
+        val ready = CountDownLatch(2)
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+        val futures = try {
+            (1..2).map { index ->
+                executor.submit<HttpJsonResult> {
+                    ready.countDown()
+                    check(start.await(5, TimeUnit.SECONDS)) { "concurrent HTTP refund requests were not released" }
+                    postJsonResult(
+                        "/api/refunds",
+                        refundRequest(
+                            paymentId,
+                            "R-HTTP-CONCURRENT-$index",
+                            "40.00",
+                            "2026-08-17T11:00:0${index}Z",
+                        ),
+                    )
+                }
+            }.also {
+                check(ready.await(5, TimeUnit.SECONDS)) { "concurrent HTTP refund requests did not rendezvous" }
+                start.countDown()
+            }
+        } finally {
+            // The executor remains alive until the submitted requests are collected below.
+        }
+
+        val results = try {
+            futures.map { it.get(15, TimeUnit.SECONDS) }
+        } finally {
+            executor.shutdownNow()
+        }
+        assertThat(results.map { it.status }.sorted()).containsExactly(201, 409)
+        val created = results.single { it.status == 201 }.body
+        val conflict = results.single { it.status == 409 }.body
+        assertThat(created.requiredText("status")).isEqualTo("PROCESSING")
+        assertThat(created["idempotentReplay"].asBoolean()).isFalse()
+        assertThat(conflict.requiredText("code")).isEqualTo("CONCURRENT_MODIFICATION")
+        assertThat(conflict.requiredText("message")).isNotBlank()
+
+        val persistedRefund = getJson("/api/refunds/${created.requiredText("refundId")}")
+        assertThat(persistedRefund.requiredText("status")).isEqualTo("PROCESSING")
+        assertThat(persistedRefund["reservationActive"].asBoolean()).isTrue()
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("40.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("20.00")
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refund where merchant_refund_number in (?, ?)",
+                Long::class.java,
+                "R-HTTP-CONCURRENT-1",
+                "R-HTTP-CONCURRENT-2",
+            )
+        ).isEqualTo(1L)
+    }
+
+    @Test
+    fun `refund creation database failure rolls back payment reservation and refund aggregate together`() {
+        val paymentId = createSucceededPayment("REFUND-UOW-ROLLBACK", "50.00")
+        val overlongRefundNumber = "R-UOW-" + "X".repeat(3_000)
+
+        val requestResult = runCatching {
+            postJsonResult(
+                "/api/refunds",
+                refundRequest(paymentId, overlongRefundNumber, "10.00", "2026-08-17T11:00:00Z"),
+            )
+        }
+        assertThat(
+            requestResult.isFailure || requireNotNull(requestResult.getOrNull()).status >= 500
+        ).isTrue()
+        if (requestResult.isFailure) {
+            assertThat(
+                requestResult.exceptionOrNull()!!.causalChain()
+                    .mapNotNull { it.message }
+                    .joinToString(" | ")
+                    .lowercase()
+            ).containsAnyOf("value too long", "22001", "data exception")
+        }
+
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("50.00")
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refund where payment_id = ?",
+                Long::class.java,
+                paymentId,
+            )
+        ).isEqualTo(0L)
+    }
+    @Test
+    fun `two real transactions cannot over-reserve one payment refund budget`() {
+        val paymentId = createSucceededPayment("REFUND-CONCURRENT", "60.00")
+        val ready = CountDownLatch(2)
+        val failures = Collections.synchronizedList(mutableListOf<Throwable>())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val futures = (1..2).map {
+                executor.submit {
+                    try {
+                        TransactionTemplate(transactionManager).executeWithoutResult {
+                            val payment = requireNotNull(
+                                entityManager.find(Payment::class.java, PaymentId.parse(paymentId))
+                            )
+                            ready.countDown()
+                            check(ready.await(5, TimeUnit.SECONDS)) { "refund workers did not rendezvous" }
+                            payment.reserveRefund(BigDecimal("40.00"))
+                            entityManager.flush()
+                        }
+                    } catch (error: Throwable) {
+                        failures += error
+                    }
+                }
+            }
+            futures.forEach { it.get(10, TimeUnit.SECONDS) }
+        } finally {
+            executor.shutdownNow()
+        }
+
+        assertThat(failures).hasSize(1)
+        assertThat(failures.single().causalChain().any {
+            it is OptimisticLockException || it is OptimisticLockingFailureException
+        }).isTrue()
+        val payment = getJson("/api/payments/$paymentId")
+        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("40.00")
+        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("20.00")
+    }
+
+    @Test
+    fun `refund gateway exception fails attempt and releases payment budget`() {
+        val paymentId = createSucceededPayment("REFUND-GATEWAY", "50.00")
+        jdbcTemplate.update("update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?", "C-THROW", "M-001", "C-001")
+        try {
+            val created = postJson("/api/refunds", mapOf("merchantId" to "M-001", "merchantRefundNumber" to "R-GATEWAY", "paymentId" to paymentId, "amount" to BigDecimal("20.00"), "currency" to "CNY", "requestedAt" to Instant.parse("2026-08-17T12:00:00Z")), 201)
+            assertThat(created.requiredText("status")).isEqualTo("FAILED")
+            val refund = getJson("/api/refunds/${created.requiredText("refundId")}")
+            assertThat(refund["reservationReleased"].asBoolean()).isTrue()
+            assertThat(refund["attempts"][0].requiredText("finalResult")).isEqualTo("GATEWAY_REJECTED")
+        } finally { jdbcTemplate.update("update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?", "C-001", "M-001", "C-THROW") }
+    }
+
+    private fun createSucceededPayment(prefix: String, amount: String): String {
+        val created = postJson("/api/payments", paymentRequest(prefix, "K-$prefix", amount), 201); val paymentId = created.requiredText("paymentId")
+        val attemptId = postJson("/api/payments/$paymentId/attempts", emptyMap<String, Any>(), 200).requiredText("paymentAttemptId")
+        postJson("/api/channel/payment-results", mapOf("channelId" to "C-001", "notificationId" to "N-$prefix", "paymentId" to paymentId, "paymentAttemptId" to attemptId, "channelTransactionId" to "CT-$prefix", "amount" to BigDecimal(amount), "currency" to "CNY", "result" to "SUCCESS", "occurredAt" to Instant.parse("2026-08-17T10:30:00Z"), "verificationMaterial" to "test-secret"), 200); return paymentId
+    }
+
+    private fun createRefund(
+        paymentId: String,
+        merchantRefundNumber: String,
+        amount: String,
+        requestedAt: String,
+    ): JsonNode = postJson(
+        "/api/refunds",
+        refundRequest(paymentId, merchantRefundNumber, amount, requestedAt),
+        201,
+    )
+
+    private fun confirmRefund(
+        refund: JsonNode,
+        amount: String,
+        notificationId: String,
+        result: String,
+        occurredAt: String,
+    ): JsonNode = postJson(
+        "/api/channel/refund-results",
+        mapOf(
+            "channelId" to "C-001",
+            "notificationId" to notificationId,
+            "refundId" to refund.requiredText("refundId"),
+            "refundAttemptId" to refund.requiredText("refundAttemptId"),
+            "channelRefundId" to "fake-refund-${refund.requiredText("requestIdentity")}",
+            "amount" to BigDecimal(amount),
+            "currency" to "CNY",
+            "result" to result,
+            "occurredAt" to Instant.parse(occurredAt),
+            "verificationMaterial" to "test-secret",
+        ),
+        200,
+    )
+
+    private fun refundRequest(
+        paymentId: String,
+        merchantRefundNumber: String,
+        amount: String,
+        requestedAt: String,
+    ): Map<String, Any> = mapOf(
+        "merchantId" to "M-001",
+        "merchantRefundNumber" to merchantRefundNumber,
+        "paymentId" to paymentId,
+        "amount" to BigDecimal(amount),
+        "currency" to "CNY",
+        "requestedAt" to Instant.parse(requestedAt),
+    )
+
     private fun paymentRequest(
         merchantOrderNumber: String,
         idempotencyKey: String,
@@ -425,6 +874,26 @@ class PaymentReferenceApplicationTests(
         "expiresAt" to Instant.parse("2030-01-01T00:00:00Z"),
     )
 
+    private data class HttpJsonResult(
+        val status: Int,
+        val body: JsonNode,
+    )
+
+    private fun postJsonResult(path: String, payload: Any): HttpJsonResult {
+        val result = mockMvc.perform(
+            post(path)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(payload))
+        ).andReturn()
+        val body = result.response.contentAsByteArray
+            .takeIf { it.isNotEmpty() }
+            ?.let(objectMapper::readTree)
+            ?: objectMapper.createObjectNode()
+        return HttpJsonResult(
+            status = result.response.status,
+            body = body,
+        )
+    }
     private fun postJson(path: String, payload: Any, expectedStatus: Int): JsonNode {
         val result = mockMvc.perform(
             post(path)

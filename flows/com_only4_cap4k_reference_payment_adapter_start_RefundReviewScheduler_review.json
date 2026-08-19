@@ -1,0 +1,27 @@
+{
+  "entryId": "com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler::review",
+  "entryType": "temporaltriggermethod",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler::review",
+      "name": "RefundReviewScheduler::review",
+      "fullName": "com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler::review",
+      "type": "temporaltriggermethod"
+    },
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.refund.review.ReviewPendingRefundsCmd.Request",
+      "name": "ReviewPendingRefundsCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.refund.review.ReviewPendingRefundsCmd.Request",
+      "type": "command"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler::review",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.refund.review.ReviewPendingRefundsCmd.Request",
+      "type": "TemporalTriggerMethodToCommand"
+    }
+  ]
+}

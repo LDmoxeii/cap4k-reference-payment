@@ -1,0 +1,4 @@
+flowchart TD
+  N1["ConfirmRefundResultCmd.Request"]
+  N2["refund.result.confirm [POST /api/channel/refund-results]"]
+  N2 -->|EndpointHttpBindingToCommand| N1

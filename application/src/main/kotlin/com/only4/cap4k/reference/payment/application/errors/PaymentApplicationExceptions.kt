@@ -16,3 +16,12 @@ class NoEligibleChannelException(paymentIdentity: String) : PaymentApplicationEx
     code = "NO_ELIGIBLE_CHANNEL",
     message = "no eligible merchant channel configuration for $paymentIdentity",
 )
+
+class RefundNotFoundException(refundId: String) : PaymentApplicationException(
+    code = "REFUND_NOT_FOUND",
+    message = "refund $refundId was not found",
+)
+
+class RefundConflictException(code: String, message: String) : PaymentApplicationException(code, message)
+
+class RefundRejectedException(code: String, message: String) : PaymentApplicationException(code, message)
