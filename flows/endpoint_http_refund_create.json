@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:refund.create",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.refund.create.CreateRefundCmd.Request",
+      "name": "CreateRefundCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.refund.create.CreateRefundCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:refund.create",
+      "name": "refund.create [POST /api/refunds]",
+      "fullName": "endpoint-http:refund.create",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:refund.create",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.refund.create.CreateRefundCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

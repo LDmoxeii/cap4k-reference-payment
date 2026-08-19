@@ -295,52 +295,52 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-020
     projection_ids: [PAY-CP-002, PAY-CP-010, PAY-CP-011]
     evidence_ids: [PAY-EV-005, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-021:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-021
     projection_ids: [PAY-CP-002]
     evidence_ids: [PAY-EV-005]
-    status: planned
+    status: verified
   PAY-AC-022:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-022
     projection_ids: [PAY-CP-002, PAY-CP-011]
     evidence_ids: [PAY-EV-005, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-023:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-023
     projection_ids: [PAY-CP-002]
     evidence_ids: [PAY-EV-005]
-    status: planned
+    status: verified
   PAY-AC-024:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-024
     projection_ids: [PAY-CP-002, PAY-CP-010]
     evidence_ids: [PAY-EV-005, PAY-EV-018]
-    status: planned
+    status: verified
   PAY-AC-025:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-025
     projection_ids: [PAY-CP-002, PAY-CP-010]
     evidence_ids: [PAY-EV-005, PAY-EV-018]
-    status: planned
+    status: verified
   PAY-AC-026:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-026
     projection_ids: [PAY-CP-002, PAY-CP-011]
     evidence_ids: [PAY-EV-005, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-027:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-027
     projection_ids: [PAY-CP-002, PAY-CP-011]
     evidence_ids: [PAY-EV-005, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-028:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-028
     projection_ids: [PAY-CP-002, PAY-CP-011]
     evidence_ids: [PAY-EV-005, PAY-EV-019]
-    status: planned
+    status: verified
   PAY-AC-029:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-029
     projection_ids: [PAY-CP-002, PAY-CP-010]
     evidence_ids: [PAY-EV-005, PAY-EV-018]
-    status: planned
+    status: verified
   PAY-AC-040:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-040
     projection_ids: [PAY-CP-003, PAY-CP-008]
@@ -600,6 +600,16 @@ build_slices:
     cap4k_commit: dcafcc43928aa47a0613bb839ba5f6010efa3414
     cap4k_upstream_prs: [211, 212, 214]
     published_coordinate_cold_start: deferred-to-B6
+  B2:
+    title: refund and partial refund lifecycle
+    status: verified
+    acceptance_ids: [PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023, PAY-AC-024, PAY-AC-025, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-029]
+    evidence_ids: [PAY-EV-004, PAY-EV-005, PAY-EV-019, PAY-EV-021, PAY-EV-022, PAY-EV-023, PAY-EV-024]
+    cap4k_validation: explicit-local-composite
+    cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
+    repository_local_path: none
+    cap4k_commit: dcafcc43928aa47a0613bb839ba5f6010efa3414
+    published_coordinate_cold_start: deferred-to-B6
 
 evidence:
   PAY-EV-001:
@@ -647,12 +657,34 @@ evidence:
     status: verified
   PAY-EV-004:
     kind: generated-model
-    path: planned
-    status: not-built
+    path: design/schema.sql
+    related_paths:
+      - design/design.json
+      - design/enums.json
+      - design/value-objects.json
+      - domain/src/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/refund
+      - domain/build/generated/cap4k/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/refund
+      - adapter/build/generated/cap4k/main/kotlin/com/only4/cap4k/reference/payment/adapter/domain/repositories/RefundRepository.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/refund/api
+    command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
+    result: 72 plan items from DB, Design JSON, enum manifest, and value-object manifest; 47 checked-in SKIP and 25 generated OVERWRITE items include the independent Refund aggregate, two owned children, Strong IDs, repository, factory/behavior, four typed refund enums, non-persistent RefundResultRecordingOutcome, commands, query, capabilities, and three Endpoint contracts
+    status: verified
   PAY-EV-005:
     kind: refund-runtime-test
-    path: planned
-    status: not-built
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+    related_paths:
+      - domain/src/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/payment/PaymentBehavior.kt
+      - domain/src/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/refund/RefundBehavior.kt
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/PaymentBehaviorTest.kt
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/refund/RefundResultRecordingOutcomeTest.kt
+      - application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/refund
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/refund/api
+    command: .\gradlew.bat clean build --no-daemon --console=plain
+    covers: [full-refund, multiple-partial-refunds, over-refund-rejection, concurrent-http-refund-409, dual-transaction-optimistic-lock, failure-releases-reservation, unknown-and-scheduled-review-retain-reservation, idempotent-replay, idempotency-content-conflict, non-success-payment-rejection, merchant-mismatch, currency-mismatch, no-eligible-channel, 180-day-window, duplicate-and-conflicting-callbacks, success-terminal, cross-aggregate-uow-rollback]
+    result: 37 tests across 11 suites pass with zero failures (10 domain, 1 application, 6 adapter, 2 contract, and 18 HTTP/H2/JPA integration tests); PAY-AC-020..029 have exact business-path evidence, including real concurrent Refund applications, stable HTTP 409 CONCURRENT_MODIFICATION, and Payment plus Refund rollback after a database failure
+    status: verified
   PAY-EV-006:
     kind: generated-model
     path: planned
@@ -723,18 +755,16 @@ evidence:
     path: start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
     related_paths:
       - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api
-      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/CreatePaymentEndpointHandler.kt
-      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/StartPaymentAttemptEndpointHandler.kt
-      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/ConfirmPaymentResultEndpointHandler.kt
-      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/GetPaymentEndpointHandler.kt
-      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfiguration.kt
-      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentHttpErrorAdvice.kt
-      - application/src/test/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/result/ConfirmPaymentResultCmdContractTest.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/refund/api
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund
       - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
       - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund/RefundEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund/RefundEndpointHttpConfigurationContractTest.kt
       - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
-    command: .\gradlew.bat :start:test --no-daemon --console=plain
-    result: four one-class-per-file Endpoint Handlers use static Mediator; focused adapter guards lock mapping, method, path, status, and handwritten binding semantics, while the full HTTP/JPA integration suite passes
+    command: .\gradlew.bat :adapter:test :contract:test :start:test --no-daemon --console=plain
+    result: seven one-class-per-file Endpoint Handlers use static Mediator; payment and refund adapter guards lock explicit Outcome projection, handwritten binding factory, method, path, status, and mapper semantics; contract remains a dependency leaf and all HTTP/H2/JPA integration tests pass
     status: verified
   PAY-EV-020:
     kind: runtime-capability-suite
@@ -744,16 +774,29 @@ evidence:
     kind: generator-output-and-tests
     path: build/cap4k/plan.json
     command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
-    result: 41 plan items; 26 checked-in SKIP; 15 generated OVERWRITE; generators include aggregate, command, query, capability, endpoint, enum, value object, and handlers
+    result: 72 plan items; 47 checked-in SKIP; 25 generated OVERWRITE; generators include aggregate, command, query, capability, endpoint, enum, value object, and handlers
     determinism:
-      files_compared: 26
+      files_compared: 47
       differences: 0
-      plan_sha256: 744A50BF69044A79FBC873B40208AE7C97C071A5133EB45D77EC26EA42F9AEE4
+      checked_in_sha256: C9B5CD4F43808FFF27E3353146E63449849570BAA3DCB4543BD3E29C8E960298
+      plan_sha256: 0873A99F2B677CFF7F4B11699AB1A9EB27D520B0C37AFC000E15C07DE4B3EAFB
     status: verified
   PAY-EV-022:
     kind: analyzer-output-and-tests
-    path: planned
-    status: not-built
+    path: flows/endpoint_http_refund_create.json
+    related_paths:
+      - flows/endpoint_http_refund_create.mmd
+      - flows/endpoint_http_refund_result_confirm.json
+      - flows/endpoint_http_refund_result_confirm.mmd
+      - flows/com_only4_cap4k_reference_payment_adapter_start_RefundReviewScheduler_review.json
+      - flows/com_only4_cap4k_reference_payment_adapter_start_RefundReviewScheduler_review.mmd
+      - design/drawing_board_command.json
+      - design/drawing_board_query.json
+      - design/drawing_board_endpoint.json
+      - design/drawing_board_aggregate_elements.json
+    command: .\gradlew.bat cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
+    result: 18 analysis items; six independent entry-centered flows include two refund Endpoint HTTP Actor roots and one RefundReviewScheduler Time root; all Mermaid labels are quoted and parse-safe; Command, Query, Endpoint, Capability, and Refund Aggregate Structure remain separate evidence without fabricated cross-entry stitching
+    status: verified
   PAY-EV-023:
     kind: pipeline-descriptor-and-task-facts
     path: build/cap4k/agent/manifest.json
@@ -768,7 +811,7 @@ evidence:
       command_line_property_over_invalid_environment: passed
       blank_property_to_environment_fallback: passed
       no_local_input: selected-released-2.0.1-and-reached-known-unpublished-dsl-boundary
-    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 41 items and analysis plan has 12 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and the machine-local Gradle property remains outside repository and Comet evidence
+    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 72 items and analysis plan has 18 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and the machine-local Gradle property remains outside repository and Comet evidence
     status: verified
   PAY-EV-024:
     kind: agent-facts-export-and-validation
@@ -778,7 +821,7 @@ evidence:
       - build/cap4k/agent/analysis.json
       - build/cap4k/agent/diagnostics.json
     command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
-    result: partial only because live DB input freshness is UNKNOWN; 41 ownership items; zero diagnostics, errors, INVALID entries, or plan-evidence-invalid warnings; Analyzer status ok with four IR input directories and 12 available outputs
+    result: partial only because live DB input freshness is UNKNOWN; 72 ownership items; zero diagnostics, errors, INVALID entries, or plan-evidence-invalid warnings; Analyzer status ok with four IR input directories and 18 available outputs
     status: verified
   PAY-EV-025:
     kind: merchant-notification-reliability-test

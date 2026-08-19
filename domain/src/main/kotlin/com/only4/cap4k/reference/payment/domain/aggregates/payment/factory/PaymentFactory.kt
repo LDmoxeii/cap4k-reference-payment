@@ -41,7 +41,9 @@ class PaymentFactory : AggregateFactory<PaymentFactory.Payload, Payment> {
             conflictingNotificationCount = entityPayload.conflictingNotificationCount,
             lastRejectionSummary = entityPayload.lastRejectionSummary,
             lastConflictSummary = entityPayload.lastConflictSummary,
-            settlementBlocked = entityPayload.settlementBlocked
+            settlementBlocked = entityPayload.settlementBlocked,
+            reservedRefundAmount = entityPayload.reservedRefundAmount,
+            successfulRefundAmount = entityPayload.successfulRefundAmount
         ).also { aggregate ->
             entityPayload.attempts.forEach { childCreation ->
                 aggregate.attempts.add(createPaymentAttempt(childCreation))
@@ -90,6 +92,8 @@ class PaymentFactory : AggregateFactory<PaymentFactory.Payload, Payment> {
         val lastRejectionSummary: String?,
         val lastConflictSummary: String?,
         val settlementBlocked: Boolean = false,
+        val reservedRefundAmount: BigDecimal = BigDecimal.ZERO,
+        val successfulRefundAmount: BigDecimal = BigDecimal.ZERO,
         val attempts: List<PaymentAttemptCreation> = emptyList()
     ) : AggregatePayload<Payment>
 }

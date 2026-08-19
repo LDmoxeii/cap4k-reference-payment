@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:refund.result.confirm",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.refund.result.ConfirmRefundResultCmd.Request",
+      "name": "ConfirmRefundResultCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.refund.result.ConfirmRefundResultCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:refund.result.confirm",
+      "name": "refund.result.confirm [POST /api/channel/refund-results]",
+      "fullName": "endpoint-http:refund.result.confirm",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:refund.result.confirm",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.refund.result.ConfirmRefundResultCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

@@ -18,6 +18,15 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.RefundJpaRepositoryAdapter",
+    "aggregate": "Refund",
+    "name": "RefundRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration.SMerchantChannelConfiguration",
     "aggregate": "MerchantChannelConfiguration",
     "name": "SMerchantChannelConfiguration",
@@ -49,6 +58,33 @@
     "aggregate": "Payment",
     "name": "SPaymentNotificationReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefund",
+    "aggregate": "Refund",
+    "name": "SRefund",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.refund",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefundAttempt",
+    "aggregate": "Refund",
+    "name": "SRefundAttempt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.refund",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefundNotificationReceipt",
+    "aggregate": "Refund",
+    "name": "SRefundNotificationReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.refund",
     "description": "",
     "type": "schema",
     "root": false
@@ -139,6 +175,69 @@
     "aggregate": "Payment",
     "name": "PaymentFactory",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.Refund",
+    "aggregate": "Refund",
+    "name": "Refund",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
+    "description": "",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundAttempt",
+    "aggregate": "Refund",
+    "name": "RefundAttempt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
+    "description": "",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundAttemptId",
+    "aggregate": "Refund",
+    "name": "RefundAttemptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId",
+    "aggregate": "Refund",
+    "name": "RefundId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundNotificationReceipt",
+    "aggregate": "Refund",
+    "name": "RefundNotificationReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
+    "description": "",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundNotificationReceiptId",
+    "aggregate": "Refund",
+    "name": "RefundNotificationReceiptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.factory.RefundFactory",
+    "aggregate": "Refund",
+    "name": "RefundFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund.factory",
     "description": "",
     "type": "factory",
     "root": false

@@ -146,6 +146,8 @@ class PaymentBehaviorTest {
         paymentMethod = "CARD",
         status = PaymentStatus.PENDING,
         expiresAt = LocalDateTime.parse("2030-01-01T00:00:00"),
+        reservedRefundAmount = BigDecimal.ZERO,
+        successfulRefundAmount = BigDecimal.ZERO,
     ).also {
         it.id = PaymentId.parse("018f22a0-0000-7000-8000-000000000010")
     }

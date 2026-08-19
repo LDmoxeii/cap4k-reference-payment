@@ -254,3 +254,28 @@ private fun Payment.outcome(
 fun Payment.onCreate() = Unit
 
 fun Payment.onDeleted() = Unit
+
+val Payment.refundableAmount: BigDecimal
+    get() = amount.subtract(reservedRefundAmount).subtract(successfulRefundAmount)
+
+fun Payment.reserveRefund(amount: BigDecimal) {
+    require(status == PaymentStatus.SUCCEEDED) { "payment $id is not successful" }
+    require(amount > BigDecimal.ZERO) { "refund amount must be positive" }
+    if (refundableAmount < amount) {
+        throw RefundBudgetConflictException("payment $id has only $refundableAmount refundable amount")
+    }
+    reservedRefundAmount = reservedRefundAmount.add(amount)
+}
+
+fun Payment.releaseRefundReservation(amount: BigDecimal) {
+    require(amount > BigDecimal.ZERO) { "refund amount must be positive" }
+    require(reservedRefundAmount >= amount) { "payment $id has no matching refund reservation" }
+    reservedRefundAmount = reservedRefundAmount.subtract(amount)
+}
+
+fun Payment.convertRefundReservationToSuccess(amount: BigDecimal) {
+    require(amount > BigDecimal.ZERO) { "refund amount must be positive" }
+    require(reservedRefundAmount >= amount) { "payment $id has no matching refund reservation" }
+    reservedRefundAmount = reservedRefundAmount.subtract(amount)
+    successfulRefundAmount = successfulRefundAmount.add(amount)
+}

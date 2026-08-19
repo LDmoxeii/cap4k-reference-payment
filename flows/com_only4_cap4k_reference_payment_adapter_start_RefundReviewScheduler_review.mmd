@@ -1,0 +1,4 @@
+flowchart TD
+  N1["RefundReviewScheduler::review"]
+  N2["ReviewPendingRefundsCmd.Request"]
+  N1 -->|TemporalTriggerMethodToCommand| N2

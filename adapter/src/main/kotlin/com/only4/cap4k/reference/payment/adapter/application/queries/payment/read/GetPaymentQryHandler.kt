@@ -7,6 +7,7 @@ import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundExcep
 import com.only4.cap4k.reference.payment.application.queries.payment.read.GetPaymentQry
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.refundableAmount
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
 
@@ -37,6 +38,9 @@ class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.R
             expiresAt = payment.expiresAt.toInstant(ZoneOffset.UTC),
             succeededAt = payment.succeededAt?.toInstant(ZoneOffset.UTC),
             channelTransactionId = payment.channelTransactionId,
+            reservedRefundAmount = payment.reservedRefundAmount,
+            successfulRefundAmount = payment.successfulRefundAmount,
+            refundableAmount = payment.refundableAmount,
             attemptCount = payment.attemptCount,
             notificationReceiveCount = payment.notificationReceiveCount,
             rejectedNotificationCount = payment.rejectedNotificationCount,

@@ -114,6 +114,8 @@ object CreatePaymentCmd {
                     channelTransactionId = null,
                     lastRejectionSummary = null,
                     lastConflictSummary = null,
+                    reservedRefundAmount = BigDecimal.ZERO,
+                    successfulRefundAmount = BigDecimal.ZERO,
                 )
             )
             return Response(
