@@ -1,0 +1,3224 @@
+schema: comet.native.v4
+name: build-payment-reconciliation
+language: zh-CN
+phase: archive
+status: active
+state_version: 11
+brief: brief.md
+spec_changes:
+  - capability: payment-reference-build
+    operation: modify
+    source: specs/payment-reference-build/spec.md
+workspace:
+  isolation: worktree
+  change_branch: comet/build-payment-reconciliation
+  target_branch: main
+  finish: pull-request
+loop:
+  stage: archive-ready
+  goal_cycle: 1
+  iteration: 1
+  attempt: 3
+  retry_epoch: 0
+  failed_iteration_count: 0
+  no_progress_count: 0
+  execution_failure_count: 0
+  previous_unresolved_ids: []
+  next_action: archive
+acceptance:
+  - id: A1
+    source: brief.md
+    text: A1：B1/B2 的 contract leaf、依赖方向、Payment/Refund 行为、Endpoint Handler/静态
+      Mediator/手写 HTTP binding、Composite Build 解析合同和全部已验收测试保持通过。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A2
+    source: brief.md
+    text: A2：真实 schema/design/enum/value-object 输入经 cap4k plan/generate 产生
+      ReconciliationBatch、ReconciliationRun、ReconciliationItem、ReconciliationDisposition、Strong
+      ID、Repository、Factory/Behavior、业务
+      enum、Command/Query/Capability/Endpoint；checked-in source 重复 generation 必须
+      SKIP，build-owned source可重建且 ownership 可解释。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A3
+    source: brief.md
+    text: A3：ReconciliationBatch 是独立 Aggregate
+      Root；PaymentId、RefundId、PaymentAttemptId、RefundAttemptId 等仅作为稳定弱引用或事实
+      identity 保存，不存在跨聚合 ORM relation、lazy proxy 或整取对象图。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A4
+    source: brief.md
+    text: A4：普通日终 scheduler 只发送 Command；Command 按业务时区计算 reconciliationDate，并按
+      `channel + currency + date` 幂等创建/装载唯一批次，再通过 PullChannelStatement
+      Capability 拉取账单。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A5
+    source: brief.md
+    text: A5：同渠道交易号、同币种、同金额、同最终状态的 100.00 CNY 支付判定 MATCHED；成功退款同样参与核对，平台和渠道两侧快照均可查询。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A6
+    source: brief.md
+    text: A6：自动测试分别证明
+      PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD
+      与 UNMATCHED，且任何差异都不以一方值覆盖另一方。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A7
+    source: brief.md
+    text: A7：相同 statement identity/revision 重放不产生第二次有效运行或重复有效差异；新 revision 形成新的
+      ReconciliationRun，旧 run/items 保留，当前有效结果可区分。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A8
+    source: brief.md
+    text: A8：批次存在未决差异、账单不完整或账单未取得时不能完成；全部明细匹配或差异已有明确 disposition 后才能完成，并公开未决数量和阻断原因。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A9
+    source: brief.md
+    text: A9：未授权运营人员处置被拒绝并留下审计记录；获授权人员的追加式 disposition 包含负责人、处置时间、证据、结论和
+      follow-up，不修改原平台事实、渠道记录和最初差异。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A10
+    source: brief.md
+    text: A10：对于平台结果待确认但渠道成功且身份/金额/币种匹配的状态差异，授权确认形成新的
+      ReconciliationConfirmationFact；原 Payment/Refund 状态记录和渠道证据保持可见，确认事实可被后续 B4
+      作为有效资金事实消费。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A11
+    source: brief.md
+    text: A11：独立 contract 至少提供
+      GetReconciliationBatchEndpoint、DisposeReconciliationDifferenceEndpoint 与
+      RerunReconciliationBatchEndpoint；每个 Handler 一类一文件、静态 Mediator、手写 HTTP
+      binding 的 method/path/status/mapper 有合同测试。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A12
+    source: brief.md
+    text: A12：H2/JPA/UoW
+      测试证明同范围唯一批次、运行/明细/处置聚合图原子保存、重复触发幂等以及并发创建或重跑不产生两个有效结果；典型并发冲突映射为稳定 409。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A13
+    source: brief.md
+    text: A13：Analyzer 至少生成日终 scheduler 的 Time root、人工处置与重跑的 Endpoint HTTP Actor
+      flow；Mermaid 可解析，Command/Query/Capability 与 Reconciliation Aggregate
+      Structure 由各自 projection 提供证据，不伪造跨入口 stitching。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A14
+    source: brief.md
+    text: A14：自动化测试覆盖 PAY-AC-040..047、PAY-AC-082 和 PAY-AC-085；PAY-AC-083 只增加 B3
+      增量轨迹证据，不在 B4 结算完成前宣称全链路已验证。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A15
+    source: brief.md
+    text: A15：AgentFacts 无 INVALID/error/plan-evidence-invalid，ownership 非空；live DB
+      freshness UNKNOWN 可导致 PARTIAL。traceability 只把有真实路径与命令结果的 B3 evidence 转为
+      verified，并同步 README 的当前状态和数量。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 brief, implementation, tests, generated
+        plan/analysis/AgentFacts evidence and confirmed this brief acceptance.
+      truncated: false
+  - id: A16
+    source: specs/payment-reference-build/spec.md
+    text: "`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付与退款系统。它在 B1 支付与
+      B2 退款闭环上增加 B3 日终对账与差异处置闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate
+      Root、多层 owned child、Strong ID、Value
+      Object、生成并类型化的业务枚举、Repository/UoW、跨聚合弱引用事实、Command/Query/Capability/Endpo\
+      int、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer
+      和 AgentFacts 能在同一真实业务链中协同工作。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A17
+    source: specs/payment-reference-build/spec.md
+    text: 该状态是完整支付引用项目的前三个实现投影，不改变 `docs/requirements/**`
+      中的业务真源，也不声称商户结算、可靠异步、大额退款审批、超期人工例外或生产级账单 transport 已经可用。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A18
+    source: specs/payment-reference-build/spec.md
+    text: 项目必须包含：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A19
+    source: specs/payment-reference-build/spec.md
+    text: "`contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request 与
+      Response，只依赖轻量 `cap4k-contract-api` 及编译期分析 metadata，不依赖任何项目内模块、Spring、JPA
+      或 transport 实现。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A20
+    source: specs/payment-reference-build/spec.md
+    text: "`domain`：Payment、Refund 与 Reconciliation 领域模型、Value Object、生成 enum、领域事实与
+      Repository 契约。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A21
+    source: specs/payment-reference-build/spec.md
+    text: "`application`：支付、退款与日终对账的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑和查询输入/处理器；支付/退款
+      Gateway、结果验证与渠道账单 Capability。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A22
+    source: specs/payment-reference-build/spec.md
+    text: "`adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund
+      Gateway、Fake Channel Statement Provider、渠道结果验证器、普通 scheduled reaction 和
+      JPA 适配。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A23
+    source: specs/payment-reference-build/spec.md
+    text: "`start`：Spring Boot 组装、H2 配置、包含退款与对账规则的最小渠道配置/账单 fixture 和端到端测试。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A24
+    source: specs/payment-reference-build/spec.md
+    text: 项目内依赖方向必须为：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A25
+    source: specs/payment-reference-build/spec.md
+    text: "`application -> domain`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A26
+    source: specs/payment-reference-build/spec.md
+    text: "`adapter -> contract + application + domain`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A27
+    source: specs/payment-reference-build/spec.md
+    text: "`start -> adapter`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A28
+    source: specs/payment-reference-build/spec.md
+    text: "`contract` 不依赖任何项目内模块；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A29
+    source: specs/payment-reference-build/spec.md
+    text: "`domain` 不依赖 contract/application/adapter/start；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A30
+    source: specs/payment-reference-build/spec.md
+    text: application/domain 不依赖 start 或具体 Web 配置。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A31
+    source: specs/payment-reference-build/spec.md
+    text: Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint
+      contract 必须物理位于该模块；既有 payment/refund FQN 保持不变，B3 reconciliation contract
+      使用同一发布边界下的稳定 FQN。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A32
+    source: specs/payment-reference-build/spec.md
+    text: Java/Kotlin toolchain：17。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A33
+    source: specs/payment-reference-build/spec.md
+    text: Kotlin：2.2.20。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A34
+    source: specs/payment-reference-build/spec.md
+    text: Spring Boot：3.5.6。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A35
+    source: specs/payment-reference-build/spec.md
+    text: 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A36
+    source: specs/payment-reference-build/spec.md
+    text: 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A37
+    source: specs/payment-reference-build/spec.md
+    text: B1/B2/B3 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline
+      完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property
+      `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版
+      `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行
+      `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地
+      `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3 验收，保留给
+      B6。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A38
+    source: specs/payment-reference-build/spec.md
+    text: cap4k 生成器产生的 generated source 由构建拥有，不进入手工编辑区。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A39
+    source: specs/payment-reference-build/spec.md
+    text: Endpoint contracts、Domain Value Object 和需要持续演进的 behavior skeleton 采用
+      checked-in ownership，首次生成后由业务代码维护，重复 generation 必须 SKIP 已演进文件。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A40
+    source: specs/payment-reference-build/spec.md
+    text: Endpoint Handler 与 HTTP binding 是 reference 手写 adapter 代码；不得伪造为本切片已有的
+      Generator capability。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A41
+    source: specs/payment-reference-build/spec.md
+    text: "`cap4kPlan` 必须解释 generator、module role、output path、output kind、resolved
+      root 和 conflict policy。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A42
+    source: specs/payment-reference-build/spec.md
+    text: 重复 plan/generation 在相同输入下保持确定性，不覆盖用户已修改的 checked-in source。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A43
+    source: specs/payment-reference-build/spec.md
+    text: "`design/enums.json` 是 B1/B2/B3 有限业务枚举的 authoring source，并通过
+      `types.enumManifest` 注册。至少声明以下 aggregate-owned enum："
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A44
+    source: specs/payment-reference-build/spec.md
+    text: "`PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、\
+      `CLOSED(4)`、`RESULT_UNKNOWN(5)`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A45
+    source: specs/payment-reference-build/spec.md
+    text: "`PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A46
+    source: specs/payment-reference-build/spec.md
+    text: "`PaymentAttemptFinalResult`：`SUCCESS(0)`、`FAILED(1)`、`GATEWAY_REJECTED(2\
+      )`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A47
+    source: specs/payment-reference-build/spec.md
+    text: "`MerchantChannelConfigurationStatus`：`ACTIVE(0)`、`RETIRED(1)`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A48
+    source: specs/payment-reference-build/spec.md
+    text: "`ChannelResultDisposition`：`RECEIVED(0)`、`REJECTED(1)`、`SUCCESS_ACCEPTED\
+      (2)`、`FAILURE_ACCEPTED(3)`、`ACCEPTED_DUPLICATE(4)`、`REJECTED_DUPLICATE(5)\
+      `、`CONFLICT(6)`、`ATTEMPT_NOT_FOUND(7)`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A49
+    source: specs/payment-reference-build/spec.md
+    text: 这些 numeric value 一经生成并进入持久化或可观察证据后保持稳定。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A50
+    source: specs/payment-reference-build/spec.md
+    text: 以下内部有界状态列必须使用整数存储，并通过完整 `@Type=<EnumName>;` metadata 绑定：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A51
+    source: specs/payment-reference-build/spec.md
+    text: "`payment.status -> PaymentStatus`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A52
+    source: specs/payment-reference-build/spec.md
+    text: "`payment_attempt.status -> PaymentAttemptStatus`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A53
+    source: specs/payment-reference-build/spec.md
+    text: "`payment_attempt.final_result -> PaymentAttemptFinalResult`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A54
+    source: specs/payment-reference-build/spec.md
+    text: "`payment_notification_receipt.decision -> ChannelResultDisposition`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A55
+    source: specs/payment-reference-build/spec.md
+    text: "`merchant_channel_configuration.status ->
+      MerchantChannelConfigurationStatus`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A56
+    source: specs/payment-reference-build/spec.md
+    text: 领域代码直接读写生成 enum，不使用重复手写 enum，也不通过 `.name` 把 enum 写回实体状态列。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A57
+    source: specs/payment-reference-build/spec.md
+    text: 以下开放 vocabulary 或外部证据保持标量，不加入 enum manifest：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A58
+    source: specs/payment-reference-build/spec.md
+    text: inbound Endpoint/Command 的渠道 raw `result`；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A59
+    source: specs/payment-reference-build/spec.md
+    text: "`payment_notification_receipt.result` 原始/归一化渠道声明；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A60
+    source: specs/payment-reference-build/spec.md
+    text: currency 与 payment method；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A61
+    source: specs/payment-reference-build/spec.md
+    text: merchant、channel、request、notification、transaction、order、idempotency 等外部
+      identity；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A62
+    source: specs/payment-reference-build/spec.md
+    text: verification material、snapshot 与诊断 summary。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A63
+    source: specs/payment-reference-build/spec.md
+    text: "`design/value-objects.json` 必须声明 Payment aggregate-owned 的
+      `ChannelResultRecordingOutcome`，不包含 `persistence` 配置。生成结果是 checked-in
+      Domain Value Object，不生成 JPA converter、不绑定 schema 列、不拥有独立实体身份。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A64
+    source: specs/payment-reference-build/spec.md
+    text: 该 VO 至少包含：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A65
+    source: specs/payment-reference-build/spec.md
+    text: "`paymentStatus: PaymentStatus`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A66
+    source: specs/payment-reference-build/spec.md
+    text: "`attemptStatus: PaymentAttemptStatus?`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A67
+    source: specs/payment-reference-build/spec.md
+    text: "`notificationReceiveCount: Int`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A68
+    source: specs/payment-reference-build/spec.md
+    text: "`disposition: ChannelResultDisposition`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A69
+    source: specs/payment-reference-build/spec.md
+    text: "`rejectionSummary: String?`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A70
+    source: specs/payment-reference-build/spec.md
+    text: "`conflictSummary: String?`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A71
+    source: specs/payment-reference-build/spec.md
+    text: "`successFactFormedNow: Boolean`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A72
+    source: specs/payment-reference-build/spec.md
+    text: 生成后的 checked-in VO 必须补充派生属性：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A73
+    source: specs/payment-reference-build/spec.md
+    text: "`duplicate` 由 `ACCEPTED_DUPLICATE` 或 `REJECTED_DUPLICATE` 推导；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A74
+    source: specs/payment-reference-build/spec.md
+    text: "`accepted` 由 `SUCCESS_ACCEPTED`、`FAILURE_ACCEPTED` 或 `ACCEPTED_DUPLICATE`
+      推导；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A75
+    source: specs/payment-reference-build/spec.md
+    text: "`rejected` 由 `REJECTED`、`REJECTED_DUPLICATE` 或 `ATTEMPT_NOT_FOUND` 推导；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A76
+    source: specs/payment-reference-build/spec.md
+    text: "`conflicting` 由 `CONFLICT` 推导。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A77
+    source: specs/payment-reference-build/spec.md
+    text: VO 必须拒绝无效组合：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A78
+    source: specs/payment-reference-build/spec.md
+    text: "`notificationReceiveCount` 小于 1；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A79
+    source: specs/payment-reference-build/spec.md
+    text: 最终 Outcome 使用 `RECEIVED`；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A80
+    source: specs/payment-reference-build/spec.md
+    text: "`ATTEMPT_NOT_FOUND` 以外的 disposition 配置 null `attemptStatus`，或
+      `ATTEMPT_NOT_FOUND` 配置非空 `attemptStatus`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A81
+    source: specs/payment-reference-build/spec.md
+    text: rejected disposition 没有 rejection summary，或非 rejected disposition 携带
+      rejection summary；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A82
+    source: specs/payment-reference-build/spec.md
+    text: "`CONFLICT` 没有 conflict summary，或非 `CONFLICT` 携带 conflict summary；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A83
+    source: specs/payment-reference-build/spec.md
+    text: "`successFactFormedNow=true` 但 disposition 不是 `SUCCESS_ACCEPTED`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A84
+    source: specs/payment-reference-build/spec.md
+    text: duplicate outcome 再次形成成功事实；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A85
+    source: specs/payment-reference-build/spec.md
+    text: "`SUCCESS_ACCEPTED` 未对应 `PaymentStatus.SUCCEEDED` 和
+      `PaymentAttemptStatus.SUCCEEDED`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A86
+    source: specs/payment-reference-build/spec.md
+    text: "`FAILURE_ACCEPTED` 未对应 `PaymentAttemptStatus.FAILED`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A87
+    source: specs/payment-reference-build/spec.md
+    text: Payment 是聚合根，至少包含：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A88
+    source: specs/payment-reference-build/spec.md
+    text: "`PaymentId`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A89
+    source: specs/payment-reference-build/spec.md
+    text: merchant identity；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A90
+    source: specs/payment-reference-build/spec.md
+    text: merchant order number；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A91
+    source: specs/payment-reference-build/spec.md
+    text: idempotency key；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A92
+    source: specs/payment-reference-build/spec.md
+    text: Money；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A93
+    source: specs/payment-reference-build/spec.md
+    text: payment method；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A94
+    source: specs/payment-reference-build/spec.md
+    text: typed `PaymentStatus`；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A95
+    source: specs/payment-reference-build/spec.md
+    text: createdAt、expiresAt；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A96
+    source: specs/payment-reference-build/spec.md
+    text: succeededAt、channelTransactionId（成功后）；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A97
+    source: specs/payment-reference-build/spec.md
+    text: PaymentAttempt 集合；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A98
+    source: specs/payment-reference-build/spec.md
+    text: 聚合版本和审计字段。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A99
+    source: specs/payment-reference-build/spec.md
+    text: B1 支付路径只主动推进 `PENDING -> PROCESSING -> SUCCEEDED`，但模型不得允许成功回退。B2 在成功
+      Payment 上增加退款预算字段，不改变支付成功事实。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A100
+    source: specs/payment-reference-build/spec.md
+    text: PaymentAttempt 是 Payment 的强引用 owned child，至少包含：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A101
+    source: specs/payment-reference-build/spec.md
+    text: "`PaymentAttemptId`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A102
+    source: specs/payment-reference-build/spec.md
+    text: channel identity 与渠道配置快照；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A103
+    source: specs/payment-reference-build/spec.md
+    text: request identity；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A104
+    source: specs/payment-reference-build/spec.md
+    text: typed `PaymentAttemptStatus`；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A105
+    source: specs/payment-reference-build/spec.md
+    text: initiatedAt；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A106
+    source: specs/payment-reference-build/spec.md
+    text: channelTransactionId；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A107
+    source: specs/payment-reference-build/spec.md
+    text: typed `PaymentAttemptFinalResult` 与业务发生时间；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A108
+    source: specs/payment-reference-build/spec.md
+    text: 每个 notification identity 的接收计数、首次/最近接收时间、raw result、typed
+      `ChannelResultDisposition` 和裁决摘要。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A109
+    source: specs/payment-reference-build/spec.md
+    text: 尝试之间不能覆盖。Payment 成功后不得创建新尝试。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A110
+    source: specs/payment-reference-build/spec.md
+    text: "`ChannelResultDisposition.RECEIVED` 只允许作为 receipt 保存后、裁决完成前的内部状态；最终
+      receipt 必须进入 accepted、duplicate、rejected 或 conflict disposition。Attempt
+      不属于当前 Payment 时，不伪造 `PaymentAttemptStatus.NOT_FOUND`，而由 Outcome 的 null
+      `attemptStatus` 与 `ATTEMPT_NOT_FOUND` 表达。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A111
+    source: specs/payment-reference-build/spec.md
+    text: Money 使用精确十进制金额和 ISO 风格币种代码；拒绝非正数、超过币种精度或应用资格配置未支持的币种。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A112
+    source: specs/payment-reference-build/spec.md
+    text: PaymentId 和 PaymentAttemptId 使用 cap4k Strong ID，应用侧按当前 UUID7 合同分配。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A113
+    source: specs/payment-reference-build/spec.md
+    text: merchant identity、channel identity 和外部业务号保持稳定、可追踪，不把完整凭据放入聚合。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A114
+    source: specs/payment-reference-build/spec.md
+    text: B1/B2 提供最小持久化模型：merchant、channel、currency、payment method、amount
+      range、typed active/retired
+      status、refundWindowDays、refundResultReviewAfterMinutes 及必要审计信息。start 层建立一条
+      M-001、CNY、测试支付方式可用、退款期限 180 天、退款结果核对阈值 30 分钟的配置。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A115
+    source: specs/payment-reference-build/spec.md
+    text: 配置只用于资格判断和渠道选择，不提供管理 API。PaymentAttempt 保存当时的渠道身份和规则摘要，因此以后配置退役不会改写交易历史。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A116
+    source: specs/payment-reference-build/spec.md
+    text: 输入至少包括 merchant、merchant order number、idempotency
+      key、amount、currency、payment method 和 expiresAt。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A117
+    source: specs/payment-reference-build/spec.md
+    text: 处理顺序：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A118
+    source: specs/payment-reference-build/spec.md
+    text: 验证格式、金额、币种和到期时间；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A119
+    source: specs/payment-reference-build/spec.md
+    text: 验证 merchant 至少存在一条合格的 active channel configuration；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A120
+    source: specs/payment-reference-build/spec.md
+    text: 按 merchant + idempotency key 查询既有 Payment；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A121
+    source: specs/payment-reference-build/spec.md
+    text: 内容相同则返回既有结果；关键内容不同则返回明确幂等冲突；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A122
+    source: specs/payment-reference-build/spec.md
+    text: 不存在时创建 `PENDING` Payment 并持久化。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A123
+    source: specs/payment-reference-build/spec.md
+    text: 创建成功不自动形成 PaymentAttempt，也不表示支付成功。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A124
+    source: specs/payment-reference-build/spec.md
+    text: 输入 PaymentId。处理器装载 Payment，确认仍允许尝试，选择合格配置并在聚合内新增 PaymentAttempt，然后调用
+      Channel Gateway。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A125
+    source: specs/payment-reference-build/spec.md
+    text: Fake Gateway 返回稳定 request identity 和 `ACCEPTED`。`ACCEPTED` 只让尝试/Payment
+      进入处理中，不得形成成功事实。Gateway 调用失败的完整重试策略后置，但失败必须留下可诊断信息而不能伪造成功。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A126
+    source: specs/payment-reference-build/spec.md
+    text: 入站结果至少包含
+      channel、notificationId、PaymentId/PaymentAttemptId、channelTransactionId、amount、currency、raw
+      result、occurredAt 和验证材料。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A127
+    source: specs/payment-reference-build/spec.md
+    text: 适配层只把 HTTP 输入转换为稳定 Command；Command Handler 在 UoW 边界内调用结果验证
+      Capability，再把验证结果交给聚合。聚合按以下顺序裁决：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A128
+    source: specs/payment-reference-build/spec.md
+    text: 记录接收时间和 notification identity；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A129
+    source: specs/payment-reference-build/spec.md
+    text: 识别重复通知并增加计数；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A130
+    source: specs/payment-reference-build/spec.md
+    text: 校验 attempt/channel/payment/amount/currency；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A131
+    source: specs/payment-reference-build/spec.md
+    text: 不可信或不匹配时保留拒绝原因，不推进 Payment 状态；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A132
+    source: specs/payment-reference-build/spec.md
+    text: 首次可信成功时把 attempt 和 Payment 确认为成功，记录渠道交易号和两个时间；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A133
+    source: specs/payment-reference-build/spec.md
+    text: 重复成功形成 accepted-duplicate disposition，不产生第二个成功事实；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A134
+    source: specs/payment-reference-build/spec.md
+    text: 重复未接受证据形成 rejected-duplicate disposition；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A135
+    source: specs/payment-reference-build/spec.md
+    text: 成功后的失败结果不回退状态，形成 conflict disposition 并留存；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A136
+    source: specs/payment-reference-build/spec.md
+    text: 返回 `ChannelResultRecordingOutcome`，其字段和派生属性来自最终持久化裁决，不建立第二套
+      accepted/duplicate 真源。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A137
+    source: specs/payment-reference-build/spec.md
+    text: B1 记录“商户成功通知意图”领域事实，但不发送真实 Integration Event 或网络通知。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A138
+    source: specs/payment-reference-build/spec.md
+    text: "`Payment.recordChannelResult(...)` 返回 `ChannelResultRecordingOutcome`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A139
+    source: specs/payment-reference-build/spec.md
+    text: "`ConfirmPaymentResultCmd.Response` 直接持有该 Domain Value Object；application
+      允许依赖 domain，因此不做无价值的逐字段复制。若 cap4k Request contract 固定要求 Response wrapper，则
+      wrapper 只包含 `outcome` 字段。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A140
+    source: specs/payment-reference-build/spec.md
+    text: 独立 `contract` 模块不得依赖 domain。`ConfirmPaymentResultEndpoint.Response` 继续使用
+      contract-owned scalar/DTO 字段；adapter Endpoint Handler 从 Command Response
+      中取得 Outcome，并在该发布边界显式映射 enum name、计数、派生布尔值和摘要。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A141
+    source: specs/payment-reference-build/spec.md
+    text: 按 PaymentId 返回：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A142
+    source: specs/payment-reference-build/spec.md
+    text: Payment 身份、商户订单号、Money、状态和关键时间；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A143
+    source: specs/payment-reference-build/spec.md
+    text: 所有 PaymentAttempt 的身份、渠道、状态、请求/交易号；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A144
+    source: specs/payment-reference-build/spec.md
+    text: 渠道结果的接收计数、typed disposition、验证/拒绝/冲突摘要；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A145
+    source: specs/payment-reference-build/spec.md
+    text: 成功事实是否已经形成。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A146
+    source: specs/payment-reference-build/spec.md
+    text: 查询必须来自真实持久化数据，不返回 domain/JPA proxy 给 HTTP 层。Query/Endpoint 对外输出字符串状态时由
+      adapter 显式使用 enum name 映射，不把 contract 反向绑定到 domain enum。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A147
+    source: specs/payment-reference-build/spec.md
+    text: B1 提供四个 transport-neutral Endpoint contract：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A148
+    source: specs/payment-reference-build/spec.md
+    text: "`CreatePaymentEndpoint`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A149
+    source: specs/payment-reference-build/spec.md
+    text: "`StartPaymentAttemptEndpoint`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A150
+    source: specs/payment-reference-build/spec.md
+    text: "`ConfirmPaymentResultEndpoint`；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A151
+    source: specs/payment-reference-build/spec.md
+    text: "`GetPaymentEndpoint`。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A152
+    source: specs/payment-reference-build/spec.md
+    text: 每个 Endpoint Handler 在 adapter 中独立成文件，并采用：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A153
+    source: specs/payment-reference-build/spec.md
+    text: 写操作：`Mediator.commands.send(...)`；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A154
+    source: specs/payment-reference-build/spec.md
+    text: 查询操作：`Mediator.queries.ask(...)`。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A155
+    source: specs/payment-reference-build/spec.md
+    text: 一类一文件和静态 `Mediator` 是本 reference 的默认 authoring preference，不是 cap4k
+      对所有项目的强制规则。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A156
+    source: specs/payment-reference-build/spec.md
+    text: HTTP binding 保持手写，继续提供：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A157
+    source: specs/payment-reference-build/spec.md
+    text: "`POST /api/payments`：创建 Payment；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A158
+    source: specs/payment-reference-build/spec.md
+    text: "`POST /api/payments/{paymentId}/attempts`：发起一次 PaymentAttempt；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A159
+    source: specs/payment-reference-build/spec.md
+    text: "`POST /api/channel/payment-results`：接收测试渠道最终结果；"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A160
+    source: specs/payment-reference-build/spec.md
+    text: "`GET /api/payments/{paymentId}`：查询 Payment 和尝试摘要。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A161
+    source: specs/payment-reference-build/spec.md
+    text: HTTP method/path、request mapper、response policy、status code 和 error
+      mapping 不因 Handler 拆分或 contract 搬迁而漂移。错误结果至少区分输入校验失败、幂等冲突、无合格渠道、Payment
+      不存在、状态不允许、回调被拒绝和并发冲突。测试用验证器的可信凭据通过配置提供，任何凭据不得提交为生产秘密。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A162
+    source: specs/payment-reference-build/spec.md
+    text: 所有写操作通过 cap4k Command/UoW 边界运行。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A163
+    source: specs/payment-reference-build/spec.md
+    text: Command 聚合 Repository 使用同一 Hibernate/JPA 持久化上下文；已有聚合更新依赖 managed entity
+      dirty checking，新聚合/删除遵循 cap4k persistence intents。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A164
+    source: specs/payment-reference-build/spec.md
+    text: PaymentAttempt 和 notification receipt 生命周期由 Payment 聚合维护，JPA
+      cascade/orphan 语义与 owned graph 一致。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A165
+    source: specs/payment-reference-build/spec.md
+    text: enum converter 与整数 schema 列必须一致，H2/JPA round-trip 后仍得到相同 enum value。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A166
+    source: specs/payment-reference-build/spec.md
+    text: 使用乐观版本防止并发回调静默覆盖；典型并发由集成测试证明，极端 ORM/并发压力仍由 cap4k focused fixtures 负责。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A167
+    source: specs/payment-reference-build/spec.md
+    text: H2 用于 reference 的可重复执行，不宣称生产数据库兼容矩阵。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A168
+    source: specs/payment-reference-build/spec.md
+    text: DB/schema、Design JSON、enum manifest 和 value-object manifest 共同提供真实
+      canonical input，不接受纯手写项目冒充 Generator 证据。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A169
+    source: specs/payment-reference-build/spec.md
+    text: plan 和输出必须展示 Aggregate、Strong ID、Repository、Behavior、Enum、Value
+      Object、Command/Query/Endpoint 等本切片实际采用的能力；未采用能力不得仅为覆盖率制造空壳。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A170
+    source: specs/payment-reference-build/spec.md
+    text: contract module 必须启用 analysis compiler，并加入 root `irAnalysis.inputDirs`；移动
+      Endpoint contract 后不得丢失 design metadata。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A171
+    source: specs/payment-reference-build/spec.md
+    text: B1/B2 必须通过显式 Composite Build 消费包含 Mermaid quoted-label 修复的 cap4k
+      mainline，重新运行 `cap4kAnalysisPlan` 与 `cap4kAnalysisGenerate`。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A172
+    source: specs/payment-reference-build/spec.md
+    text: Analyzer 为创建支付、发起支付尝试和渠道回调的真实 Endpoint HTTP Actor 入口分别生成 entry-centered
+      Flow，展示入口到对应 Command 的静态 causal reachability；Command 与 Query anchors 由
+      Drawing Board Design Projection 提供，Payment/PaymentAttempt 的 Aggregate
+      element 由独立 Aggregate Structure output 提供。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A173
+    source: specs/payment-reference-build/spec.md
+    text: 三份 Flow JSON 保持预期 entry、node 与 edge 语义；三份 Mermaid 节点 label 必须被安全引用，并通过
+      Mermaid parser 或 renderer smoke，不再出现内部 `[...]` 触发的 parse error。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A174
+    source: specs/payment-reference-build/spec.md
+    text: Query、CommandHandler、Entity Method、聚合运行时状态推进和跨真实入口 process stitching 不属于默认
+      Flow 验收；不把支付超时伪造成已实现 Time 根。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A175
+    source: specs/payment-reference-build/spec.md
+    text: Agent Snapshot 必须能读取项目有效状态、输入、生成器、任务、输出和 diagnostics；没有构建或运行证据的能力保持
+      planned/not-built。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A176
+    source: specs/payment-reference-build/spec.md
+    text: 必须覆盖以下业务场景：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A177
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-001：首次创建支付；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A178
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-002：相同内容重复创建；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A179
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-003：幂等键冲突；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A180
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-004：可信成功通知；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A181
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-005：重复成功通知；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A182
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-006：未验证、attempt/channel/amount/currency 不匹配通知；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A183
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-012：无效金额/币种拒绝；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A184
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-013：已创建金额不可修改；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A185
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-016：渠道受理不等于成功；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A186
+    source: specs/payment-reference-build/spec.md
+    text: PAY-AC-017：成功后不再发起尝试。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A187
+    source: specs/payment-reference-build/spec.md
+    text: 证据至少包括：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A188
+    source: specs/payment-reference-build/spec.md
+    text: contract leaf 的依赖与编译证据；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A189
+    source: specs/payment-reference-build/spec.md
+    text: domain enum generation、schema type binding、converter round-trip 与 Outcome
+      invariant tests；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A190
+    source: specs/payment-reference-build/spec.md
+    text: H2/JPA Repository/UoW integration tests；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A191
+    source: specs/payment-reference-build/spec.md
+    text: Endpoint contract、每类一文件 Handler、静态 Mediator 和 handwritten HTTP binding
+      tests；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A192
+    source: specs/payment-reference-build/spec.md
+    text: HTTP happy path 与错误/重复/冲突 integration tests；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A193
+    source: specs/payment-reference-build/spec.md
+    text: plan/generation deterministic evidence；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A194
+    source: specs/payment-reference-build/spec.md
+    text: Analyzer plan、三个 Endpoint HTTP Actor-to-Command Flow JSON/Mermaid、Mermaid
+      parse/render smoke，以及独立 Command/Query Drawing Board 和 Aggregate Structure
+      outputs；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A195
+    source: specs/payment-reference-build/spec.md
+    text: Agent manifest 与 diagnostics；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A196
+    source: specs/payment-reference-build/spec.md
+    text: actual evidence path/command/cap4k commit/status 写回 traceability，并包含
+      tracked `settings.gradle.kts` 的 property > environment > released `2.0.1`
+      解析合同及“仓库无默认机器路径”的 smoke 证据。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A197
+    source: specs/payment-reference-build/spec.md
+    text: "仓库业务 phase 保持 build 且 build_authorized: true。B1 已在 mainline 验收并保持回归基线。B2
+      的新增聚合、配置、Endpoint、scheduled reaction、类型输入和验收必须使用本 change
+      的新证据；只有新实现与新证据验证通过时，才把 PAY-AC-020..029 及对应 evidence 更新为 verified。B1
+      的旧证据不能替代 B2 当前候选验证。"
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A198
+    source: specs/payment-reference-build/spec.md
+    text: Refund 是独立 Aggregate Root，以 Strong RefundId 标识，通过 Strong PaymentId 弱引用
+      Payment；Refund 不持有 Payment 对象、ORM relation、lazy proxy 或可导航聚合图。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A199
+    source: specs/payment-reference-build/spec.md
+    text: Payment 继续是支付成功事实和退款预算的并发裁决权威。Payment 至少增加
+      reservedRefundAmount、successfulRefundAmount，并派生 refundableAmount。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A200
+    source: specs/payment-reference-build/spec.md
+    text: 原子不变量为：reservedRefundAmount >= 0、successfulRefundAmount >= 0，且
+      reservedRefundAmount + successfulRefundAmount <= paymentAmount。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A201
+    source: specs/payment-reference-build/spec.md
+    text: 只有 SUCCEEDED Payment 可以占用退款额度。创建 Refund 时先在 Payment 聚合内占用额度，再在同一 cap4k
+      Command/UoW 与同一 Hibernate/JPA persistence context 中创建 Refund；任一步失败必须整体回滚。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A202
+    source: specs/payment-reference-build/spec.md
+    text: Refund 明确失败或拒绝时释放占用；结果未知或进入待核对时继续占用；成功时将对应占用原子转换为
+      successfulRefundAmount。Refund 成功事实不可回退。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A203
+    source: specs/payment-reference-build/spec.md
+    text: Refund 至少保存 RefundId、PaymentId、merchant identity、merchant refund
+      number、Money、原渠道/支付方式/配置快照、typed RefundStatus、请求/受理/最终/核对时间、渠道
+      request/refund identity、额度裁决和成功事实。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A204
+    source: specs/payment-reference-build/spec.md
+    text: Refund 使用 RefundAttempt 与 RefundNotificationReceipt owned child
+      保存渠道请求、notification identity、首次/最近接收时间、重复次数、raw result、typed
+      disposition、验证/拒绝/冲突摘要。查询必须能够观察这些持久化事实，不能只返回最后一条瞬时摘要。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A205
+    source: specs/payment-reference-build/spec.md
+    text: MerchantChannelConfiguration 是规则配置真源：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A206
+    source: specs/payment-reference-build/spec.md
+    text: refundWindowDays：B2 seed/default fixture 固定为 180；申请最后期限从
+      Payment.succeededAt 起算，而不是 Payment.createdAt 或渠道受理时间。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A207
+    source: specs/payment-reference-build/spec.md
+    text: refundResultReviewAfterMinutes：B2 seed/default fixture 固定为
+      30；渠道已经受理但超过该阈值仍无最终结果时，Refund 转为 REVIEW_REQUIRED 并继续保留占用。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A208
+    source: specs/payment-reference-build/spec.md
+    text: B2 不实现大额退款人工审批，也不实现超期退款人工例外或 override；二者保留为后续独立 change。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A209
+    source: specs/payment-reference-build/spec.md
+    text: 设计输入必须新增并生成/类型绑定 Refund 有限业务枚举，至少包括
+      RefundStatus、RefundAttemptStatus、RefundAttemptFinalResult 与
+      RefundResultDisposition。内部有限状态使用整数列和完整 @Type 绑定；外部 raw
+      code、message、identity 继续保持开放标量。numeric value 一经用于持久化或证据后保持稳定。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A210
+    source: specs/payment-reference-build/spec.md
+    text: value-objects.json 必须声明不配置 persistence 的
+      RefundResultRecordingOutcome。它是聚合行为产生的瞬时 Domain Value Object，可直接成为 Command
+      Response 的字段；独立 contract leaf 不依赖 domain，因此 Endpoint Response 由 adapter
+      在发布边界显式投影。Outcome 至少表达最终 Refund/attempt 状态、notification 接收计数、typed
+      disposition、额度是否释放或转成功、是否进入待核对及拒绝/冲突摘要，并拒绝互相矛盾的组合。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A211
+    source: specs/payment-reference-build/spec.md
+    text: checked-in enum、VO、Endpoint contract、Behavior 和手写 adapter 重复 generation 必须
+      SKIP；build-owned Entity、Schema、Repository 可重建。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A212
+    source: specs/payment-reference-build/spec.md
+    text: 创建退款输入至少包括 merchant、merchant refund number、PaymentId、退款金额、币种和请求时间：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A213
+    source: specs/payment-reference-build/spec.md
+    text: merchant + merchant refund number 相同内容重复提交返回同一 RefundId；关键内容冲突明确失败。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A214
+    source: specs/payment-reference-build/spec.md
+    text: 装载 Payment，确认 SUCCEEDED、merchant/币种匹配，且请求时间不晚于 succeededAt +
+      refundWindowDays。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A215
+    source: specs/payment-reference-build/spec.md
+    text: 在 Payment 内原子占用退款额度；超出 refundableAmount 时不创建渠道请求。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A216
+    source: specs/payment-reference-build/spec.md
+    text: 在同一事务创建 Refund/RefundAttempt 并保存规则快照。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A217
+    source: specs/payment-reference-build/spec.md
+    text: Fake Refund Gateway 受理只进入处理中；明确拒绝或失败释放占用；未知结果继续占用并留痕。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A218
+    source: specs/payment-reference-build/spec.md
+    text: 退款结果 callback 至少携带
+      channel、notificationId、RefundId/RefundAttemptId、channelRefundId、amount、currency、raw
+      result、occurredAt 和验证材料。Handler 在 UoW 内调用验证
+      Capability，并按首次成功、首次失败、可信未知、重复、冲突、不可信或不匹配进行幂等裁决。成功后的失败或未知不得回退成功事实。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A219
+    source: specs/payment-reference-build/spec.md
+    text: B2 提供普通 @Scheduled reaction。scheduled method 只通过
+      Mediator.commands.send(...) 发送扫描 Command，不直接操作 Repository。扫描将已受理、超过
+      refundResultReviewAfterMinutes 且仍无最终结果的 Refund 转为 REVIEW_REQUIRED，并保留
+      Payment 占用。该入口证明 Analyzer Time root，不承诺 B5 的可靠 enqueue、持久化调度、lease/retry
+      或跨实例 exactly-once。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A220
+    source: specs/payment-reference-build/spec.md
+    text: B2 至少增加 CreateRefundEndpoint、ConfirmRefundResultEndpoint 与
+      GetRefundEndpoint，继续位于独立 contract module。对应 HTTP binding 保持手写：
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A221
+    source: specs/payment-reference-build/spec.md
+    text: POST /api/refunds；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A222
+    source: specs/payment-reference-build/spec.md
+    text: POST /api/channel/refund-results；
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A223
+    source: specs/payment-reference-build/spec.md
+    text: GET /api/refunds/{refundId}。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A224
+    source: specs/payment-reference-build/spec.md
+    text: 每个 Endpoint Handler 一类一文件并使用静态 Mediator；这是 reference authoring
+      preference，不是 cap4k 强制规则。scheduled scan 不是 HTTP Endpoint，不为覆盖率伪造 transport
+      contract。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A225
+    source: specs/payment-reference-build/spec.md
+    text: Payment 查询增加 reservedRefundAmount、successfulRefundAmount 与
+      refundableAmount。Refund 查询返回身份、PaymentId、merchant refund
+      number、Money、状态、关键时间、渠道 identity、额度裁决、attempt 与 notification 摘要；不得把 JPA
+      aggregate 或 proxy 暴露给 contract/HTTP。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A226
+    source: specs/payment-reference-build/spec.md
+    text: 两笔并发 Refund 对同一 Payment 的额度占用必须由真实双事务、H2/JPA、乐观锁测试证明不会超退。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A227
+    source: specs/payment-reference-build/spec.md
+    text: 典型乐观冲突映射为稳定 409 CONCURRENT_MODIFICATION，而不是静默覆盖或 500。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A228
+    source: specs/payment-reference-build/spec.md
+    text: Payment 与 Refund 的预算变更和状态推进必须共用 cap4k JPA UoW；不引入跨 ORM bridge、detached
+      merge 或补偿事务来伪造原子性。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A229
+    source: specs/payment-reference-build/spec.md
+    text: B2 使用 Fake Gateway 与 HTTP callback，不引入真实渠道 SDK、Outbox、Integration Event
+      transport、Saga 或 only-engine gate。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A230
+    source: specs/payment-reference-build/spec.md
+    text: Analyzer 必须生成退款申请与退款渠道结果的 Endpoint HTTP Actor-to-Command Flow，并为普通
+      @Scheduled 到 Mediator.commands.send(...) 的超时核对入口生成独立 Time
+      root。Command/Query anchors 与 Refund Aggregate Structure 分别由 Drawing Board
+      和 Aggregate Structure output 证明；不把跨入口流程拼接或运行时状态变化伪造成默认 Flow 能力。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A231
+    source: specs/payment-reference-build/spec.md
+    text: Agent Snapshot 必须保留 B2 plan ownership、analysis 与 diagnostics。live DB
+      freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或
+      plan-evidence-invalid。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A232
+    source: specs/payment-reference-build/spec.md
+    text: B2 验收必须覆盖 PAY-AC-020..029：全额退款、多次部分退款、超额拒绝、并发防超退、失败释放、未知或 30
+      分钟后待核对仍占用、merchant refund number 幂等、非成功支付拒绝、180 天 seed/default
+      期限拒绝、成功后失败通知不回退。证据至少包括 domain invariant tests、H2/JPA/UoW
+      跨聚合测试、双事务并发测试、HTTP 集成测试、scheduled review test、enum/converter/Outcome
+      tests、plan/generation determinism、Analyzer Flow/Time root、AgentFacts 与
+      traceability 实际路径。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A233
+    source: specs/payment-reference-build/spec.md
+    text: B1 的 PAY-AC-001..017 已验收行为是回归基线，B2 不得破坏既有支付创建、支付尝试、支付回调、查询、contract
+      leaf、Mermaid flow 和 Composite Build 解析合同。
+    result: passed
+    reason:
+      text: Independent verifier read the canonical contract and confirmed the
+        existing B1/B2/infrastructure implementation and clean regression
+        evidence satisfy this acceptance.
+      truncated: false
+  - id: A234
+    source: specs/payment-reference-build/spec.md
+    text: ReconciliationBatch 是独立 Aggregate Root，以 Strong ReconciliationBatchId
+      标识；同一 `channel + currency + reconciliationDate` 只能存在一个有效批次。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A235
+    source: specs/payment-reference-build/spec.md
+    text: Payment、Refund、PaymentAttempt、RefundAttempt 不进入 Reconciliation ORM
+      graph。对账侧只保存 Strong ID、稳定外部 identity 和运行时复制的不可变事实快照。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A236
+    source: specs/payment-reference-build/spec.md
+    text: ReconciliationBatch 至少拥有
+      ReconciliationRun、ReconciliationItem、ReconciliationDisposition 和
+      ReconciliationConfirmationFact。Run/Item/Disposition/Confirmation 均属于批次强引用
+      owned graph，并由同一 JPA UoW 原子保存。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A237
+    source: specs/payment-reference-build/spec.md
+    text: 每次执行形成独立 ReconciliationRun；批次记录当前有效 run，但历史 run 与 item
+      永久保留。重跑不创建第二个有效批次，也不覆盖旧运行。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A238
+    source: specs/payment-reference-build/spec.md
+    text: B3 的主路径是普通 `@Scheduled` Time root 发送日终对账 Command；scheduled method 只调用静态
+      Mediator，不直接操作 Repository。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A239
+    source: specs/payment-reference-build/spec.md
+    text: Command 通过 PullChannelStatement Capability 拉取渠道日账单。B3 不实现 bill-arrival
+      Integration Event、Outbox、持久化调度、lease/retry 或跨实例 exactly-once。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A240
+    source: specs/payment-reference-build/spec.md
+    text: 账单必须携带 channel、currency、reconciliationDate、statement
+      identity、revision、完整性状态，以及每条 record identity、交易类型、渠道交易/退款
+      identity、金额、币种、状态、业务发生时间和平台接收时间。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A241
+    source: specs/payment-reference-build/spec.md
+    text: 业务时区固定为 `Asia/Shanghai`。reconciliationDate
+      以该时区的自然日边界计算；原始业务发生时间、平台接收时间与业务时区均保留。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A242
+    source: specs/payment-reference-build/spec.md
+    text: 渠道账单最长等待期限为业务日结束后 24 小时。期限内允许同一批次重试拉取；超过后批次进入 FETCH_FAILED/REVIEW_REQUIRED
+      且不得完成。迟到账单到达后在同一批次追加新 run 恢复处理。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A243
+    source: specs/payment-reference-build/spec.md
+    text: B3 从 Payment/Refund 持久化事实投影平台侧 reconciliation
+      facts，至少覆盖支付成功与退款成功；平台查询可以使用专用 Query/Capability/JPA projection，但不得滥用聚合
+      Repository 返回 detached 写模型或建立跨聚合关系图。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A244
+    source: specs/payment-reference-build/spec.md
+    text: 首选匹配键是稳定渠道交易号或渠道退款号。只有明确记录并经批准的组合条件可以作为辅助匹配；关联依据必须写入
+      ReconciliationItem。禁止只因金额相同自动认定同一交易。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A245
+    source: specs/payment-reference-build/spec.md
+    text: 每次 run 必须分别持久化平台侧快照、渠道侧快照、关联依据和自动裁决结果。双方原始值不得被另一方覆盖。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A246
+    source: specs/payment-reference-build/spec.md
+    text: 自动分类至少包括：MATCHED、PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD、UNMATCHED。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A247
+    source: specs/payment-reference-build/spec.md
+    text: 支付和退款使用稳定的 transaction kind/type 区分；金额和币种保持精确语义，首期不支持换汇或跨币种抵扣。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A248
+    source: specs/payment-reference-build/spec.md
+    text: 同一 statement identity + revision 的重复处理幂等：不产生第二个有效 run、不重复形成有效差异、不重复追加自动结论。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A249
+    source: specs/payment-reference-build/spec.md
+    text: 渠道修订账单必须使用新 revision 或新 statement identity。修订触发同一批次的新 ReconciliationRun，旧
+      run/items 保留并可查询。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A250
+    source: specs/payment-reference-build/spec.md
+    text: 批次明确记录 currentEffectiveRunId。旧 run 不再是当前结果，但仍是不可变历史证据。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A251
+    source: specs/payment-reference-build/spec.md
+    text: 新 run 不得静默删除既有人工 disposition 或 confirmation。应用层以稳定 difference identity
+      关联历史处置，并明确显示其是否仍适用于当前 run。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A252
+    source: specs/payment-reference-build/spec.md
+    text: 批次状态至少表达
+      PENDING、FETCHING、RECONCILING、AWAITING_DISPOSITION、COMPLETED、FETCH_FAILED/REVIEW_REQUIRED。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A253
+    source: specs/payment-reference-build/spec.md
+    text: 批次只有在 statement 完整、当前 run 完成、所有平台/渠道记录均已核对，且每个差异已匹配或存在明确处置结论时才能完成。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A254
+    source: specs/payment-reference-build/spec.md
+    text: PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD
+      和 UNMATCHED 默认阻断自动结算，除非授权 disposition 明确说明不影响结算及依据。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A255
+    source: specs/payment-reference-build/spec.md
+    text: 查询必须返回匹配/差异数量、未决数量、statement/run identity、当前有效 run、完成阻断原因和每项双方证据。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A256
+    source: specs/payment-reference-build/spec.md
+    text: ReconciliationDisposition 是追加式审计记录，至少包含 operator identity、authorization
+      result/role、disposedAt、evidence、conclusion、follow-up、settlement impact
+      和关联的 difference identity/item identity。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A257
+    source: specs/payment-reference-build/spec.md
+    text: 未授权动作必须拒绝并保存审计结果；B3 使用 reference 级 operator fixture 证明授权边界，不建设通用 RBAC
+      或双人复核引擎。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A258
+    source: specs/payment-reference-build/spec.md
+    text: 处置不能删除或覆盖原始 Payment/Refund、渠道记录、run/item 或早期 disposition。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A259
+    source: specs/payment-reference-build/spec.md
+    text: 当平台结果待确认而渠道账单显示成功，或获授权人员确认 CHANNEL_ONLY 实际为平台漏记成功时，B3 追加
+      ReconciliationConfirmationFact。该事实至少保存 source
+      difference、确认原因、operator、confirmedAt、evidence、资金类型、金额、币种和稳定外部 identity。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A260
+    source: specs/payment-reference-build/spec.md
+    text: ReconciliationConfirmationFact 不反向改写 Payment/Refund 原始状态；后续 B4 读取“原始资金事实 +
+      有效授权确认事实”形成结算候选视图。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A261
+    source: specs/payment-reference-build/spec.md
+    text: design/schema 必须生成 ReconciliationBatch aggregate graph、Strong
+      IDs、Repository、Factory/Behavior、Command/Query/Capability/Endpoint 与有限业务
+      enum。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A262
+    source: specs/payment-reference-build/spec.md
+    text: 业务 enum 至少覆盖 batch status、run status、transaction kind、difference
+      type、disposition status/conclusion 和 statement completeness。内部有限状态使用整数列与完整
+      `@Type` 绑定；渠道 raw status/code/identity 保持开放标量。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A263
+    source: specs/payment-reference-build/spec.md
+    text: 对账过程中需要跨层传递的 immutable structured values 可以由 value-object manifest 生成且不配置
+      persistence；是否作为 Command/Endpoint 返回值不限制其 Domain Value Object 身份。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A264
+    source: specs/payment-reference-build/spec.md
+    text: B3 至少包含以下应用入口：
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A265
+    source: specs/payment-reference-build/spec.md
+    text: "`RunDailyReconciliation`：按 channel/currency/date 幂等创建或装载批次、拉取账单、读取平台
+      facts、创建 run/items 并推进批次。"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A266
+    source: specs/payment-reference-build/spec.md
+    text: "`RerunReconciliationBatch`：对既有批次显式创建新 run；相同 revision 重放幂等，新 revision
+      保留历史。"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A267
+    source: specs/payment-reference-build/spec.md
+    text: "`DisposeReconciliationDifference`：验证 operator 授权并追加 disposition；必要时追加
+      confirmation fact，然后重新评估批次完成条件。"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A268
+    source: specs/payment-reference-build/spec.md
+    text: "`GetReconciliationBatch`：返回批次、全部 runs、当前有效结果、双方证据、差异、处置、确认事实和阻断原因。"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A269
+    source: specs/payment-reference-build/spec.md
+    text: 独立 contract module 至少增加：
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A270
+    source: specs/payment-reference-build/spec.md
+    text: "`GET /api/reconciliation-batches/{batchId}`；"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A271
+    source: specs/payment-reference-build/spec.md
+    text: "`POST /api/reconciliation-batches/{batchId}/reruns`；"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A272
+    source: specs/payment-reference-build/spec.md
+    text: "`POST /api/reconciliation-items/{itemId}/dispositions`。"
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A273
+    source: specs/payment-reference-build/spec.md
+    text: 每个 Endpoint Handler 一类一文件并使用静态 Mediator；HTTP binding 保持手写。scheduled Time
+      root 不为覆盖率伪造 HTTP Endpoint。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A274
+    source: specs/payment-reference-build/spec.md
+    text: 同范围批次必须有数据库唯一约束与聚合幂等共同保护。并发 scheduler/HTTP rerun 不得形成两个有效批次或同 revision 双
+      run。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A275
+    source: specs/payment-reference-build/spec.md
+    text: ReconciliationBatch 及完整 owned graph 的状态推进共用 cap4k JPA UoW 与同一 Hibernate
+      persistence context；不引入跨 ORM bridge、detached merge 或分散 save。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A276
+    source: specs/payment-reference-build/spec.md
+    text: 典型乐观锁/唯一性并发冲突映射为稳定 409 CONCURRENT_MODIFICATION，而不是静默覆盖或 500。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A277
+    source: specs/payment-reference-build/spec.md
+    text: Provider 不可用、账单不完整和匹配失败必须形成可查询运行证据；不得把账单不可用伪装成“空账单并完成”。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A278
+    source: specs/payment-reference-build/spec.md
+    text: Analyzer 必须生成日终 scheduler 到 Command 的独立 Time root，以及人工处置和显式重跑的 Endpoint
+      HTTP Actor-to-Command Flow。Command/Query/Capability anchors 与
+      Reconciliation Aggregate Structure 分别由 Drawing Board/Aggregate Structure
+      output 证明。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A279
+    source: specs/payment-reference-build/spec.md
+    text: Mermaid 必须可解析；不把 Query、隐藏 handler、运行时状态变化或跨入口业务链伪造成默认 Flow stitching。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A280
+    source: specs/payment-reference-build/spec.md
+    text: Agent Snapshot 必须保留 B3 plan ownership、analysis 与 diagnostics。live DB
+      freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或
+      plan-evidence-invalid。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A281
+    source: specs/payment-reference-build/spec.md
+    text: B3 验收必须覆盖 PAY-AC-040..047、PAY-AC-082 和 PAY-AC-085。PAY-AC-083 只写入 B3
+      增量轨迹，不在 B4 结算完成前宣称全链路 verified。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A282
+    source: specs/payment-reference-build/spec.md
+    text: 证据至少包括 domain invariant tests、H2/JPA/UoW aggregate
+      graph/rollback/concurrency tests、HTTP integration tests、scheduler/provider
+      tests、enum/converter/VO tests、plan/generation determinism、Analyzer
+      Flow/Time root、AgentFacts 和 traceability 实际路径。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A283
+    source: specs/payment-reference-build/spec.md
+    text: B1/B2 已验收行为是回归基线，B3 不得破坏支付、退款、contract leaf、Mermaid flow 或 Composite Build
+      解析合同。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+  - id: A284
+    source: specs/payment-reference-build/spec.md
+    text: 商户结算、可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、only-engine
+      integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和
+      published-coordinate cold start 分别保留为后续可独立验收的
+      change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
+    result: passed
+    reason:
+      text: Independent verifier read the B3 canonical contract and confirmed the
+        reconciliation implementation, tests, pipeline evidence and documented
+        boundaries satisfy this acceptance.
+      truncated: false
+builder_handoff:
+  candidate_id: bd280190-369a-4294-a943-68b77fe5c6ea
+  identity_provider: skill-coordinated
+  builder_execution_ref: skill-coordinated:builder:f125aaa3-eb57-4072-bd5c-dc1b7b7acbc9
+  iteration: 1
+  summary:
+    text: 完成 B3 日终对账与差异处置闭环：生成 ReconciliationBatch 多层 owned graph、Strong
+      IDs、Repository/Factory/Behavior、9 个业务枚举、3 个非持久化结构值及
+      Command/Query/Capability/Endpoint；实现账单拉取、平台事实投影、八类分类、revision
+      幂等与历史、追加式处置和确认事实、查询、三个 contract Endpoint、静态 Mediator Handler、手写 HTTP
+      binding、日终 Scheduler、稳定 409，并刷新 README/traceability、Analyzer 与 AgentFacts
+      证据。B1/B2 回归保持通过。
+    truncated: false
+  addressed_acceptance_ids:
+    - A1
+    - A2
+    - A3
+    - A4
+    - A5
+    - A6
+    - A7
+    - A8
+    - A9
+    - A10
+    - A11
+    - A12
+    - A13
+    - A14
+    - A15
+    - A16
+    - A17
+    - A18
+    - A19
+    - A20
+    - A21
+    - A22
+    - A23
+    - A24
+    - A25
+    - A26
+    - A27
+    - A28
+    - A29
+    - A30
+    - A31
+    - A32
+    - A33
+    - A34
+    - A35
+    - A36
+    - A37
+    - A38
+    - A39
+    - A40
+    - A41
+    - A42
+    - A43
+    - A44
+    - A45
+    - A46
+    - A47
+    - A48
+    - A49
+    - A50
+    - A51
+    - A52
+    - A53
+    - A54
+    - A55
+    - A56
+    - A57
+    - A58
+    - A59
+    - A60
+    - A61
+    - A62
+    - A63
+    - A64
+    - A65
+    - A66
+    - A67
+    - A68
+    - A69
+    - A70
+    - A71
+    - A72
+    - A73
+    - A74
+    - A75
+    - A76
+    - A77
+    - A78
+    - A79
+    - A80
+    - A81
+    - A82
+    - A83
+    - A84
+    - A85
+    - A86
+    - A87
+    - A88
+    - A89
+    - A90
+    - A91
+    - A92
+    - A93
+    - A94
+    - A95
+    - A96
+    - A97
+    - A98
+    - A99
+    - A100
+    - A101
+    - A102
+    - A103
+    - A104
+    - A105
+    - A106
+    - A107
+    - A108
+    - A109
+    - A110
+    - A111
+    - A112
+    - A113
+    - A114
+    - A115
+    - A116
+    - A117
+    - A118
+    - A119
+    - A120
+    - A121
+    - A122
+    - A123
+    - A124
+    - A125
+    - A126
+    - A127
+    - A128
+    - A129
+    - A130
+    - A131
+    - A132
+    - A133
+    - A134
+    - A135
+    - A136
+    - A137
+    - A138
+    - A139
+    - A140
+    - A141
+    - A142
+    - A143
+    - A144
+    - A145
+    - A146
+    - A147
+    - A148
+    - A149
+    - A150
+    - A151
+    - A152
+    - A153
+    - A154
+    - A155
+    - A156
+    - A157
+    - A158
+    - A159
+    - A160
+    - A161
+    - A162
+    - A163
+    - A164
+    - A165
+    - A166
+    - A167
+    - A168
+    - A169
+    - A170
+    - A171
+    - A172
+    - A173
+    - A174
+    - A175
+    - A176
+    - A177
+    - A178
+    - A179
+    - A180
+    - A181
+    - A182
+    - A183
+    - A184
+    - A185
+    - A186
+    - A187
+    - A188
+    - A189
+    - A190
+    - A191
+    - A192
+    - A193
+    - A194
+    - A195
+    - A196
+    - A197
+    - A198
+    - A199
+    - A200
+    - A201
+    - A202
+    - A203
+    - A204
+    - A205
+    - A206
+    - A207
+    - A208
+    - A209
+    - A210
+    - A211
+    - A212
+    - A213
+    - A214
+    - A215
+    - A216
+    - A217
+    - A218
+    - A219
+    - A220
+    - A221
+    - A222
+    - A223
+    - A224
+    - A225
+    - A226
+    - A227
+    - A228
+    - A229
+    - A230
+    - A231
+    - A232
+    - A233
+    - A234
+    - A235
+    - A236
+    - A237
+    - A238
+    - A239
+    - A240
+    - A241
+    - A242
+    - A243
+    - A244
+    - A245
+    - A246
+    - A247
+    - A248
+    - A249
+    - A250
+    - A251
+    - A252
+    - A253
+    - A254
+    - A255
+    - A256
+    - A257
+    - A258
+    - A259
+    - A260
+    - A261
+    - A262
+    - A263
+    - A264
+    - A265
+    - A266
+    - A267
+    - A268
+    - A269
+    - A270
+    - A271
+    - A272
+    - A273
+    - A274
+    - A275
+    - A276
+    - A277
+    - A278
+    - A279
+    - A280
+    - A281
+    - A282
+    - A283
+    - A284
+  checks:
+    - name:
+        text: full-clean-build
+        truncated: false
+      result: passed
+      note:
+        text: .\gradlew.bat clean build --no-daemon --console=plain；55 tests / 16
+          suites，0 failures/errors/skipped
+        truncated: false
+    - name:
+        text: module-tests
+        truncated: false
+      result: passed
+      note:
+        text: :domain:test :application:test :adapter:test :contract:test :start:test
+          全部通过
+        truncated: false
+    - name:
+        text: pipeline-generation
+        truncated: false
+      result: passed
+      note:
+        text: cap4kPlan + cap4kGenerateSources + cap4kAnalysisPlan +
+          cap4kAnalysisGenerate + cap4kAgentSnapshot；plan 118 items（77
+          checked-in SKIP / 41 generated OVERWRITE），analysis 24 items，9 flows
+        truncated: false
+    - name:
+        text: generation-determinism
+        truncated: false
+      result: passed
+      note:
+        text: 重复生成 Kotlin source
+          SHA256=a487dff5d66dab8d620ec8d3cb4644c57575a9bf79cecd36edae6b4b371f4363；plan
+          SHA256=73a06ff79b6f56f05966da2e08af45049fe3c31c8ccd64999b51fbe0dd00a0b2
+        truncated: false
+    - name:
+        text: mermaid-parser-smoke
+        truncated: false
+      result: passed
+      note:
+        text: 全部 9 个 .mmd 使用 Mermaid 11 实际解析通过，0 failures
+        truncated: false
+    - name:
+        text: agentfacts
+        truncated: false
+      result: passed
+      note:
+        text: ownership 118 items；analysis ok；diagnostics empty；0
+          INVALID/error/plan-evidence-invalid
+        truncated: false
+    - name:
+        text: traceability-and-worktree-hygiene
+        truncated: false
+      result: passed
+      note:
+        text: traceability YAML 解析通过；README/证据同步；git diff --check 通过；文本无尾部空白或多余 EOF 空行
+        truncated: false
+  checks_truncated: false
+  known_limits:
+    - text: Agent Snapshot/ownership 为 PARTIAL，仅因 live DB source freshness 按合同为
+        UNKNOWN；ownership 非空且 diagnostics 为空。
+      truncated: false
+    - text: Analyzer 默认 Flow 只证明独立 Actor/Time entry 到 Command；Query、Capability 与
+        Aggregate Structure 由独立 projection 提供，不声称跨入口 stitching。
+      truncated: false
+    - text: 真实账单 transport、商户结算、可靠异步与 published-coordinate cold start 属于 B4-B6，未在 B3
+        预建。
+      truncated: false
+  known_limits_truncated: false
+  submitted_at: 2026-08-20T04:59:26.986Z
+blockers: []
+verification:
+  candidate_id: bd280190-369a-4294-a943-68b77fe5c6ea
+  identity_provider: skill-coordinated
+  verifier_execution_ref: skill-coordinated:verifier:e63d3353-a637-431f-a87a-116e16873d38
+  iteration: 1
+  attempt: 3
+  assurance: skill-coordinated
+  verdict: pass
+  checks: []
+  summary:
+    text: Read restrictions are restored. Independent read-only semantic
+      verification inspected the B3 worktree and found A1-A284 all passed.
+      Source, tests, generated plan/analysis/AgentFacts, flows, README and
+      traceability align with the accepted B3 reconciliation contract; Runtime
+      checks record clean build 55 tests/16 suites, plan 118, analysis 24, 9
+      parseable flows, ownership 118, empty diagnostics and deterministic
+      generation.
+    truncated: false
+  risks:
+    - text: Verifier read scope is now working and the verifier inspected the
+        downstream worktree evidence.
+      truncated: false
+    - text: The verifier command.execute capability remained unavailable, so Git
+        status/diff rerun relies on Runtime/root evidence; source and generated
+        evidence reads were successful.
+      truncated: false
+    - text: Agent ownership remains PARTIAL only because live external DB freshness is
+        UNKNOWN; ownership is non-empty and diagnostics are empty.
+      truncated: false
+    - text: Flow index may contain a local IR locator and is treated as reproducible
+        local evidence, not portable committed evidence.
+      truncated: false
+  risks_truncated: false
+  completed_at: 2026-08-20T12:17:02.419Z
+history:
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 1
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: Independent verifier could not read the explicitly delegated downstream
+        worktree. Two fresh read-only attempts were rejected before the first
+        repository read by Codey resource/capability gates; no semantic
+        acceptance result was produced.
+      truncated: false
+    completed_at: 2026-08-20T09:19:08.292Z
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 2
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: Fresh independent verifier attempt 2 was rejected before its first
+        repository read by Codey read-scope gate, despite the exact downstream
+        worktree being declared. No semantic acceptance result was produced.
+      truncated: false
+    completed_at: 2026-08-20T09:21:38.561Z
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 3
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: Read restrictions are restored. Independent read-only semantic
+        verification inspected the B3 worktree and found A1-A284 all passed.
+        Source, tests, generated plan/analysis/AgentFacts, flows, README and
+        traceability align with the accepted B3 reconciliation contract; Runtime
+        checks record clean build 55 tests/16 suites, plan 118, analysis 24, 9
+        parseable flows, ownership 118, empty diagnostics and deterministic
+        generation.
+      truncated: false
+    completed_at: 2026-08-20T12:17:02.419Z
+history_overflow:
+  dropped_entries: 0
+  first_dropped_at: null
+  last_dropped_at: null
+  outcome_counts:
+    pass: 0
+    fail: 0
+    blocked: 0
+    execution-error: 0
+    recovery: 0
+verification_result: pass
+verification_report: verification.md
+archived: false
+created_at: 2026-08-19T13:50:30.401Z

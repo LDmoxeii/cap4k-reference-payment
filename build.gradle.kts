@@ -45,7 +45,7 @@ cap4k {
             username.set("sa")
             password.set("secret")
             schema.set("PUBLIC")
-            includeTables.set(listOf("payment", "payment_attempt", "payment_notification_receipt", "refund", "refund_attempt", "refund_notification_receipt", "merchant_channel_configuration"))
+            includeTables.set(listOf("payment", "payment_attempt", "payment_notification_receipt", "refund", "refund_attempt", "refund_notification_receipt", "merchant_channel_configuration", "reconciliation_batch", "reconciliation_run", "reconciliation_item", "reconciliation_disposition", "reconciliation_confirmation_fact"))
             excludeTables.set(emptyList())
         }
     }

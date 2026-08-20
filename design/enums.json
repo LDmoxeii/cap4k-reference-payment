@@ -353,5 +353,271 @@
         "terminal": true
       }
     ]
+  },
+  {
+    "name": "ReconciliationBatchStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "PENDING",
+        "desc": "Batch exists and awaits statement retrieval"
+      },
+      {
+        "value": 1,
+        "name": "FETCHING",
+        "desc": "Channel statement retrieval is in progress"
+      },
+      {
+        "value": 2,
+        "name": "RECONCILING",
+        "desc": "A statement revision is being reconciled"
+      },
+      {
+        "value": 3,
+        "name": "AWAITING_DISPOSITION",
+        "desc": "Current run has unresolved differences"
+      },
+      {
+        "value": 4,
+        "name": "COMPLETED",
+        "desc": "Current effective run satisfies completion conditions"
+      },
+      {
+        "value": 5,
+        "name": "FETCH_FAILED",
+        "desc": "Statement retrieval failed"
+      },
+      {
+        "value": 6,
+        "name": "REVIEW_REQUIRED",
+        "desc": "The statement deadline or evidence requires operator review"
+      }
+    ]
+  },
+  {
+    "name": "ReconciliationRunStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "FETCHING",
+        "desc": "Statement evidence is being acquired"
+      },
+      {
+        "value": 1,
+        "name": "RECONCILING",
+        "desc": "Platform and channel facts are being matched"
+      },
+      {
+        "value": 2,
+        "name": "COMPLETED",
+        "desc": "The run produced a complete immutable result"
+      },
+      {
+        "value": 3,
+        "name": "FAILED",
+        "desc": "The run failed and retained diagnostics"
+      },
+      {
+        "value": 4,
+        "name": "SUPERSEDED",
+        "desc": "A later revision is the current effective run"
+      }
+    ]
+  },
+  {
+    "name": "ReconciliationTransactionKind",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "PAYMENT",
+        "desc": "Payment funds fact"
+      },
+      {
+        "value": 1,
+        "name": "REFUND",
+        "desc": "Refund funds fact"
+      }
+    ]
+  },
+  {
+    "name": "ReconciliationDifferenceType",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "MATCHED",
+        "desc": "Platform and channel evidence matched"
+      },
+      {
+        "value": 1,
+        "name": "PLATFORM_ONLY",
+        "desc": "Only the platform fact exists"
+      },
+      {
+        "value": 2,
+        "name": "CHANNEL_ONLY",
+        "desc": "Only the channel record exists"
+      },
+      {
+        "value": 3,
+        "name": "AMOUNT_MISMATCH",
+        "desc": "Stable identities matched but amounts differ"
+      },
+      {
+        "value": 4,
+        "name": "CURRENCY_MISMATCH",
+        "desc": "Stable identities matched but currencies differ"
+      },
+      {
+        "value": 5,
+        "name": "STATUS_MISMATCH",
+        "desc": "Stable identities matched but final statuses differ"
+      },
+      {
+        "value": 6,
+        "name": "DUPLICATE_CHANNEL_RECORD",
+        "desc": "The statement repeats a stable channel record"
+      },
+      {
+        "value": 7,
+        "name": "UNMATCHED",
+        "desc": "No approved stable association could be formed"
+      }
+    ]
+  },
+  {
+    "name": "DispositionAuthorization",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "DENIED",
+        "desc": "Operator was not authorized and the attempt is retained"
+      },
+      {
+        "value": 1,
+        "name": "AUTHORIZED",
+        "desc": "Operator was authorized to append a disposition"
+      }
+    ]
+  },
+  {
+    "name": "ReconciliationDispositionStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "REJECTED",
+        "desc": "Disposition attempt was rejected"
+      },
+      {
+        "value": 1,
+        "name": "APPLIED",
+        "desc": "Authorized disposition was appended"
+      }
+    ]
+  },
+  {
+    "name": "ReconciliationDispositionConclusion",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "ACCEPT_AS_MATCHED",
+        "desc": "Evidence establishes an acceptable match"
+      },
+      {
+        "value": 1,
+        "name": "CONFIRM_PLATFORM_FACT",
+        "desc": "Channel evidence authorizes a new platform confirmation fact"
+      },
+      {
+        "value": 2,
+        "name": "ACCEPT_CHANNEL_FACT",
+        "desc": "Channel-only fact is accepted with evidence"
+      },
+      {
+        "value": 3,
+        "name": "NO_SETTLEMENT_IMPACT",
+        "desc": "Difference is documented as not affecting settlement"
+      },
+      {
+        "value": 4,
+        "name": "ESCALATE",
+        "desc": "Difference remains open for follow-up"
+      }
+    ]
+  },
+  {
+    "name": "SettlementImpact",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "BLOCKS_SETTLEMENT",
+        "desc": "Difference blocks automatic settlement"
+      },
+      {
+        "value": 1,
+        "name": "DOES_NOT_BLOCK_SETTLEMENT",
+        "desc": "Authorized evidence removes settlement blocking"
+      },
+      {
+        "value": 2,
+        "name": "CONFIRMS_SETTLEMENT_FACT",
+        "desc": "Disposition creates an additional confirmed funds fact"
+      }
+    ]
+  },
+  {
+    "name": "StatementCompleteness",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "UNKNOWN",
+        "desc": "Provider did not establish completeness"
+      },
+      {
+        "value": 1,
+        "name": "INCOMPLETE",
+        "desc": "Statement is explicitly incomplete"
+      },
+      {
+        "value": 2,
+        "name": "COMPLETE",
+        "desc": "Statement covers the requested business scope"
+      }
+    ]
   }
 ]

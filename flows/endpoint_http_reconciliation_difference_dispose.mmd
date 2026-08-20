@@ -1,0 +1,4 @@
+flowchart TD
+  N1["DisposeReconciliationDifferenceCmd.Request"]
+  N2["reconciliation.difference.dispose [POST /api/reconciliation-items/{itemId}/dispositions]"]
+  N2 -->|EndpointHttpBindingToCommand| N1

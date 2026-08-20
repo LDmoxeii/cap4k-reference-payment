@@ -1,3 +1,8 @@
+drop table if exists reconciliation_confirmation_fact;
+drop table if exists reconciliation_disposition;
+drop table if exists reconciliation_item;
+drop table if exists reconciliation_run;
+drop table if exists reconciliation_batch;
 drop table if exists refund_notification_receipt;
 drop table if exists refund_attempt;
 drop table if exists refund;
@@ -219,3 +224,130 @@ create table merchant_channel_configuration (
     updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
     constraint uk_merchant_channel_configuration unique (merchant_id, channel_id, currency, payment_method)
 );
+
+create table reconciliation_batch (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    channel_id varchar(64) not null,
+    currency varchar(3) not null,
+    reconciliation_date date not null,
+    business_timezone varchar(64) not null,
+    status integer not null comment '@Type=ReconciliationBatchStatus;',
+    current_effective_run_id varchar(36),
+    statement_wait_deadline_at timestamp with time zone not null,
+    matched_count integer not null default 0,
+    difference_count integer not null default 0,
+    unresolved_difference_count integer not null default 0,
+    settlement_blocked boolean not null default true,
+    blocking_reason varchar(2048),
+    completed_at timestamp with time zone,
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_reconciliation_batch_scope unique (channel_id, currency, reconciliation_date)
+);
+
+create table reconciliation_run (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    batch_id varchar(36) not null comment '@ParentRef;',
+    statement_identity varchar(128) not null,
+    statement_revision varchar(64) not null,
+    statement_completeness integer not null comment '@Type=StatementCompleteness;',
+    status integer not null comment '@Type=ReconciliationRunStatus;',
+    fetched_at timestamp with time zone not null,
+    started_at timestamp with time zone not null,
+    completed_at timestamp with time zone,
+    channel_record_count integer not null default 0,
+    platform_fact_count integer not null default 0,
+    matched_count integer not null default 0,
+    difference_count integer not null default 0,
+    unresolved_difference_count integer not null default 0,
+    failure_summary varchar(2048),
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_reconciliation_run_statement unique (batch_id, statement_identity, statement_revision)
+);
+comment on table reconciliation_run is '@Parent=reconciliation_batch;';
+
+create table reconciliation_item (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    reconciliation_run_id varchar(36) not null comment '@ParentRef;',
+    difference_identity varchar(128) not null,
+    transaction_kind integer not null comment '@Type=ReconciliationTransactionKind;',
+    difference_type integer not null comment '@Type=ReconciliationDifferenceType;',
+    channel_record_identity varchar(128),
+    channel_transaction_identity varchar(128),
+    channel_amount decimal(19, 4),
+    channel_currency varchar(3),
+    channel_raw_status varchar(64),
+    channel_occurred_at timestamp with time zone,
+    channel_received_at timestamp with time zone,
+    platform_fact_identity varchar(128),
+    payment_id varchar(36),
+    payment_attempt_id varchar(36),
+    refund_id varchar(36),
+    refund_attempt_id varchar(36),
+    platform_transaction_identity varchar(128),
+    platform_amount decimal(19, 4),
+    platform_currency varchar(3),
+    platform_raw_status varchar(64),
+    platform_occurred_at timestamp with time zone,
+    platform_recorded_at timestamp with time zone,
+    matching_basis varchar(2048) not null,
+    auxiliary_match_approved boolean not null default false,
+    resolved boolean not null default false,
+    settlement_blocked boolean not null default true,
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_reconciliation_item_difference unique (reconciliation_run_id, difference_identity)
+);
+comment on table reconciliation_item is '@Parent=reconciliation_run;';
+
+create table reconciliation_disposition (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    reconciliation_item_id varchar(36) not null comment '@ParentRef;',
+    operator_identity varchar(128) not null,
+    operator_role varchar(128) not null,
+    authorization_result integer not null comment '@Type=DispositionAuthorization;',
+    status integer not null comment '@Type=ReconciliationDispositionStatus;',
+    conclusion integer comment '@Type=ReconciliationDispositionConclusion;',
+    settlement_impact integer not null comment '@Type=SettlementImpact;',
+    evidence varchar(4096) not null,
+    follow_up varchar(2048),
+    disposed_at timestamp with time zone not null,
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;'
+);
+comment on table reconciliation_disposition is '@Parent=reconciliation_item;';
+
+create table reconciliation_confirmation_fact (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    reconciliation_item_id varchar(36) not null comment '@ParentRef;',
+    source_difference_identity varchar(128) not null,
+    operator_identity varchar(128) not null,
+    confirmation_reason varchar(2048) not null,
+    evidence varchar(4096) not null,
+    transaction_kind integer not null comment '@Type=ReconciliationTransactionKind;',
+    amount decimal(19, 4) not null,
+    currency varchar(3) not null,
+    external_transaction_identity varchar(128) not null,
+    payment_id varchar(36),
+    refund_id varchar(36),
+    confirmed_at timestamp with time zone not null,
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;'
+);
+comment on table reconciliation_confirmation_fact is '@Parent=reconciliation_item;';

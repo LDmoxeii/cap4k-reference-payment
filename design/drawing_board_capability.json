@@ -38,6 +38,38 @@
   },
   {
     "tag": "capability",
+    "package": "reconciliation.channel",
+    "name": "PullChannelStatement",
+    "description": "Pull one immutable revisioned channel statement for a reconciliation scope",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "reconciliationDate", "type": "java.time.LocalDate" },
+      { "name": "businessTimezone", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "statement", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatement" }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "reconciliation.platform",
+    "name": "LoadPlatformReconciliationFacts",
+    "description": "Project immutable payment and refund facts for a reconciliation scope without returning aggregate write models",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "reconciliationDate", "type": "java.time.LocalDate" },
+      { "name": "businessTimezone", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "facts", "type": "List<com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.PlatformReconciliationFact>" }
+    ]
+  },
+  {
+    "tag": "capability",
     "package": "refund.channel",
     "name": "VerifyRefundResult",
     "description": "Verify refund-channel authenticity without placing credentials in the aggregate",
