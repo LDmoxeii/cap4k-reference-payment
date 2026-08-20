@@ -1,10 +1,10 @@
-# Payment Reference B1+B2 可运行实现规格
+# Payment Reference B1+B2+B3 可运行实现规格
 
 ## 1. 目标状态
 
-`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付与退款系统。它在 B1 支付闭环上增加 B2 退款与部分退款闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate Root、owned child、Strong ID、Value Object、生成并类型化的业务枚举、Repository/UoW、跨聚合事务不变量、Command/Query/Capability/Endpoint、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
+`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付与退款系统。它在 B1 支付与 B2 退款闭环上增加 B3 日终对账与差异处置闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate Root、多层 owned child、Strong ID、Value Object、生成并类型化的业务枚举、Repository/UoW、跨聚合弱引用事实、Command/Query/Capability/Endpoint、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
 
-该状态是完整支付引用项目的前两个实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称日终对账、商户结算、可靠异步、大额退款审批或超期人工例外已经可用。
+该状态是完整支付引用项目的前三个实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称商户结算、可靠异步、大额退款审批、超期人工例外或生产级账单 transport 已经可用。
 
 ## 2. 工程与依赖合同
 
@@ -13,10 +13,10 @@
 项目必须包含：
 
 - `contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request 与 Response，只依赖轻量 `cap4k-contract-api` 及编译期分析 metadata，不依赖任何项目内模块、Spring、JPA 或 transport 实现。
-- `domain`：Payment 与 Refund 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
-- `application`：支付与退款创建、渠道请求、结果确认、超时核对扫描和查询的应用输入/处理器；支付与退款 Gateway/结果验证 Capability。
-- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund Gateway、渠道结果验证器、普通 scheduled reaction 和 JPA 适配。
-- `start`：Spring Boot 组装、H2 配置、包含退款规则的最小渠道配置 seed 和端到端测试。
+- `domain`：Payment、Refund 与 Reconciliation 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
+- `application`：支付、退款与日终对账的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑和查询输入/处理器；支付/退款 Gateway、结果验证与渠道账单 Capability。
+- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund Gateway、Fake Channel Statement Provider、渠道结果验证器、普通 scheduled reaction 和 JPA 适配。
+- `start`：Spring Boot 组装、H2 配置、包含退款与对账规则的最小渠道配置/账单 fixture 和端到端测试。
 
 项目内依赖方向必须为：
 
@@ -27,7 +27,7 @@
 - `domain` 不依赖 contract/application/adapter/start；
 - application/domain 不依赖 start 或具体 Web 配置。
 
-Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。四个 Endpoint contract 必须物理位于该模块，并保持 `com.only4.cap4k.reference.payment.contract.endpoints.payment.api` 下的既有 FQN。
+Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint contract 必须物理位于该模块；既有 payment/refund FQN 保持不变，B3 reconciliation contract 使用同一发布边界下的稳定 FQN。
 
 ### 2.2 版本与解析
 
@@ -36,7 +36,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。四
 - Spring Boot：3.5.6。
 - 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
 - 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
-- B1/B2 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2 验收，保留给 B6。
+- B1/B2/B3 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3 验收，保留给 B6。
 
 ### 2.3 Pipeline ownership
 
@@ -50,7 +50,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。四
 
 ### 3.1 Enum manifest
 
-`design/enums.json` 是 B1/B2 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
+`design/enums.json` 是 B1/B2/B3 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
 
 - `PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、`CLOSED(4)`、`RESULT_UNKNOWN(5)`。
 - `PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。
@@ -373,6 +373,92 @@ B2 验收必须覆盖 PAY-AC-020..029：全额退款、多次部分退款、超�
 
 B1 的 PAY-AC-001..017 已验收行为是回归基线，B2 不得破坏既有支付创建、支付尝试、支付回调、查询、contract leaf、Mermaid flow 和 Composite Build 解析合同。
 
+## 10B. B3 日终对账与差异处置目标合同
+
+### 10B.1 聚合边界与范围身份
+
+- ReconciliationBatch 是独立 Aggregate Root，以 Strong ReconciliationBatchId 标识；同一 `channel + currency + reconciliationDate` 只能存在一个有效批次。
+- Payment、Refund、PaymentAttempt、RefundAttempt 不进入 Reconciliation ORM graph。对账侧只保存 Strong ID、稳定外部 identity 和运行时复制的不可变事实快照。
+- ReconciliationBatch 至少拥有 ReconciliationRun、ReconciliationItem、ReconciliationDisposition 和 ReconciliationConfirmationFact。Run/Item/Disposition/Confirmation 均属于批次强引用 owned graph，并由同一 JPA UoW 原子保存。
+- 每次执行形成独立 ReconciliationRun；批次记录当前有效 run，但历史 run 与 item 永久保留。重跑不创建第二个有效批次，也不覆盖旧运行。
+
+### 10B.2 账单拉取与时间边界
+
+- B3 的主路径是普通 `@Scheduled` Time root 发送日终对账 Command；scheduled method 只调用静态 Mediator，不直接操作 Repository。
+- Command 通过 PullChannelStatement Capability 拉取渠道日账单。B3 不实现 bill-arrival Integration Event、Outbox、持久化调度、lease/retry 或跨实例 exactly-once。
+- 账单必须携带 channel、currency、reconciliationDate、statement identity、revision、完整性状态，以及每条 record identity、交易类型、渠道交易/退款 identity、金额、币种、状态、业务发生时间和平台接收时间。
+- 业务时区固定为 `Asia/Shanghai`。reconciliationDate 以该时区的自然日边界计算；原始业务发生时间、平台接收时间与业务时区均保留。
+- 渠道账单最长等待期限为业务日结束后 24 小时。期限内允许同一批次重试拉取；超过后批次进入 FETCH_FAILED/REVIEW_REQUIRED 且不得完成。迟到账单到达后在同一批次追加新 run 恢复处理。
+
+### 10B.3 平台事实与匹配
+
+- B3 从 Payment/Refund 持久化事实投影平台侧 reconciliation facts，至少覆盖支付成功与退款成功；平台查询可以使用专用 Query/Capability/JPA projection，但不得滥用聚合 Repository 返回 detached 写模型或建立跨聚合关系图。
+- 首选匹配键是稳定渠道交易号或渠道退款号。只有明确记录并经批准的组合条件可以作为辅助匹配；关联依据必须写入 ReconciliationItem。禁止只因金额相同自动认定同一交易。
+- 每次 run 必须分别持久化平台侧快照、渠道侧快照、关联依据和自动裁决结果。双方原始值不得被另一方覆盖。
+- 自动分类至少包括：MATCHED、PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD、UNMATCHED。
+- 支付和退款使用稳定的 transaction kind/type 区分；金额和币种保持精确语义，首期不支持换汇或跨币种抵扣。
+
+### 10B.4 重放、修订与有效结果
+
+- 同一 statement identity + revision 的重复处理幂等：不产生第二个有效 run、不重复形成有效差异、不重复追加自动结论。
+- 渠道修订账单必须使用新 revision 或新 statement identity。修订触发同一批次的新 ReconciliationRun，旧 run/items 保留并可查询。
+- 批次明确记录 currentEffectiveRunId。旧 run 不再是当前结果，但仍是不可变历史证据。
+- 新 run 不得静默删除既有人工 disposition 或 confirmation。应用层以稳定 difference identity 关联历史处置，并明确显示其是否仍适用于当前 run。
+
+### 10B.5 完成条件与结算阻断
+
+- 批次状态至少表达 PENDING、FETCHING、RECONCILING、AWAITING_DISPOSITION、COMPLETED、FETCH_FAILED/REVIEW_REQUIRED。
+- 批次只有在 statement 完整、当前 run 完成、所有平台/渠道记录均已核对，且每个差异已匹配或存在明确处置结论时才能完成。
+- PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD 和 UNMATCHED 默认阻断自动结算，除非授权 disposition 明确说明不影响结算及依据。
+- 查询必须返回匹配/差异数量、未决数量、statement/run identity、当前有效 run、完成阻断原因和每项双方证据。
+
+### 10B.6 人工处置与新确认事实
+
+- ReconciliationDisposition 是追加式审计记录，至少包含 operator identity、authorization result/role、disposedAt、evidence、conclusion、follow-up、settlement impact 和关联的 difference identity/item identity。
+- 未授权动作必须拒绝并保存审计结果；B3 使用 reference 级 operator fixture 证明授权边界，不建设通用 RBAC 或双人复核引擎。
+- 处置不能删除或覆盖原始 Payment/Refund、渠道记录、run/item 或早期 disposition。
+- 当平台结果待确认而渠道账单显示成功，或获授权人员确认 CHANNEL_ONLY 实际为平台漏记成功时，B3 追加 ReconciliationConfirmationFact。该事实至少保存 source difference、确认原因、operator、confirmedAt、evidence、资金类型、金额、币种和稳定外部 identity。
+- ReconciliationConfirmationFact 不反向改写 Payment/Refund 原始状态；后续 B4 读取“原始资金事实 + 有效授权确认事实”形成结算候选视图。
+
+### 10B.7 生成类型与 ownership
+
+- design/schema 必须生成 ReconciliationBatch aggregate graph、Strong IDs、Repository、Factory/Behavior、Command/Query/Capability/Endpoint 与有限业务 enum。
+- 业务 enum 至少覆盖 batch status、run status、transaction kind、difference type、disposition status/conclusion 和 statement completeness。内部有限状态使用整数列与完整 `@Type` 绑定；渠道 raw status/code/identity 保持开放标量。
+- 对账过程中需要跨层传递的 immutable structured values 可以由 value-object manifest 生成且不配置 persistence；是否作为 Command/Endpoint 返回值不限制其 Domain Value Object 身份。
+
+### 10B.8 应用行为与 Endpoint
+
+B3 至少包含以下应用入口：
+
+1. `RunDailyReconciliation`：按 channel/currency/date 幂等创建或装载批次、拉取账单、读取平台 facts、创建 run/items 并推进批次。
+2. `RerunReconciliationBatch`：对既有批次显式创建新 run；相同 revision 重放幂等，新 revision 保留历史。
+3. `DisposeReconciliationDifference`：验证 operator 授权并追加 disposition；必要时追加 confirmation fact，然后重新评估批次完成条件。
+4. `GetReconciliationBatch`：返回批次、全部 runs、当前有效结果、双方证据、差异、处置、确认事实和阻断原因。
+
+独立 contract module 至少增加：
+
+- `GET /api/reconciliation-batches/{batchId}`；
+- `POST /api/reconciliation-batches/{batchId}/reruns`；
+- `POST /api/reconciliation-items/{itemId}/dispositions`。
+
+每个 Endpoint Handler 一类一文件并使用静态 Mediator；HTTP binding 保持手写。scheduled Time root 不为覆盖率伪造 HTTP Endpoint。
+
+### 10B.9 并发、UoW 与错误合同
+
+- 同范围批次必须有数据库唯一约束与聚合幂等共同保护。并发 scheduler/HTTP rerun 不得形成两个有效批次或同 revision 双 run。
+- ReconciliationBatch 及完整 owned graph 的状态推进共用 cap4k JPA UoW 与同一 Hibernate persistence context；不引入跨 ORM bridge、detached merge 或分散 save。
+- 典型乐观锁/唯一性并发冲突映射为稳定 409 CONCURRENT_MODIFICATION，而不是静默覆盖或 500。
+- Provider 不可用、账单不完整和匹配失败必须形成可查询运行证据；不得把账单不可用伪装成“空账单并完成”。
+
+### 10B.10 Analyzer、AgentFacts 与证据
+
+- Analyzer 必须生成日终 scheduler 到 Command 的独立 Time root，以及人工处置和显式重跑的 Endpoint HTTP Actor-to-Command Flow。Command/Query/Capability anchors 与 Reconciliation Aggregate Structure 分别由 Drawing Board/Aggregate Structure output 证明。
+- Mermaid 必须可解析；不把 Query、隐藏 handler、运行时状态变化或跨入口业务链伪造成默认 Flow stitching。
+- Agent Snapshot 必须保留 B3 plan ownership、analysis 与 diagnostics。live DB freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或 plan-evidence-invalid。
+- B3 验收必须覆盖 PAY-AC-040..047、PAY-AC-082 和 PAY-AC-085。PAY-AC-083 只写入 B3 增量轨迹，不在 B4 结算完成前宣称全链路 verified。
+- 证据至少包括 domain invariant tests、H2/JPA/UoW aggregate graph/rollback/concurrency tests、HTTP integration tests、scheduler/provider tests、enum/converter/VO tests、plan/generation determinism、Analyzer Flow/Time root、AgentFacts 和 traceability 实际路径。
+- B1/B2 已验收行为是回归基线，B3 不得破坏支付、退款、contract leaf、Mermaid flow 或 Composite Build 解析合同。
+
 ## 11. 后续边界
 
-日终对账、商户结算、可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
+商户结算、可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
