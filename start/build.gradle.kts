@@ -20,6 +20,7 @@ dependencies {
     runtimeOnly(libs.h2)
 
     testImplementation(project(":domain"))
+    testImplementation(project(":application"))
     testImplementation(libs.spring.boot.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

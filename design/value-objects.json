@@ -97,5 +97,151 @@
         "type": "String?"
       }
     ]
+  },
+  {
+    "name": "ChannelStatementRecord",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "description": "Immutable channel statement record used for deterministic reconciliation matching",
+    "fields": [
+      {
+        "name": "recordIdentity",
+        "type": "String"
+      },
+      {
+        "name": "transactionKind",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind"
+      },
+      {
+        "name": "channelTransactionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "rawStatus",
+        "type": "String"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "receivedAt",
+        "type": "java.time.Instant"
+      }
+    ]
+  },
+  {
+    "name": "ChannelStatement",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "description": "Immutable revisioned channel statement returned by PullChannelStatement",
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "reconciliationDate",
+        "type": "java.time.LocalDate"
+      },
+      {
+        "name": "businessTimezone",
+        "type": "String"
+      },
+      {
+        "name": "statementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "statementRevision",
+        "type": "String"
+      },
+      {
+        "name": "completeness",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.StatementCompleteness"
+      },
+      {
+        "name": "fetchedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "records",
+        "type": "List<com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatementRecord>"
+      }
+    ]
+  },
+  {
+    "name": "PlatformReconciliationFact",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values",
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
+    "description": "Immutable payment or refund fact projected for reconciliation without an ORM aggregate relation",
+    "fields": [
+      {
+        "name": "factIdentity",
+        "type": "String"
+      },
+      {
+        "name": "transactionKind",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind"
+      },
+      {
+        "name": "paymentId",
+        "type": "String?"
+      },
+      {
+        "name": "paymentAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "refundId",
+        "type": "String?"
+      },
+      {
+        "name": "refundAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "channelTransactionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "rawStatus",
+        "type": "String"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "recordedAt",
+        "type": "java.time.Instant"
+      }
+    ]
   }
 ]

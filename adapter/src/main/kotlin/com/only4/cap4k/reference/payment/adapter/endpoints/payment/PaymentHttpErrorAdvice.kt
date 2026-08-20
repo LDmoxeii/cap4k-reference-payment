@@ -7,8 +7,10 @@ import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundExcep
 import com.only4.cap4k.reference.payment.application.errors.RefundConflictException
 import com.only4.cap4k.reference.payment.application.errors.RefundNotFoundException
 import com.only4.cap4k.reference.payment.application.errors.RefundRejectedException
+import com.only4.cap4k.reference.payment.application.errors.ReconciliationBatchNotFoundException
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.RefundBudgetConflictException
 import jakarta.persistence.OptimisticLockException
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -21,7 +23,11 @@ class PaymentHttpErrorAdvice {
     fun badRequest(error: IllegalArgumentException): ResponseEntity<PaymentErrorResponse> =
         response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", error.message)
 
-    @ExceptionHandler(PaymentNotFoundException::class, RefundNotFoundException::class)
+    @ExceptionHandler(
+        PaymentNotFoundException::class,
+        RefundNotFoundException::class,
+        ReconciliationBatchNotFoundException::class,
+    )
     fun notFound(error: PaymentApplicationException): ResponseEntity<PaymentErrorResponse> =
         response(HttpStatus.NOT_FOUND, error.code, error.message)
 
@@ -45,6 +51,7 @@ class PaymentHttpErrorAdvice {
     @ExceptionHandler(
         OptimisticLockingFailureException::class,
         OptimisticLockException::class,
+        DataIntegrityViolationException::class,
     )
     fun concurrentModification(error: RuntimeException): ResponseEntity<PaymentErrorResponse> =
         response(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", error.message)

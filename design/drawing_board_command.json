@@ -64,6 +64,73 @@
   },
   {
     "tag": "command",
+    "package": "reconciliation.disposition",
+    "name": "DisposeReconciliationDifference",
+    "description": "Authorize and append a disposition, optionally forming a separate confirmation fact",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      { "name": "batchId", "type": "String" },
+      { "name": "itemId", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "conclusion", "type": "String" },
+      { "name": "settlementImpact", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "followUp", "type": "String?" },
+      { "name": "disposedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "dispositionId", "type": "String" },
+      { "name": "authorization", "type": "String" },
+      { "name": "status", "type": "String" },
+      { "name": "confirmationFactId", "type": "String?" },
+      { "name": "batchStatus", "type": "String" },
+      { "name": "settlementBlocked", "type": "Boolean" },
+      { "name": "blockingReason", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reconciliation.run",
+    "name": "RerunReconciliationBatch",
+    "description": "Explicitly pull and process a statement revision for an existing reconciliation batch",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      { "name": "batchId", "type": "String" },
+      { "name": "requestedBy", "type": "String" },
+      { "name": "requestedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "batchId", "type": "String" },
+      { "name": "runId", "type": "String?" },
+      { "name": "batchStatus", "type": "String" },
+      { "name": "idempotentReplay", "type": "Boolean" },
+      { "name": "statementIdentity", "type": "String?" },
+      { "name": "statementRevision", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reconciliation.run",
+    "name": "RunDailyReconciliation",
+    "description": "Idempotently create or load a daily batch, pull a statement revision, load platform facts, and reconcile it",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "triggeredAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "batchId", "type": "String" },
+      { "name": "runId", "type": "String?" },
+      { "name": "batchStatus", "type": "String" },
+      { "name": "idempotentReplay", "type": "Boolean" },
+      { "name": "unresolvedDifferenceCount", "type": "Int" },
+      { "name": "blockingReason", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
     "package": "refund.create",
     "name": "CreateRefund",
     "description": "Reserve payment refund budget, create a refund, and submit one channel attempt",
