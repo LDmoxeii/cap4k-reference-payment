@@ -5,7 +5,11 @@ import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.reference.payment.application.errors.ReconciliationBatchNotFoundException
+import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch.SReconciliationBatch
+import com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefund
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationConfirmationFactCreation
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationDispositionCreation
@@ -16,6 +20,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationDispositionConclusion
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationDispositionStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.SettlementImpact
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -49,7 +54,7 @@ object DisposeReconciliationDifferenceCmd {
             val impact = enumValue<SettlementImpact>(command.settlementImpact, "settlementImpact")
 
             val confirmation = if (authorized && conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT) {
-                confirmationFor(item, command, disposedAt)
+                confirmationFor(batch, item, command, disposedAt)
             } else null
             val disposition = batch.appendDisposition(
                 differenceIdentity = item.differenceIdentity,
@@ -82,6 +87,7 @@ object DisposeReconciliationDifferenceCmd {
         }
 
         private fun confirmationFor(
+            batch: ReconciliationBatch,
             item: ReconciliationItem,
             command: Request,
             disposedAt: LocalDateTime,
@@ -90,8 +96,11 @@ object DisposeReconciliationDifferenceCmd {
             val currency = item.channelCurrency ?: throw IllegalArgumentException("Confirmation requires channel currency evidence")
             val externalIdentity = item.channelTransactionIdentity
                 ?: throw IllegalArgumentException("Confirmation requires a channel transaction identity")
+            val attribution = resolveAttribution(batch, item, command)
             return ReconciliationConfirmationFactCreation(
                 sourceDifferenceIdentity = item.differenceIdentity,
+                merchantId = attribution.merchantId,
+                channelId = attribution.channelId,
                 operatorIdentity = command.operatorIdentity.trim(),
                 confirmationReason = command.followUp?.trim()?.takeIf { it.isNotBlank() }
                     ?: "Authorized reconciliation disposition",
@@ -105,11 +114,86 @@ object DisposeReconciliationDifferenceCmd {
                 confirmedAt = disposedAt,
             )
         }
+
+        private fun resolveAttribution(
+            batch: ReconciliationBatch,
+            item: ReconciliationItem,
+            command: Request,
+        ): ConfirmationAttribution {
+            var merchantId: String? = null
+            var channelId: String? = null
+
+            item.paymentId?.let { rawPaymentId ->
+                val payment = Mediator.repositories.findOne(
+                    SPayment.predicateById(PaymentId.parse(rawPaymentId))
+                ) ?: throw IllegalArgumentException("Confirmation payment $rawPaymentId does not exist")
+                merchantId = payment.merchantId
+                item.paymentAttemptId?.let { rawAttemptId ->
+                    val attempt = payment.attempts.firstOrNull { it.id.toString() == rawAttemptId }
+                        ?: throw IllegalArgumentException(
+                            "Confirmation payment attempt $rawAttemptId does not belong to payment $rawPaymentId"
+                        )
+                    channelId = attempt.channelId
+                }
+            }
+
+            item.refundId?.let { rawRefundId ->
+                val refund = Mediator.repositories.findOne(
+                    SRefund.predicateById(RefundId.parse(rawRefundId))
+                ) ?: throw IllegalArgumentException("Confirmation refund $rawRefundId does not exist")
+                item.paymentId?.let { referencedPaymentId ->
+                    require(refund.paymentId.toString() == referencedPaymentId) {
+                        "Confirmation refund $rawRefundId does not belong to payment $referencedPaymentId"
+                    }
+                }
+                item.refundAttemptId?.let { rawAttemptId ->
+                    require(refund.attempts.any { it.id.toString() == rawAttemptId }) {
+                        "Confirmation refund attempt $rawAttemptId does not belong to refund $rawRefundId"
+                    }
+                }
+                merchantId?.let { require(it == refund.merchantId) { "Confirmation weak references disagree on merchant" } }
+                channelId?.let { require(it == refund.channelId) { "Confirmation weak references disagree on channel" } }
+                merchantId = refund.merchantId
+                channelId = refund.channelId
+            }
+
+            val explicitMerchantId = command.merchantId?.trim()?.takeIf { it.isNotBlank() }
+            val explicitChannelId = command.channelId?.trim()?.takeIf { it.isNotBlank() }
+            if (merchantId == null) {
+                merchantId = explicitMerchantId
+                    ?: throw IllegalArgumentException("Confirmation requires merchantId when weak references do not provide it")
+            } else {
+                explicitMerchantId?.let {
+                    require(it == merchantId) { "Explicit confirmation merchant does not match weak references" }
+                }
+            }
+            if (channelId == null) {
+                channelId = explicitChannelId
+                    ?: throw IllegalArgumentException("Confirmation requires channelId when weak references do not provide it")
+            } else {
+                explicitChannelId?.let {
+                    require(it == channelId) { "Explicit confirmation channel does not match weak references" }
+                }
+            }
+
+            require(channelId == batch.channelId) { "Confirmation channel does not belong to reconciliation batch" }
+            return ConfirmationAttribution(
+                merchantId = requireNotNull(merchantId),
+                channelId = requireNotNull(channelId),
+            )
+        }
     }
+
+    private data class ConfirmationAttribution(
+        val merchantId: String,
+        val channelId: String,
+    )
 
     data class Request(
         val batchId: String,
         val itemId: String,
+        val merchantId: String?,
+        val channelId: String?,
         val operatorIdentity: String,
         val operatorRole: String,
         val conclusion: String,

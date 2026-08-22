@@ -1,6 +1,192 @@
 [
   {
     "tag": "command",
+    "package": "merchant_settlement.adjustment",
+    "name": "ReturnMerchantSettlementForAdjustment",
+    "description": "Return an unconfirmed merchant settlement for adjustment and prepare a fresh effective replacement",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "returnedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "previousSettlementId", "type": "String" },
+      { "name": "previousStatus", "type": "String" },
+      { "name": "replacementSettlementId", "type": "String" },
+      { "name": "replacementStatus", "type": "String" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.confirm",
+    "name": "ConfirmMerchantSettlement",
+    "description": "Authorize and freeze a prepared merchant settlement composition",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "confirmedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "status", "type": "String" },
+      { "name": "netAmount", "type": "Big_decimal" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.execution",
+    "name": "StartMerchantSettlementExecution",
+    "description": "Submit a confirmed positive settlement or retry after an explicit failed attempt",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "requestedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "attemptId", "type": "String?" },
+      { "name": "executionGroupIdentity", "type": "String?" },
+      { "name": "requestIdentity", "type": "String?" },
+      { "name": "status", "type": "String" },
+      { "name": "providerAccepted", "type": "Boolean" },
+      { "name": "diagnosticSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.lifecycle",
+    "name": "ActivateMerchantSettlement",
+    "description": "Activate the effective scope and source-consumption ownership of a replacement settlement",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "status", "type": "String" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.prepare",
+    "name": "PrepareMerchantSettlement",
+    "description": "Idempotently prepare one daily merchant settlement from current effective reconciliation facts",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "settlementDate", "type": "java.time.LocalDate" },
+      { "name": "requestedBy", "type": "String" },
+      { "name": "requestedAt", "type": "java.time.Instant" },
+      { "name": "predecessorSettlementId", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.result",
+    "name": "ConfirmMerchantSettlementResult",
+    "description": "Verify and adjudicate one external settlement result notification",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "notificationId", "type": "String" },
+      { "name": "settlementId", "type": "String" },
+      { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionGroupIdentity", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "externalSettlementIdentity", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" },
+      { "name": "result", "type": "String" },
+      { "name": "resultCode", "type": "String?" },
+      { "name": "occurredAt", "type": "java.time.Instant" },
+      { "name": "receivedAt", "type": "java.time.Instant" },
+      { "name": "verificationMaterial", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.review",
+    "name": "AdjudicateMerchantSettlementResult",
+    "description": "Append an authorized final conclusion to an unknown merchant settlement result without deleting receipt history",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "executionAttemptId", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "finalResult", "type": "String" },
+      { "name": "adjudicatedAt", "type": "java.time.Instant" },
+      { "name": "evidence", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.review",
+    "name": "ReviewUnknownMerchantSettlements",
+    "description": "Move overdue unknown settlement attempts into manual review without creating a payment retry",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "reviewedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "reviewedCount", "type": "Int" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.run",
+    "name": "RunDailyMerchantSettlement",
+    "description": "Scheduled daily merchant settlement preparation for one merchant channel currency scope",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "triggeredAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.voiding",
+    "name": "VoidMerchantSettlement",
+    "description": "Void a settlement before external execution and optionally create a replacement chain",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "voidedAt", "type": "java.time.Instant" },
+      { "name": "createReplacement", "type": "Boolean" }
+    ],
+    "resultFields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "status", "type": "String" },
+      { "name": "replacementSettlementId", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
     "package": "payment.attempt",
     "name": "StartPaymentAttempt",
     "description": "Select an eligible merchant channel and start a durable payment attempt",
@@ -71,6 +257,8 @@
     "fields": [
       { "name": "batchId", "type": "String" },
       { "name": "itemId", "type": "String" },
+      { "name": "merchantId", "type": "String?" },
+      { "name": "channelId", "type": "String?" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "conclusion", "type": "String" },

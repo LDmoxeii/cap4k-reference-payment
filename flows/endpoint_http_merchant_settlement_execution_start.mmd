@@ -1,0 +1,4 @@
+flowchart TD
+  N1["StartMerchantSettlementExecutionCmd.Request"]
+  N2["merchant-settlement.execution.start [POST /api/merchant-settlements/{settlementId}/executions]"]
+  N2 -->|EndpointHttpBindingToCommand| N1

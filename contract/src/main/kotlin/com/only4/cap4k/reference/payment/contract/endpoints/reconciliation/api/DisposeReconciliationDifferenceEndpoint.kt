@@ -22,6 +22,8 @@ object DisposeReconciliationDifferenceEndpoint {
     data class Request(
         val batchId: String,
         val itemId: String,
+        val merchantId: String?,
+        val channelId: String?,
         val operatorIdentity: String,
         val operatorRole: String,
         val conclusion: String,

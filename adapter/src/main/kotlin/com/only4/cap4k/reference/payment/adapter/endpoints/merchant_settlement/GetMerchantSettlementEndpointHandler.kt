@@ -1,0 +1,132 @@
+package com.only4.cap4k.reference.payment.adapter.endpoints.merchant_settlement
+
+import com.only4.cap4k.ddd.core.Mediator
+import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
+import com.only4.cap4k.reference.payment.application.queries.merchant_settlement.read.GetMerchantSettlementQry
+import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.GetMerchantSettlementEndpoint
+import org.springframework.stereotype.Component
+
+@Component
+class GetMerchantSettlementEndpointHandler : EndpointHandler<GetMerchantSettlementEndpoint.Request, GetMerchantSettlementEndpoint.Response> {
+    override fun handle(request: GetMerchantSettlementEndpoint.Request): GetMerchantSettlementEndpoint.Response {
+        val response = Mediator.queries.ask(GetMerchantSettlementQry.Request(request.settlementId))
+        return GetMerchantSettlementEndpoint.Response(
+            settlementId = response.settlementId,
+            merchantId = response.merchantId,
+            channelId = response.channelId,
+            currency = response.currency,
+            periodType = response.periodType,
+            periodStart = response.periodStart,
+            periodEnd = response.periodEnd,
+            businessTimezone = response.businessTimezone,
+            scopeIdentity = response.scopeIdentity,
+            effectiveScopeIdentity = response.effectiveScopeIdentity,
+            status = response.status,
+            eligibleCount = response.eligibleCount,
+            excludedCount = response.excludedCount,
+            blockerSummary = response.blockerSummary,
+            paymentGrossAmount = response.paymentGrossAmount,
+            refundGrossAmount = response.refundGrossAmount,
+            feeTotalAmount = response.feeTotalAmount,
+            adjustmentTotalAmount = response.adjustmentTotalAmount,
+            netAmount = response.netAmount,
+            compositionFrozen = response.compositionFrozen,
+            executionGroupIdentity = response.executionGroupIdentity,
+            predecessorSettlementId = response.predecessorSettlementId,
+            replacementSettlementId = response.replacementSettlementId,
+            confirmedBy = response.confirmedBy,
+            confirmedAt = response.confirmedAt,
+            voidedBy = response.voidedBy,
+            voidReason = response.voidReason,
+            voidedAt = response.voidedAt,
+            settledFactFormed = response.settledFactFormed,
+            externalSettlementIdentity = response.externalSettlementIdentity,
+            completedAt = response.completedAt,
+            lastRejectionSummary = response.lastRejectionSummary,
+            lastConflictSummary = response.lastConflictSummary,
+            lastReviewSummary = response.lastReviewSummary,
+            lines = response.lines.map { line ->
+                GetMerchantSettlementEndpoint.Response.SettlementLineSummary(
+                    lineId = line.lineId,
+                    lineIdentity = line.lineIdentity,
+                    sourceKind = line.sourceKind,
+                    transactionKind = line.transactionKind,
+                    sourceFactIdentity = line.sourceFactIdentity,
+                    feeFactIdentity = line.feeFactIdentity,
+                    paymentId = line.paymentId,
+                    paymentAttemptId = line.paymentAttemptId,
+                    refundId = line.refundId,
+                    refundAttemptId = line.refundAttemptId,
+                    reconciliationBatchId = line.reconciliationBatchId,
+                    reconciliationRunId = line.reconciliationRunId,
+                    reconciliationItemId = line.reconciliationItemId,
+                    reconciliationConfirmationFactId = line.reconciliationConfirmationFactId,
+                    externalTransactionIdentity = line.externalTransactionIdentity,
+                    grossAmount = line.grossAmount,
+                    feeAmount = line.feeAmount,
+                    signedNetAmount = line.signedNetAmount,
+                    currency = line.currency,
+                    occurredAt = line.occurredAt,
+                    recordedAt = line.recordedAt,
+                    feeBasisPoints = line.feeBasisPoints,
+                    feeFixedAmount = line.feeFixedAmount,
+                    feeRoundingMode = line.feeRoundingMode,
+                    feeCurrencyPrecision = line.feeCurrencyPrecision,
+                    feeCalculationAmount = line.feeCalculationAmount,
+                    eligibilityBasis = line.eligibilityBasis,
+                    confirmationReason = line.confirmationReason,
+                    confirmationEvidence = line.confirmationEvidence,
+                    adjustmentSourceIdentity = line.adjustmentSourceIdentity,
+                    adjustmentEvidence = line.adjustmentEvidence,
+                )
+            },
+            attempts = response.attempts.map { attempt ->
+                GetMerchantSettlementEndpoint.Response.SettlementExecutionAttemptSummary(
+                    attemptId = attempt.attemptId,
+                    attemptSequence = attempt.attemptSequence,
+                    executionGroupIdentity = attempt.executionGroupIdentity,
+                    requestIdentity = attempt.requestIdentity,
+                    channelId = attempt.channelId,
+                    status = attempt.status,
+                    initiatedAt = attempt.initiatedAt,
+                    acceptedAt = attempt.acceptedAt,
+                    reviewAfterMinutesSnapshot = attempt.reviewAfterMinutesSnapshot,
+                    reviewAfterAt = attempt.reviewAfterAt,
+                    amount = attempt.amount,
+                    currency = attempt.currency,
+                    externalSettlementIdentity = attempt.externalSettlementIdentity,
+                    finalResult = attempt.finalResult,
+                    resultOccurredAt = attempt.resultOccurredAt,
+                    notificationReceiveCount = attempt.notificationReceiveCount,
+                    rejectionSummary = attempt.rejectionSummary,
+                    conflictSummary = attempt.conflictSummary,
+                    receipts = attempt.receipts.map { receipt ->
+                        GetMerchantSettlementEndpoint.Response.SettlementResultReceiptSummary(
+                            receiptId = receipt.receiptId,
+                            notificationIdentity = receipt.notificationIdentity,
+                            payloadFingerprint = receipt.payloadFingerprint,
+                            channelId = receipt.channelId,
+                            executionGroupIdentity = receipt.executionGroupIdentity,
+                            requestIdentity = receipt.requestIdentity,
+                            externalSettlementIdentity = receipt.externalSettlementIdentity,
+                            amount = receipt.amount,
+                            currency = receipt.currency,
+                            result = receipt.result,
+                            resultCode = receipt.resultCode,
+                            occurredAt = receipt.occurredAt,
+                            firstReceivedAt = receipt.firstReceivedAt,
+                            lastReceivedAt = receipt.lastReceivedAt,
+                            receiveCount = receipt.receiveCount,
+                            verified = receipt.verified,
+                            accepted = receipt.accepted,
+                            decision = receipt.decision,
+                            verdictSummary = receipt.verdictSummary,
+                            rejectionSummary = receipt.rejectionSummary,
+                            conflictSummary = receipt.conflictSummary,
+                        )
+                    },
+                )
+            },
+        )
+    }
+}

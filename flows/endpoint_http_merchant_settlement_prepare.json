@@ -1,0 +1,49 @@
+{
+  "entryId": "endpoint-http:merchant-settlement.prepare",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 4,
+  "edgeCount": 3,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd.Request",
+      "name": "ActivateMerchantSettlementCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.prepare.PrepareMerchantSettlementCmd.Request",
+      "name": "PrepareMerchantSettlementCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.prepare.PrepareMerchantSettlementCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementActivationRequestedDomainEvent",
+      "name": "MerchantSettlementActivationRequestedDomainEvent",
+      "fullName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementActivationRequestedDomainEvent",
+      "type": "domainevent"
+    },
+    {
+      "id": "endpoint-http:merchant-settlement.prepare",
+      "name": "merchant-settlement.prepare [POST /api/merchant-settlements]",
+      "fullName": "endpoint-http:merchant-settlement.prepare",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.prepare.PrepareMerchantSettlementCmd.Request",
+      "toId": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementActivationRequestedDomainEvent",
+      "type": "CommandToDomainEvent"
+    },
+    {
+      "fromId": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementActivationRequestedDomainEvent",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd.Request",
+      "type": "DomainEventToCommand"
+    },
+    {
+      "fromId": "endpoint-http:merchant-settlement.prepare",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.prepare.PrepareMerchantSettlementCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

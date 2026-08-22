@@ -1,5 +1,8 @@
 package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 
+import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementConflictException
+import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementNotFoundException
+import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementRejectedException
 import com.only4.cap4k.reference.payment.application.errors.NoEligibleChannelException
 import com.only4.cap4k.reference.payment.application.errors.PaymentApplicationException
 import com.only4.cap4k.reference.payment.application.errors.PaymentConflictException
@@ -10,6 +13,7 @@ import com.only4.cap4k.reference.payment.application.errors.RefundRejectedExcept
 import com.only4.cap4k.reference.payment.application.errors.ReconciliationBatchNotFoundException
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.RefundBudgetConflictException
 import jakarta.persistence.OptimisticLockException
+import jakarta.persistence.PersistenceException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
@@ -27,6 +31,7 @@ class PaymentHttpErrorAdvice {
         PaymentNotFoundException::class,
         RefundNotFoundException::class,
         ReconciliationBatchNotFoundException::class,
+        MerchantSettlementNotFoundException::class,
     )
     fun notFound(error: PaymentApplicationException): ResponseEntity<PaymentErrorResponse> =
         response(HttpStatus.NOT_FOUND, error.code, error.message)
@@ -36,6 +41,8 @@ class PaymentHttpErrorAdvice {
         NoEligibleChannelException::class,
         RefundConflictException::class,
         RefundRejectedException::class,
+        MerchantSettlementConflictException::class,
+        MerchantSettlementRejectedException::class,
     )
     fun conflict(error: PaymentApplicationException): ResponseEntity<PaymentErrorResponse> =
         response(HttpStatus.CONFLICT, error.code, error.message)
@@ -52,6 +59,7 @@ class PaymentHttpErrorAdvice {
         OptimisticLockingFailureException::class,
         OptimisticLockException::class,
         DataIntegrityViolationException::class,
+        PersistenceException::class,
     )
     fun concurrentModification(error: RuntimeException): ResponseEntity<PaymentErrorResponse> =
         response(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", error.message)

@@ -61,6 +61,8 @@ class ReconciliationBatchFactory : AggregateFactory<ReconciliationBatchFactory.P
     private fun createReconciliationConfirmationFact(creation: ReconciliationConfirmationFactCreation): ReconciliationConfirmationFact =
         ReconciliationConfirmationFact(
             sourceDifferenceIdentity = creation.sourceDifferenceIdentity,
+            merchantId = creation.merchantId,
+            channelId = creation.channelId,
             operatorIdentity = creation.operatorIdentity,
             confirmationReason = creation.confirmationReason,
             evidence = creation.evidence,

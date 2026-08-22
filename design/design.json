@@ -2000,6 +2000,14 @@
         "type": "String"
       },
       {
+        "name": "merchantId",
+        "type": "String?"
+      },
+      {
+        "name": "channelId",
+        "type": "String?"
+      },
+      {
         "name": "operatorIdentity",
         "type": "String"
       },
@@ -2863,6 +2871,14 @@
         "type": "String"
       },
       {
+        "name": "merchantId",
+        "type": "String?"
+      },
+      {
+        "name": "channelId",
+        "type": "String?"
+      },
+      {
         "name": "operatorIdentity",
         "type": "String"
       },
@@ -2919,6 +2935,1864 @@
       {
         "name": "blockingReason",
         "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.prepare",
+    "name": "PrepareMerchantSettlement",
+    "description": "Idempotently prepare one daily merchant settlement from current effective reconciliation facts",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "settlementDate",
+        "type": "java.time.LocalDate"
+      },
+      {
+        "name": "requestedBy",
+        "type": "String"
+      },
+      {
+        "name": "requestedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "predecessorSettlementId",
+        "type": "String?"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "outcome",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.run",
+    "name": "RunDailyMerchantSettlement",
+    "description": "Scheduled daily merchant settlement preparation for one merchant channel currency scope",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "triggeredAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "outcome",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.confirm",
+    "name": "ConfirmMerchantSettlement",
+    "description": "Authorize and freeze a prepared merchant settlement composition",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "confirmedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "netAmount",
+        "type": "Big_decimal"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.execution",
+    "name": "StartMerchantSettlementExecution",
+    "description": "Submit a confirmed positive settlement or retry after an explicit failed attempt",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "requestedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "attemptId",
+        "type": "String?"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "providerAccepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "diagnosticSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.result",
+    "name": "ConfirmMerchantSettlementResult",
+    "description": "Verify and adjudicate one external settlement result notification",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "notificationId",
+        "type": "String"
+      },
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "executionAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "externalSettlementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "result",
+        "type": "String"
+      },
+      {
+        "name": "resultCode",
+        "type": "String?"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "receivedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "verificationMaterial",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "outcome",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.review",
+    "name": "AdjudicateMerchantSettlementResult",
+    "description": "Append an authorized final conclusion to an unknown merchant settlement result without deleting receipt history",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "executionAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "finalResult",
+        "type": "String"
+      },
+      {
+        "name": "adjudicatedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "evidence",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "outcome",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.review",
+    "name": "ReviewUnknownMerchantSettlements",
+    "description": "Move overdue unknown settlement attempts into manual review without creating a payment retry",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "reviewedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "reviewedCount",
+        "type": "Int"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.voiding",
+    "name": "VoidMerchantSettlement",
+    "description": "Void a settlement before external execution and optionally create a replacement chain",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      },
+      {
+        "name": "voidedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "createReplacement",
+        "type": "Boolean"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "replacementSettlementId",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.adjustment",
+    "name": "ReturnMerchantSettlementForAdjustment",
+    "description": "Return an unconfirmed merchant settlement for adjustment and prepare a fresh effective replacement",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      },
+      {
+        "name": "returnedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "previousSettlementId",
+        "type": "String"
+      },
+      {
+        "name": "previousStatus",
+        "type": "String"
+      },
+      {
+        "name": "replacementSettlementId",
+        "type": "String"
+      },
+      {
+        "name": "replacementStatus",
+        "type": "String"
+      }
+    ]
+  },
+  {
+    "tag": "query",
+    "package": "merchant_settlement.read",
+    "name": "GetMerchantSettlement",
+    "description": "Read the full merchant settlement scope, lines, fee evidence, execution attempts, receipts, conflicts, and replacement trail",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "periodType",
+        "type": "String"
+      },
+      {
+        "name": "periodStart",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "periodEnd",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "businessTimezone",
+        "type": "String"
+      },
+      {
+        "name": "scopeIdentity",
+        "type": "String"
+      },
+      {
+        "name": "effectiveScopeIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "eligibleCount",
+        "type": "Int"
+      },
+      {
+        "name": "excludedCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockerSummary",
+        "type": "String?"
+      },
+      {
+        "name": "paymentGrossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "refundGrossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "feeTotalAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "adjustmentTotalAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "netAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "compositionFrozen",
+        "type": "Boolean"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "predecessorSettlementId",
+        "type": "String?"
+      },
+      {
+        "name": "replacementSettlementId",
+        "type": "String?"
+      },
+      {
+        "name": "confirmedBy",
+        "type": "String?"
+      },
+      {
+        "name": "confirmedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "voidedBy",
+        "type": "String?"
+      },
+      {
+        "name": "voidReason",
+        "type": "String?"
+      },
+      {
+        "name": "voidedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "settledFactFormed",
+        "type": "Boolean"
+      },
+      {
+        "name": "externalSettlementIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "completedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "lastRejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lastConflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lastReviewSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lines",
+        "type": "List<SettlementLineSummary>"
+      },
+      {
+        "name": "lines[].lineId",
+        "type": "String"
+      },
+      {
+        "name": "lines[].lineIdentity",
+        "type": "String"
+      },
+      {
+        "name": "lines[].sourceKind",
+        "type": "String"
+      },
+      {
+        "name": "lines[].transactionKind",
+        "type": "String"
+      },
+      {
+        "name": "lines[].sourceFactIdentity",
+        "type": "String"
+      },
+      {
+        "name": "lines[].feeFactIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].paymentId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].paymentAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].refundId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].refundAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationBatchId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationRunId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationItemId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationConfirmationFactId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].externalTransactionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "lines[].grossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "lines[].feeAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "lines[].signedNetAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "lines[].currency",
+        "type": "String"
+      },
+      {
+        "name": "lines[].occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "lines[].recordedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "lines[].feeBasisPoints",
+        "type": "Int?"
+      },
+      {
+        "name": "lines[].feeFixedAmount",
+        "type": "Big_decimal?"
+      },
+      {
+        "name": "lines[].feeRoundingMode",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].feeCurrencyPrecision",
+        "type": "Int?"
+      },
+      {
+        "name": "lines[].feeCalculationAmount",
+        "type": "Big_decimal?"
+      },
+      {
+        "name": "lines[].eligibilityBasis",
+        "type": "String"
+      },
+      {
+        "name": "lines[].confirmationReason",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].confirmationEvidence",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].adjustmentSourceIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].adjustmentEvidence",
+        "type": "String?"
+      },
+      {
+        "name": "attempts",
+        "type": "List<SettlementExecutionAttemptSummary>"
+      },
+      {
+        "name": "attempts[].attemptId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].attemptSequence",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].status",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].initiatedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].acceptedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "attempts[].reviewAfterMinutesSnapshot",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].reviewAfterAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "attempts[].currency",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].externalSettlementIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].finalResult",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].resultOccurredAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "attempts[].notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts",
+        "type": "List<SettlementResultReceiptSummary>"
+      },
+      {
+        "name": "attempts[].receipts[].receiptId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].notificationIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].payloadFingerprint",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].externalSettlementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "attempts[].receipts[].currency",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].result",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].resultCode",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts[].occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].receipts[].firstReceivedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].receipts[].lastReceivedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].receipts[].receiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].receipts[].verified",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].receipts[].accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].receipts[].decision",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].verdictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts[].conflictSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "merchant_settlement.candidate",
+    "name": "LoadMerchantSettlementCandidates",
+    "description": "Project eligible and excluded current-effective-run facts for a merchant settlement period",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "periodStart",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "periodEnd",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "businessTimezone",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "eligibleFacts",
+        "type": "List<com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementCandidateFact>"
+      },
+      {
+        "name": "excludedCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockerSummaries",
+        "type": "List<String>"
+      }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "merchant_settlement.transfer",
+    "name": "StartSettlementTransfer",
+    "description": "Submit one idempotent settlement transfer request to the reference provider",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "executionAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "externalSettlementIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "failureCode",
+        "type": "String?"
+      },
+      {
+        "name": "diagnosticSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "merchant_settlement.result",
+    "name": "VerifySettlementResult",
+    "description": "Verify and normalize one reference settlement result notification",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "notificationId",
+        "type": "String"
+      },
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "executionAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "externalSettlementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "result",
+        "type": "String"
+      },
+      {
+        "name": "resultCode",
+        "type": "String?"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "verificationMaterial",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "verified",
+        "type": "Boolean"
+      },
+      {
+        "name": "normalizedResult",
+        "type": "String"
+      },
+      {
+        "name": "verificationSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "merchant_settlement.api",
+    "name": "PrepareMerchantSettlementEndpoint",
+    "description": "POST /api/merchant-settlements",
+    "aggregates": [],
+    "operationName": "merchant-settlement.prepare",
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "settlementDate",
+        "type": "java.time.LocalDate"
+      },
+      {
+        "name": "requestedBy",
+        "type": "String"
+      },
+      {
+        "name": "requestedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String?"
+      },
+      {
+        "name": "status",
+        "type": "String?"
+      },
+      {
+        "name": "created",
+        "type": "Boolean"
+      },
+      {
+        "name": "idempotentReplay",
+        "type": "Boolean"
+      },
+      {
+        "name": "noOp",
+        "type": "Boolean"
+      },
+      {
+        "name": "eligibleCount",
+        "type": "Int"
+      },
+      {
+        "name": "excludedCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockerSummary",
+        "type": "String?"
+      },
+      {
+        "name": "paymentGrossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "refundGrossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "feeTotalAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "adjustmentTotalAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "netAmount",
+        "type": "Big_decimal"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "merchant_settlement.api",
+    "name": "ConfirmMerchantSettlementEndpoint",
+    "description": "POST /api/merchant-settlements/{settlementId}/confirmations",
+    "aggregates": [],
+    "operationName": "merchant-settlement.confirm",
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "confirmedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "netAmount",
+        "type": "Big_decimal"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "merchant_settlement.api",
+    "name": "StartMerchantSettlementExecutionEndpoint",
+    "description": "POST /api/merchant-settlements/{settlementId}/executions",
+    "aggregates": [],
+    "operationName": "merchant-settlement.execution.start",
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "requestedAt",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "attemptId",
+        "type": "String?"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "providerAccepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "diagnosticSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "merchant_settlement.api",
+    "name": "ConfirmMerchantSettlementResultEndpoint",
+    "description": "POST /api/channel/settlement-results",
+    "aggregates": [],
+    "operationName": "merchant-settlement.result.confirm",
+    "fields": [
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "notificationId",
+        "type": "String"
+      },
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "executionAttemptId",
+        "type": "String"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "externalSettlementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "result",
+        "type": "String"
+      },
+      {
+        "name": "resultCode",
+        "type": "String?"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "receivedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "verificationMaterial",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementStatus",
+        "type": "String"
+      },
+      {
+        "name": "attemptStatus",
+        "type": "String?"
+      },
+      {
+        "name": "notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "disposition",
+        "type": "String"
+      },
+      {
+        "name": "rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "reviewSummary",
+        "type": "String?"
+      },
+      {
+        "name": "settledFactFormedNow",
+        "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "merchant_settlement.api",
+    "name": "VoidMerchantSettlementEndpoint",
+    "description": "POST /api/merchant-settlements/{settlementId}/voids",
+    "aggregates": [],
+    "operationName": "merchant-settlement.void",
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      },
+      {
+        "name": "voidedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "createReplacement",
+        "type": "Boolean"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "replacementSettlementId",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "merchant_settlement.api",
+    "name": "GetMerchantSettlementEndpoint",
+    "description": "GET /api/merchant-settlements/{settlementId}",
+    "aggregates": [],
+    "operationName": "merchant-settlement.get",
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "periodType",
+        "type": "String"
+      },
+      {
+        "name": "periodStart",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "periodEnd",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "businessTimezone",
+        "type": "String"
+      },
+      {
+        "name": "scopeIdentity",
+        "type": "String"
+      },
+      {
+        "name": "effectiveScopeIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "eligibleCount",
+        "type": "Int"
+      },
+      {
+        "name": "excludedCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockerSummary",
+        "type": "String?"
+      },
+      {
+        "name": "paymentGrossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "refundGrossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "feeTotalAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "adjustmentTotalAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "netAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "compositionFrozen",
+        "type": "Boolean"
+      },
+      {
+        "name": "executionGroupIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "predecessorSettlementId",
+        "type": "String?"
+      },
+      {
+        "name": "replacementSettlementId",
+        "type": "String?"
+      },
+      {
+        "name": "confirmedBy",
+        "type": "String?"
+      },
+      {
+        "name": "confirmedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "voidedBy",
+        "type": "String?"
+      },
+      {
+        "name": "voidReason",
+        "type": "String?"
+      },
+      {
+        "name": "voidedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "settledFactFormed",
+        "type": "Boolean"
+      },
+      {
+        "name": "externalSettlementIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "completedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "lastRejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lastConflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lastReviewSummary",
+        "type": "String?"
+      },
+      {
+        "name": "lines",
+        "type": "List<SettlementLineSummary>"
+      },
+      {
+        "name": "lines[].lineId",
+        "type": "String"
+      },
+      {
+        "name": "lines[].lineIdentity",
+        "type": "String"
+      },
+      {
+        "name": "lines[].sourceKind",
+        "type": "String"
+      },
+      {
+        "name": "lines[].transactionKind",
+        "type": "String"
+      },
+      {
+        "name": "lines[].sourceFactIdentity",
+        "type": "String"
+      },
+      {
+        "name": "lines[].feeFactIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].paymentId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].paymentAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].refundId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].refundAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationBatchId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationRunId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationItemId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].reconciliationConfirmationFactId",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].externalTransactionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "lines[].grossAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "lines[].feeAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "lines[].signedNetAmount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "lines[].currency",
+        "type": "String"
+      },
+      {
+        "name": "lines[].occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "lines[].recordedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "lines[].feeBasisPoints",
+        "type": "Int?"
+      },
+      {
+        "name": "lines[].feeFixedAmount",
+        "type": "Big_decimal?"
+      },
+      {
+        "name": "lines[].feeRoundingMode",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].feeCurrencyPrecision",
+        "type": "Int?"
+      },
+      {
+        "name": "lines[].feeCalculationAmount",
+        "type": "Big_decimal?"
+      },
+      {
+        "name": "lines[].eligibilityBasis",
+        "type": "String"
+      },
+      {
+        "name": "lines[].confirmationReason",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].confirmationEvidence",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].adjustmentSourceIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "lines[].adjustmentEvidence",
+        "type": "String?"
+      },
+      {
+        "name": "attempts",
+        "type": "List<SettlementExecutionAttemptSummary>"
+      },
+      {
+        "name": "attempts[].attemptId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].attemptSequence",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].status",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].initiatedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].acceptedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "attempts[].reviewAfterMinutesSnapshot",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].reviewAfterAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "attempts[].currency",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].externalSettlementIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].finalResult",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].resultOccurredAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "attempts[].notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts",
+        "type": "List<SettlementResultReceiptSummary>"
+      },
+      {
+        "name": "attempts[].receipts[].receiptId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].notificationIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].payloadFingerprint",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].channelId",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].executionGroupIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].requestIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].externalSettlementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].amount",
+        "type": "Big_decimal"
+      },
+      {
+        "name": "attempts[].receipts[].currency",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].result",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].resultCode",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts[].occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].receipts[].firstReceivedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].receipts[].lastReceivedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "attempts[].receipts[].receiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "attempts[].receipts[].verified",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].receipts[].accepted",
+        "type": "Boolean"
+      },
+      {
+        "name": "attempts[].receipts[].decision",
+        "type": "String"
+      },
+      {
+        "name": "attempts[].receipts[].verdictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts[].rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].receipts[].conflictSummary",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "domain_event",
+    "package": "merchant_settlement.lifecycle",
+    "name": "MerchantSettlementActivationRequested",
+    "description": "Activate replacement settlement ownership after the predecessor release has been persisted",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "persist": false,
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_settlement.lifecycle",
+    "name": "ActivateMerchantSettlement",
+    "description": "Activate the effective scope and source-consumption ownership of a replacement settlement",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "status",
+        "type": "String"
       }
     ]
   }
