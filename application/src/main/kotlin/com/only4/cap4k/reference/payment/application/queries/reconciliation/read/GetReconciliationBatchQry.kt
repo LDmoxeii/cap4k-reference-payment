@@ -78,6 +78,8 @@ object GetReconciliationBatchQry {
             val platformRawStatus: String?,
             val platformOccurredAt: Instant?,
             val platformRecordedAt: Instant?,
+            val paymentReviewIdentitySnapshot: String?,
+            val paymentReviewSummary: String?,
             val matchingBasis: String,
             val auxiliaryMatchApproved: Boolean,
             val resolved: Boolean,

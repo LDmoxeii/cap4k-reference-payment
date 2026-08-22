@@ -10,6 +10,8 @@ drop table if exists reconciliation_batch;
 drop table if exists refund_notification_receipt;
 drop table if exists refund_attempt;
 drop table if exists refund;
+drop table if exists payment_review_decision;
+drop table if exists payment_review_case;
 drop table if exists payment_notification_receipt;
 drop table if exists payment_attempt;
 drop table if exists merchant_channel_configuration;
@@ -31,8 +33,11 @@ create table payment (
     updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
     expires_at timestamp with time zone not null,
     succeeded_at timestamp with time zone,
+    closed_at timestamp with time zone,
+    close_reason varchar(256),
     channel_transaction_id varchar(128),
     success_fact_formed boolean not null default false,
+    merchant_order_success_identity varchar(320),
     attempt_count integer not null default 0,
     notification_receive_count integer not null default 0,
     rejected_notification_count integer not null default 0,
@@ -42,6 +47,10 @@ create table payment (
     last_rejection_summary varchar(1024),
     last_conflict_summary varchar(1024),
     merchant_success_notification_intent_count integer not null default 0,
+    merchant_success_notification_intent_identity varchar(160),
+    merchant_success_notification_intent_state integer comment '@Type=PaymentNotificationIntentState;',
+    review_count integer not null default 0,
+    blocking_review_count integer not null default 0,
     settlement_fee_fact_identity varchar(128),
     settlement_fee_basis_points integer,
     settlement_fixed_fee_amount decimal(19, 4),
@@ -53,7 +62,9 @@ create table payment (
     settlement_blocked boolean not null default false,
     reserved_refund_amount decimal(19, 4) not null,
     successful_refund_amount decimal(19, 4) not null,
-    constraint uk_payment_merchant_idempotency unique (merchant_id, idempotency_key)
+    constraint uk_payment_merchant_idempotency unique (merchant_id, idempotency_key),
+    constraint uk_payment_merchant_order_success unique (merchant_order_success_identity),
+    constraint uk_payment_notification_intent unique (merchant_success_notification_intent_identity)
 );
 
 create table payment_attempt (
@@ -92,6 +103,7 @@ create table payment_notification_receipt (
     version bigint not null default 0 comment '@Managed=version;',
     payment_attempt_id varchar(36) not null comment '@ParentRef;',
     notification_identity varchar(128) not null,
+    payload_identity varchar(128) not null,
     channel_id varchar(64) not null,
     channel_transaction_id varchar(128) not null,
     amount decimal(19, 4) not null,
@@ -111,9 +123,53 @@ create table payment_notification_receipt (
     created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
     updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
     updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
-    constraint uk_payment_notification_receipt unique (payment_attempt_id, notification_identity)
+    constraint uk_payment_notification_receipt unique (payment_attempt_id, notification_identity, payload_identity)
 );
 comment on table payment_notification_receipt is '@Parent=payment_attempt;';
+
+create table payment_review_case (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    payment_id varchar(36) not null comment '@ParentRef;',
+    review_identity varchar(320) not null,
+    type integer not null comment '@Type=PaymentReviewType;',
+    status integer not null comment '@Type=PaymentReviewStatus;',
+    opened_at timestamp with time zone not null,
+    triggering_payment_status integer not null comment '@Type=PaymentStatus;',
+    triggering_attempt_identities varchar(2048),
+    triggering_receipt_identities varchar(2048),
+    summary varchar(2048) not null,
+    settlement_impact integer not null comment '@Type=PaymentReviewSettlementImpact;',
+    resolved_at timestamp with time zone,
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_payment_review_case unique (payment_id, review_identity)
+);
+comment on table payment_review_case is '@Parent=payment;';
+
+create table payment_review_decision (
+    id varchar(36) primary key comment '@Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '@Managed=version;',
+    payment_review_case_id varchar(36) not null comment '@ParentRef;',
+    decision_identity varchar(320) not null,
+    decision integer not null comment '@Type=PaymentReviewDecisionType;',
+    operator_identity varchar(128) not null,
+    operator_role varchar(128) not null,
+    authorization_outcome boolean not null,
+    reason varchar(2048) not null,
+    evidence varchar(4096) not null,
+    decided_at timestamp with time zone not null,
+    eligibility_impact integer not null comment '@Type=PaymentReviewEligibilityImpact;',
+    remediation_reference varchar(512),
+    created_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '@Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '@Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '@Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_payment_review_decision unique (payment_review_case_id, decision_identity)
+);
+comment on table payment_review_decision is '@Parent=payment_review_case;';
 
 create table refund (
     id varchar(36) primary key comment '@Managed=identifier.uuid7;',
@@ -314,6 +370,8 @@ create table reconciliation_item (
     platform_raw_status varchar(64),
     platform_occurred_at timestamp with time zone,
     platform_recorded_at timestamp with time zone,
+    payment_review_identity_snapshot varchar(2048),
+    payment_review_summary varchar(2048),
     matching_basis varchar(2048) not null,
     auxiliary_match_approved boolean not null default false,
     resolved boolean not null default false,

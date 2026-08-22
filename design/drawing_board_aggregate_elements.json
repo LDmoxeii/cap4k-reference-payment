@@ -117,6 +117,24 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment.SPaymentReviewCase",
+    "aggregate": "Payment",
+    "name": "SPaymentReviewCase",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment.SPaymentReviewDecision",
+    "aggregate": "Payment",
+    "name": "SPaymentReviewDecision",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "",
+    "type": "schema",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch.SReconciliationBatch",
     "aggregate": "ReconciliationBatch",
     "name": "SReconciliationBatch",
@@ -345,6 +363,42 @@
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentNotificationReceiptId",
     "aggregate": "Payment",
     "name": "PaymentNotificationReceiptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentReviewCase",
+    "aggregate": "Payment",
+    "name": "PaymentReviewCase",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentReviewCaseId",
+    "aggregate": "Payment",
+    "name": "PaymentReviewCaseId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentReviewDecision",
+    "aggregate": "Payment",
+    "name": "PaymentReviewDecision",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentReviewDecisionId",
+    "aggregate": "Payment",
+    "name": "PaymentReviewDecisionId",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
     "description": "",
     "type": "strong-id",

@@ -35,6 +35,9 @@ class ConfirmPaymentResultEndpointHandler : EndpointHandler<ConfirmPaymentResult
             rejectionSummary = outcome.rejectionSummary,
             conflictSummary = outcome.conflictSummary,
             successFactFormedNow = outcome.successFactFormedNow,
+            reviewIdentity = outcome.reviewIdentity,
+            settlementEligible = outcome.settlementEligible,
+            notificationIntentState = outcome.notificationIntentState?.name,
         )
     }
 }

@@ -272,7 +272,7 @@ private fun classify(
 
 private fun item(record: ChannelStatementRecord?, fact: PlatformReconciliationFact?, type: ReconciliationDifferenceType, basis: String): ReconciliationItem {
     val identity = record?.recordIdentity ?: fact!!.factIdentity
-    val matched = type == ReconciliationDifferenceType.MATCHED
+    val matched = type == ReconciliationDifferenceType.MATCHED && fact?.settlementEligible != false
     return ReconciliationItem(
         differenceIdentity = "$identity:${type.name}", transactionKind = record?.transactionKind ?: fact!!.transactionKind,
         differenceType = type, channelRecordIdentity = record?.recordIdentity,
@@ -286,6 +286,8 @@ private fun item(record: ChannelStatementRecord?, fact: PlatformReconciliationFa
         platformCurrency = fact?.currency, platformRawStatus = fact?.rawStatus,
         platformOccurredAt = fact?.occurredAt?.let { LocalDateTime.ofInstant(it, ZoneOffset.UTC) },
         platformRecordedAt = fact?.recordedAt?.let { LocalDateTime.ofInstant(it, ZoneOffset.UTC) },
+        paymentReviewIdentitySnapshot = fact?.paymentReviewIdentitySnapshot,
+        paymentReviewSummary = fact?.paymentReviewSummary,
         matchingBasis = basis, auxiliaryMatchApproved = false, resolved = matched, settlementBlocked = !matched
     )
 }

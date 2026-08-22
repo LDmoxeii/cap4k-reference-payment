@@ -4,6 +4,7 @@ import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityHandler
 import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.platform.LoadPlatformReconciliationFacts
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.PlatformReconciliationFact
@@ -45,6 +46,7 @@ class LoadPlatformReconciliationFactsHandler(
                 val attempt = payment.attempts.lastOrNull {
                     it.channelId == request.channelId && it.channelTransactionId == channelIdentity
                 } ?: return@mapNotNull null
+                val eligibility = payment.currentReviewEligibility()
                 PlatformReconciliationFact(
                     factIdentity = "PAYMENT:${payment.id}",
                     transactionKind = ReconciliationTransactionKind.PAYMENT,
@@ -58,6 +60,9 @@ class LoadPlatformReconciliationFactsHandler(
                     rawStatus = payment.status.name,
                     occurredAt = occurredAt.toInstant(ZoneOffset.UTC),
                     recordedAt = (payment.updatedAt ?: occurredAt).toInstant(ZoneOffset.UTC),
+                    paymentReviewIdentitySnapshot = eligibility.blockingReviewIdentities.joinToString(",").ifBlank { null },
+                    paymentReviewSummary = eligibility.blockingReviewSummaries.joinToString(" | ").ifBlank { null },
+                    settlementEligible = eligibility.settlementEligible,
                 )
             }
         val refunds = entityManager.createQuery(

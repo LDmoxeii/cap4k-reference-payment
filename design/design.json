@@ -414,6 +414,134 @@
       {
         "name": "attempts[].notificationReceipts[].conflictSummary",
         "type": "String?"
+      },
+      {
+        "name": "closedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "closeReason",
+        "type": "String?"
+      },
+      {
+        "name": "merchantOrderSuccessIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "merchantSuccessNotificationIntentIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "merchantSuccessNotificationIntentState",
+        "type": "String?"
+      },
+      {
+        "name": "reviewCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockingReviewCount",
+        "type": "Int"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "reviews",
+        "type": "List<PaymentReviewSummary>"
+      },
+      {
+        "name": "reviews[].reviewId",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].reviewIdentity",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].type",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].status",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].openedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "reviews[].summary",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].settlementImpact",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].resolvedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "reviews[].triggeringAttemptIdentities",
+        "type": "String?"
+      },
+      {
+        "name": "reviews[].triggeringReceiptIdentities",
+        "type": "String?"
+      },
+      {
+        "name": "reviews[].decisions",
+        "type": "List<PaymentReviewDecisionSummary>"
+      },
+      {
+        "name": "reviews[].decisions[].decisionId",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].decisionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].decision",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].authorizationOutcome",
+        "type": "Boolean"
+      },
+      {
+        "name": "reviews[].decisions[].reason",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].evidence",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].decidedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "reviews[].decisions[].eligibilityImpact",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].remediationReference",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].payloadIdentity",
+        "type": "String"
       }
     ]
   },
@@ -451,6 +579,28 @@
       {
         "name": "verificationSummary",
         "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "payment.order",
+    "name": "SerializeMerchantOrderSuccess",
+    "description": "Serialize accepted-success decisions for one merchant before evaluating the merchant-order claim",
+    "aggregates": [
+      "Payment",
+      "MerchantChannelConfiguration"
+    ],
+    "fields": [
+      {
+        "name": "merchantId",
+        "type": "String"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "lockedConfigurationCount",
+        "type": "Int"
       }
     ]
   },
@@ -692,6 +842,18 @@
       {
         "name": "successFactFormedNow",
         "type": "Boolean"
+      },
+      {
+        "name": "reviewIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "notificationIntentState",
+        "type": "String?"
       }
     ]
   },
@@ -936,6 +1098,134 @@
       {
         "name": "attempts[].notificationReceipts[].conflictSummary",
         "type": "String?"
+      },
+      {
+        "name": "closedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "closeReason",
+        "type": "String?"
+      },
+      {
+        "name": "merchantOrderSuccessIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "merchantSuccessNotificationIntentIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "merchantSuccessNotificationIntentState",
+        "type": "String?"
+      },
+      {
+        "name": "reviewCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockingReviewCount",
+        "type": "Int"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "reviews",
+        "type": "List<PaymentReviewSummary>"
+      },
+      {
+        "name": "reviews[].reviewId",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].reviewIdentity",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].type",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].status",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].openedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "reviews[].summary",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].settlementImpact",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].resolvedAt",
+        "type": "java.time.Instant?"
+      },
+      {
+        "name": "reviews[].triggeringAttemptIdentities",
+        "type": "String?"
+      },
+      {
+        "name": "reviews[].triggeringReceiptIdentities",
+        "type": "String?"
+      },
+      {
+        "name": "reviews[].decisions",
+        "type": "List<PaymentReviewDecisionSummary>"
+      },
+      {
+        "name": "reviews[].decisions[].decisionId",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].decisionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].decision",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].authorizationOutcome",
+        "type": "Boolean"
+      },
+      {
+        "name": "reviews[].decisions[].reason",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].evidence",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].decidedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "reviews[].decisions[].eligibilityImpact",
+        "type": "String"
+      },
+      {
+        "name": "reviews[].decisions[].remediationReference",
+        "type": "String?"
+      },
+      {
+        "name": "attempts[].notificationReceipts[].payloadIdentity",
+        "type": "String"
       }
     ]
   },
@@ -4796,28 +5086,63 @@
       }
     ]
   },
-
   {
     "tag": "integration_event",
     "package": "reconciliation",
     "name": "ChannelStatementAvailable",
     "description": "Signal that a revisioned channel statement is available for authoritative pull",
     "eventName": "payment.reconciliation.channel-statement-available.v1",
-    "aggregates": ["ReconciliationBatch"],
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
     "artifacts": [
-      {"family": "integration-event", "variant": "inbound"},
-      {"family": "integration-subscriber"}
+      {
+        "family": "integration-event",
+        "variant": "inbound"
+      },
+      {
+        "family": "integration-subscriber"
+      }
     ],
     "fields": [
-      {"name": "eventIdentity", "type": "String"},
-      {"name": "channelId", "type": "String"},
-      {"name": "currency", "type": "String"},
-      {"name": "reconciliationDate", "type": "java.time.LocalDate"},
-      {"name": "statementIdentity", "type": "String"},
-      {"name": "statementRevision", "type": "String"},
-      {"name": "publishedAt", "type": "java.time.Instant"},
-      {"name": "correlationIdentity", "type": "String?", "defaultValue": "null"},
-      {"name": "causationIdentity", "type": "String?", "defaultValue": "null"}
+      {
+        "name": "eventIdentity",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "reconciliationDate",
+        "type": "java.time.LocalDate"
+      },
+      {
+        "name": "statementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "statementRevision",
+        "type": "String"
+      },
+      {
+        "name": "publishedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "correlationIdentity",
+        "type": "String?",
+        "defaultValue": "null"
+      },
+      {
+        "name": "causationIdentity",
+        "type": "String?",
+        "defaultValue": "null"
+      }
     ]
   },
   {
@@ -4826,20 +5151,54 @@
     "name": "MerchantSettlementCompleted",
     "description": "A merchant settlement formed its first accepted terminal success fact",
     "eventName": "payment.merchant-settlement.completed.v1",
-    "aggregates": ["MerchantSettlement"],
+    "aggregates": [
+      "MerchantSettlement"
+    ],
     "artifacts": [
-      {"family": "integration-event", "variant": "outbound"}
+      {
+        "family": "integration-event",
+        "variant": "outbound"
+      }
     ],
     "fields": [
-      {"name": "eventIdentity", "type": "String"},
-      {"name": "settlementId", "type": "String"},
-      {"name": "merchantId", "type": "String"},
-      {"name": "channelId", "type": "String"},
-      {"name": "currency", "type": "String"},
-      {"name": "netAmount", "type": "java.math.BigDecimal"},
-      {"name": "completedAt", "type": "java.time.Instant"},
-      {"name": "correlationIdentity", "type": "String?", "defaultValue": "null"},
-      {"name": "causationIdentity", "type": "String?", "defaultValue": "null"}
+      {
+        "name": "eventIdentity",
+        "type": "String"
+      },
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "netAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "completedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "correlationIdentity",
+        "type": "String?",
+        "defaultValue": "null"
+      },
+      {
+        "name": "causationIdentity",
+        "type": "String?",
+        "defaultValue": "null"
+      }
     ]
   },
   {
@@ -4847,23 +5206,64 @@
     "package": "reconciliation.integration",
     "name": "ProcessAvailableChannelStatement",
     "description": "Pull and reconcile the exact statement revision announced by an inbound availability event",
-    "aggregates": ["ReconciliationBatch"],
+    "aggregates": [
+      "ReconciliationBatch"
+    ],
     "fields": [
-      {"name": "eventIdentity", "type": "String"},
-      {"name": "channelId", "type": "String"},
-      {"name": "currency", "type": "String"},
-      {"name": "reconciliationDate", "type": "java.time.LocalDate"},
-      {"name": "statementIdentity", "type": "String"},
-      {"name": "statementRevision", "type": "String"},
-      {"name": "publishedAt", "type": "java.time.Instant"},
-      {"name": "correlationIdentity", "type": "String?"},
-      {"name": "causationIdentity", "type": "String?"}
+      {
+        "name": "eventIdentity",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "reconciliationDate",
+        "type": "java.time.LocalDate"
+      },
+      {
+        "name": "statementIdentity",
+        "type": "String"
+      },
+      {
+        "name": "statementRevision",
+        "type": "String"
+      },
+      {
+        "name": "publishedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "correlationIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "causationIdentity",
+        "type": "String?"
+      }
     ],
     "resultFields": [
-      {"name": "batchId", "type": "String"},
-      {"name": "runId", "type": "String"},
-      {"name": "batchStatus", "type": "String"},
-      {"name": "idempotentReplay", "type": "Boolean"}
+      {
+        "name": "batchId",
+        "type": "String"
+      },
+      {
+        "name": "runId",
+        "type": "String"
+      },
+      {
+        "name": "batchStatus",
+        "type": "String"
+      },
+      {
+        "name": "idempotentReplay",
+        "type": "Boolean"
+      }
     ]
   },
   {
@@ -4871,16 +5271,229 @@
     "package": "merchant_settlement.completion",
     "name": "MerchantSettlementCompleted",
     "description": "A merchant settlement formed its first accepted terminal success fact",
-    "aggregates": ["MerchantSettlement"],
+    "aggregates": [
+      "MerchantSettlement"
+    ],
     "persist": false,
     "fields": [
-      {"name": "eventIdentity", "type": "String"},
-      {"name": "settlementId", "type": "String"},
-      {"name": "merchantId", "type": "String"},
-      {"name": "channelId", "type": "String"},
-      {"name": "currency", "type": "String"},
-      {"name": "netAmount", "type": "java.math.BigDecimal"},
-      {"name": "completedAt", "type": "java.time.LocalDateTime"}
+      {
+        "name": "eventIdentity",
+        "type": "String"
+      },
+      {
+        "name": "settlementId",
+        "type": "String"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "netAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "completedAt",
+        "type": "java.time.LocalDateTime"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.expiry",
+    "name": "ExpirePayments",
+    "description": "Idempotently close expired payments without pending attempts or move pending attempts into result review",
+    "aggregates": [
+      "Payment"
+    ],
+    "fields": [
+      {
+        "name": "now",
+        "type": "java.time.Instant"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "inspectedCount",
+        "type": "Int"
+      },
+      {
+        "name": "closedCount",
+        "type": "Int"
+      },
+      {
+        "name": "reviewOpenedCount",
+        "type": "Int"
+      }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.review",
+    "name": "AdjudicatePaymentReview",
+    "description": "Append an authorized decision to one payment review without deleting evidence",
+    "aggregates": [
+      "Payment"
+    ],
+    "fields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "reviewId",
+        "type": "String"
+      },
+      {
+        "name": "decisionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "decision",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "authorizationMaterial",
+        "type": "String"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      },
+      {
+        "name": "evidence",
+        "type": "String"
+      },
+      {
+        "name": "decidedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "eligibilityImpact",
+        "type": "String"
+      },
+      {
+        "name": "remediationReference",
+        "type": "String?"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentStatus",
+        "type": "String"
+      },
+      {
+        "name": "reviewStatus",
+        "type": "String"
+      },
+      {
+        "name": "decisionCount",
+        "type": "Int"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "notificationIntentState",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "payment.api",
+    "name": "AdjudicatePaymentReviewEndpoint",
+    "description": "POST /api/payments/{paymentId}/reviews/{reviewId}/decisions",
+    "aggregates": [],
+    "operationName": "payment.review.adjudicate",
+    "fields": [
+      {
+        "name": "paymentId",
+        "type": "String"
+      },
+      {
+        "name": "reviewId",
+        "type": "String"
+      },
+      {
+        "name": "decisionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "decision",
+        "type": "String"
+      },
+      {
+        "name": "operatorIdentity",
+        "type": "String"
+      },
+      {
+        "name": "operatorRole",
+        "type": "String"
+      },
+      {
+        "name": "authorizationMaterial",
+        "type": "String"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      },
+      {
+        "name": "evidence",
+        "type": "String"
+      },
+      {
+        "name": "decidedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "eligibilityImpact",
+        "type": "String"
+      },
+      {
+        "name": "remediationReference",
+        "type": "String?"
+      }
+    ],
+    "resultFields": [
+      {
+        "name": "paymentStatus",
+        "type": "String"
+      },
+      {
+        "name": "reviewStatus",
+        "type": "String"
+      },
+      {
+        "name": "decisionCount",
+        "type": "Int"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "notificationIntentState",
+        "type": "String?"
+      }
     ]
   }
 ]

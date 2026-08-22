@@ -10,9 +10,11 @@ import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.application.capabilities.payment.gateway.StartChannelPayment
 import com.only4.cap4k.reference.payment.application.errors.NoEligibleChannelException
 import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundException
+import com.only4.cap4k.reference.payment.application.errors.PaymentConflictException
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.enums.MerchantChannelConfigurationStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentAttemptStatus
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.rejectAttemptStart
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.startAttempt
 import java.time.Clock
@@ -39,6 +41,13 @@ object StartPaymentAttemptCmd {
                 SPayment.predicateById(PaymentId.parse(command.paymentId))
             ) ?: throw PaymentNotFoundException(command.paymentId)
 
+            val now = LocalDateTime.now(clock)
+            if (!now.isBefore(payment.expiresAt)) {
+                throw PaymentConflictException("PAYMENT_EXPIRED", "payment ${payment.id} has expired")
+            }
+            if (!payment.currentReviewEligibility().settlementEligible) {
+                throw PaymentConflictException("PAYMENT_REVIEW_REQUIRED", "payment ${payment.id} has an unresolved blocking review")
+            }
             payment.attempts.firstOrNull { it.status == PaymentAttemptStatus.PROCESSING }?.let { current ->
                 return Response(
                     paymentAttemptId = current.id.toString(),
@@ -61,7 +70,6 @@ object StartPaymentAttemptCmd {
                 }
             ) ?: throw NoEligibleChannelException("payment ${payment.id}")
 
-            val now = LocalDateTime.now(clock)
             val requestIdentity = "${payment.id}:${payment.attemptCount + 1}"
             val snapshot = listOf(
                 "channelId=${configuration.channelId}",

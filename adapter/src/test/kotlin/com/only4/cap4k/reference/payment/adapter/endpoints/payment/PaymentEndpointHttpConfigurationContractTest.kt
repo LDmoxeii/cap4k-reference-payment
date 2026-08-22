@@ -16,6 +16,7 @@ class PaymentEndpointHttpConfigurationContractTest {
         assertBinding("createPaymentHttpBinding", "special", "POST", "/api/payments", 201, "request.body(CreatePaymentEndpoint.Request::class)")
         assertBinding("startPaymentAttemptHttpBinding", "special", "POST", "/api/payments/{paymentId}/attempts", 200, "request.path(\"paymentId\", String::class)")
         assertBinding("confirmPaymentResultHttpBinding", "json", "POST", "/api/channel/payment-results", null, null)
+        assertBinding("adjudicatePaymentReviewHttpBinding", "special", "POST", "/api/payments/{paymentId}/reviews/{reviewId}/decisions", 200, "request.path(\"reviewId\", String::class)")
         assertBinding("getPaymentHttpBinding", "special", "GET", "/api/payments/{paymentId}", 200, "request.path(\"paymentId\", String::class)")
     }
 

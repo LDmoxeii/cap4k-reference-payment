@@ -80,6 +80,8 @@ class GetReconciliationBatchQryHandler : QueryHandler<GetReconciliationBatchQry.
                             platformRawStatus = item.platformRawStatus,
                             platformOccurredAt = item.platformOccurredAt?.toInstant(ZoneOffset.UTC),
                             platformRecordedAt = item.platformRecordedAt?.toInstant(ZoneOffset.UTC),
+                            paymentReviewIdentitySnapshot = item.paymentReviewIdentitySnapshot,
+                            paymentReviewSummary = item.paymentReviewSummary,
                             matchingBasis = item.matchingBasis,
                             auxiliaryMatchApproved = item.auxiliaryMatchApproved,
                             resolved = item.resolved,

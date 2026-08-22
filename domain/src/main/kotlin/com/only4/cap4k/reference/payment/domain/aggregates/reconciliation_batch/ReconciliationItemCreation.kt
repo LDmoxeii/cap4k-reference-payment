@@ -27,6 +27,8 @@ data class ReconciliationItemCreation(
     val platformRawStatus: String?,
     val platformOccurredAt: LocalDateTime?,
     val platformRecordedAt: LocalDateTime?,
+    val paymentReviewIdentitySnapshot: String? = null,
+    val paymentReviewSummary: String? = null,
     val matchingBasis: String,
     val auxiliaryMatchApproved: Boolean = false,
     val resolved: Boolean = false,

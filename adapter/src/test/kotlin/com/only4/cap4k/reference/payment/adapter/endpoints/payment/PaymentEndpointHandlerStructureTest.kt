@@ -16,6 +16,7 @@ class PaymentEndpointHandlerStructureTest {
             "CreatePaymentEndpointHandler.kt" to "Mediator.commands.send(",
             "StartPaymentAttemptEndpointHandler.kt" to "Mediator.commands.send(",
             "ConfirmPaymentResultEndpointHandler.kt" to "Mediator.commands.send(",
+            "AdjudicatePaymentReviewEndpointHandler.kt" to "Mediator.commands.send(",
             "GetPaymentEndpointHandler.kt" to "Mediator.queries.ask(",
         )
 
@@ -45,6 +46,9 @@ class PaymentEndpointHandlerStructureTest {
             "rejectionSummary = outcome.rejectionSummary",
             "conflictSummary = outcome.conflictSummary",
             "successFactFormedNow = outcome.successFactFormedNow",
+            "reviewIdentity = outcome.reviewIdentity",
+            "settlementEligible = outcome.settlementEligible",
+            "notificationIntentState = outcome.notificationIntentState?.name",
         )
 
         assertContains(source, "Mediator.commands.send(")

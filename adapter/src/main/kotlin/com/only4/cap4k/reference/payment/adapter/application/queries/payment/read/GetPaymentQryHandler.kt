@@ -7,60 +7,48 @@ import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundExcep
 import com.only4.cap4k.reference.payment.application.queries.payment.read.GetPaymentQry
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.refundableAmount
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
 
 @Service
-@DesignBlockMetadata(
-    tag = "query",
-    name = "GetPayment",
-    packageName = "payment.read",
-    description = "Read a persisted payment and all payment-attempt adjudication summaries",
-    aggregates = ["Payment"],
-    family = "query-handler"
-)
+@DesignBlockMetadata(tag = "query", name = "GetPayment", packageName = "payment.read", description = "Read a persisted payment and all payment-attempt adjudication summaries", aggregates = ["Payment"], family = "query-handler")
 class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.Response> {
-
     override fun handle(query: GetPaymentQry.Request): GetPaymentQry.Response {
-        val payment = Mediator.repositories.findOne(
-            SPayment.predicateById(PaymentId.parse(query.paymentId))
-        ) ?: throw PaymentNotFoundException(query.paymentId)
+        val payment = Mediator.repositories.findOne(SPayment.predicateById(PaymentId.parse(query.paymentId)))
+            ?: throw PaymentNotFoundException(query.paymentId)
+        val eligibility = payment.currentReviewEligibility()
         return GetPaymentQry.Response(
-            paymentId = payment.id.toString(),
-            merchantId = payment.merchantId,
-            merchantOrderNumber = payment.merchantOrderNumber,
-            amount = payment.amount,
-            currency = payment.currency,
-            paymentMethod = payment.paymentMethod,
-            status = payment.status.name,
-            createdAt = requireNotNull(payment.createdAt) { "payment ${payment.id} has no createdAt" }.toInstant(ZoneOffset.UTC),
+            paymentId = payment.id.toString(), merchantId = payment.merchantId,
+            merchantOrderNumber = payment.merchantOrderNumber, amount = payment.amount,
+            currency = payment.currency, paymentMethod = payment.paymentMethod, status = payment.status.name,
+            createdAt = requireNotNull(payment.createdAt).toInstant(ZoneOffset.UTC),
             expiresAt = payment.expiresAt.toInstant(ZoneOffset.UTC),
             succeededAt = payment.succeededAt?.toInstant(ZoneOffset.UTC),
+            closedAt = payment.closedAt?.toInstant(ZoneOffset.UTC), closeReason = payment.closeReason,
             channelTransactionId = payment.channelTransactionId,
             reservedRefundAmount = payment.reservedRefundAmount,
-            successfulRefundAmount = payment.successfulRefundAmount,
-            refundableAmount = payment.refundableAmount,
-            attemptCount = payment.attemptCount,
-            notificationReceiveCount = payment.notificationReceiveCount,
+            successfulRefundAmount = payment.successfulRefundAmount, refundableAmount = payment.refundableAmount,
+            attemptCount = payment.attemptCount, notificationReceiveCount = payment.notificationReceiveCount,
             rejectedNotificationCount = payment.rejectedNotificationCount,
             conflictingNotificationCount = payment.conflictingNotificationCount,
             lastNotificationIdentity = payment.lastNotificationIdentity,
             lastNotificationReceivedAt = payment.lastNotificationReceivedAt?.toInstant(ZoneOffset.UTC),
-            lastRejectionSummary = payment.lastRejectionSummary,
-            lastConflictSummary = payment.lastConflictSummary,
+            lastRejectionSummary = payment.lastRejectionSummary, lastConflictSummary = payment.lastConflictSummary,
             successFactFormed = payment.successFactFormed,
+            merchantOrderSuccessIdentity = payment.merchantOrderSuccessIdentity,
             merchantSuccessNotificationIntentCount = payment.merchantSuccessNotificationIntentCount,
-            settlementBlocked = payment.settlementBlocked,
+            merchantSuccessNotificationIntentIdentity = payment.merchantSuccessNotificationIntentIdentity,
+            merchantSuccessNotificationIntentState = payment.merchantSuccessNotificationIntentState?.name,
+            reviewCount = payment.reviewCases.size, blockingReviewCount = eligibility.blockingReviewIdentities.size,
+            settlementEligible = eligibility.settlementEligible, settlementBlocked = payment.settlementBlocked,
             attempts = payment.attempts.map { attempt ->
                 GetPaymentQry.Response.PaymentAttemptSummary(
-                    paymentAttemptId = attempt.id.toString(),
-                    channelId = attempt.channelId,
-                    status = attempt.status.name,
-                    requestIdentity = attempt.requestIdentity,
+                    paymentAttemptId = attempt.id.toString(), channelId = attempt.channelId,
+                    status = attempt.status.name, requestIdentity = attempt.requestIdentity,
                     initiatedAt = attempt.initiatedAt.toInstant(ZoneOffset.UTC),
-                    channelTransactionId = attempt.channelTransactionId,
-                    finalResult = attempt.finalResult?.name,
+                    channelTransactionId = attempt.channelTransactionId, finalResult = attempt.finalResult?.name,
                     resultOccurredAt = attempt.resultOccurredAt?.toInstant(ZoneOffset.UTC),
                     notificationReceiveCount = attempt.notificationReceiveCount,
                     notificationFirstReceivedAt = attempt.notificationFirstReceivedAt?.toInstant(ZoneOffset.UTC),
@@ -68,27 +56,42 @@ class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.R
                     verifiedNotificationCount = attempt.verifiedNotificationCount,
                     rejectedNotificationCount = attempt.rejectedNotificationCount,
                     conflictingNotificationCount = attempt.conflictingNotificationCount,
-                    verdictSummary = attempt.verdictSummary,
-                    rejectionSummary = attempt.rejectionSummary,
+                    verdictSummary = attempt.verdictSummary, rejectionSummary = attempt.rejectionSummary,
                     conflictSummary = attempt.conflictSummary,
                     notificationReceipts = attempt.paymentNotificationReceipts.map { receipt ->
                         GetPaymentQry.Response.NotificationReceiptSummary(
-                            notificationIdentity = receipt.notificationIdentity,
-                            channelId = receipt.channelId,
-                            channelTransactionId = receipt.channelTransactionId,
-                            amount = receipt.amount,
-                            currency = receipt.currency,
-                            result = receipt.result,
+                            notificationIdentity = receipt.notificationIdentity, payloadIdentity = receipt.payloadIdentity,
+                            channelId = receipt.channelId, channelTransactionId = receipt.channelTransactionId,
+                            amount = receipt.amount, currency = receipt.currency, result = receipt.result,
                             occurredAt = receipt.occurredAt.toInstant(ZoneOffset.UTC),
                             firstReceivedAt = receipt.firstReceivedAt.toInstant(ZoneOffset.UTC),
                             lastReceivedAt = receipt.lastReceivedAt.toInstant(ZoneOffset.UTC),
-                            receiveCount = receipt.receiveCount,
-                            verified = receipt.verified,
-                            accepted = receipt.accepted,
-                            decision = receipt.decision.name,
-                            verdictSummary = receipt.verdictSummary,
-                            rejectionSummary = receipt.rejectionSummary,
+                            receiveCount = receipt.receiveCount, verified = receipt.verified,
+                            accepted = receipt.accepted, decision = receipt.decision.name,
+                            verdictSummary = receipt.verdictSummary, rejectionSummary = receipt.rejectionSummary,
                             conflictSummary = receipt.conflictSummary,
+                        )
+                    },
+                )
+            },
+            reviews = payment.reviewCases.map { review ->
+                GetPaymentQry.Response.PaymentReviewSummary(
+                    reviewId = review.id.toString(), reviewIdentity = review.reviewIdentity,
+                    type = review.type.name, status = review.status.name,
+                    openedAt = review.openedAt.toInstant(ZoneOffset.UTC), summary = review.summary,
+                    settlementImpact = review.settlementImpact.name,
+                    resolvedAt = review.resolvedAt?.toInstant(ZoneOffset.UTC),
+                    triggeringAttemptIdentities = review.triggeringAttemptIdentities,
+                    triggeringReceiptIdentities = review.triggeringReceiptIdentities,
+                    decisions = review.paymentReviewDecisions.map { decision ->
+                        GetPaymentQry.Response.PaymentReviewDecisionSummary(
+                            decisionId = decision.id.toString(), decisionIdentity = decision.decisionIdentity,
+                            decision = decision.decision.name, operatorIdentity = decision.operatorIdentity,
+                            operatorRole = decision.operatorRole, authorizationOutcome = decision.authorizationOutcome,
+                            reason = decision.reason, evidence = decision.evidence,
+                            decidedAt = decision.decidedAt.toInstant(ZoneOffset.UTC),
+                            eligibilityImpact = decision.eligibilityImpact.name,
+                            remediationReference = decision.remediationReference,
                         )
                     },
                 )
