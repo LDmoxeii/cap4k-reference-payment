@@ -6,6 +6,8 @@ import java.time.LocalDateTime
 
 data class ReconciliationConfirmationFactCreation(
     val sourceDifferenceIdentity: String,
+    val merchantId: String,
+    val channelId: String,
     val operatorIdentity: String,
     val confirmationReason: String,
     val evidence: String,

@@ -116,6 +116,8 @@ class ReconciliationBatchBehaviorTest {
         val item = run.reconciliationItems.single()
         val confirmation = ReconciliationConfirmationFactCreation(
             sourceDifferenceIdentity = item.differenceIdentity,
+            merchantId = "M-001",
+            channelId = "C-001",
             operatorIdentity = "finance-1",
             confirmationReason = "Channel success proves omitted platform success",
             evidence = "statement://s-1/1/channel-only",

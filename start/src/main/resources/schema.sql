@@ -5,3 +5,24 @@ alter table reconciliation_batch
 
 alter table reconciliation_run
     add constraint uk_reconciliation_run_statement unique (batch_id, statement_identity, statement_revision);
+
+alter table merchant_settlement
+    add constraint uk_merchant_settlement_effective_scope unique (effective_scope_identity);
+
+alter table settlement_line
+    add constraint uk_settlement_line_identity unique (merchant_settlement_id, line_identity);
+
+alter table settlement_line
+    add constraint uk_settlement_line_source unique (merchant_settlement_id, source_kind, source_fact_identity);
+
+alter table settlement_line
+    add constraint uk_settlement_line_effective_consumption unique (effective_consumption_identity);
+
+alter table settlement_execution_attempt
+    add constraint uk_settlement_execution_attempt_request unique (channel_id, request_identity);
+
+alter table settlement_execution_attempt
+    add constraint uk_settlement_execution_attempt_sequence unique (merchant_settlement_id, attempt_sequence);
+
+alter table settlement_result_receipt
+    add constraint uk_settlement_result_receipt unique (settlement_execution_attempt_id, notification_identity);

@@ -6,7 +6,23 @@ import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDateTime
+
+data class SettlementFeeRule(
+    val configurationId: String,
+    val basisPoints: Int,
+    val fixedFeeAmount: BigDecimal,
+    val roundingMode: RoundingMode,
+    val currencyPrecision: Int,
+) {
+    init {
+        require(configurationId.isNotBlank()) { "settlement fee configuration identity must not be blank" }
+        require(basisPoints >= 0) { "settlement fee basis points must not be negative" }
+        require(fixedFeeAmount >= BigDecimal.ZERO) { "settlement fixed fee must not be negative" }
+        require(currencyPrecision >= 0) { "settlement fee currency precision must not be negative" }
+    }
+}
 
 fun Payment.startAttempt(
     channelId: String,
@@ -62,6 +78,7 @@ fun Payment.recordChannelResult(
     receivedAt: LocalDateTime,
     verified: Boolean,
     verificationSummary: String?,
+    settlementFeeRule: SettlementFeeRule? = null,
 ): ChannelResultRecordingOutcome {
     val normalizedResult = result.trim().uppercase()
     require(normalizedResult == "SUCCESS" || normalizedResult == "FAILED") {
@@ -199,9 +216,17 @@ fun Payment.recordChannelResult(
         succeededAt = occurredAt
         this.channelTransactionId = channelTransactionId
         val formedNow = !successFactFormed
-        successFactFormed = true
         if (formedNow) {
+            freezeSettlementFee(
+                rule = requireNotNull(settlementFeeRule) {
+                    "payment $id cannot form a success fact without a settlement fee rule"
+                },
+                formedAt = occurredAt,
+            )
+            successFactFormed = true
             merchantSuccessNotificationIntentCount += 1
+        } else {
+            requireSettlementFeeSnapshot()
         }
         outcome(
             attempt = attempt,
@@ -218,6 +243,37 @@ fun Payment.recordChannelResult(
             disposition = ChannelResultDisposition.FAILURE_ACCEPTED,
         )
     }
+}
+
+private fun Payment.freezeSettlementFee(rule: SettlementFeeRule, formedAt: LocalDateTime) {
+    check(settlementFeeFactIdentity == null) { "payment $id already has a settlement fee fact" }
+    val calculatedFee = amount
+        .multiply(BigDecimal.valueOf(rule.basisPoints.toLong()))
+        .divide(BigDecimal.valueOf(10_000L))
+        .add(rule.fixedFeeAmount)
+        .setScale(rule.currencyPrecision, rule.roundingMode)
+
+    settlementFeeFactIdentity = "payment:${id}:settlement-fee"
+    settlementFeeBasisPoints = rule.basisPoints
+    settlementFixedFeeAmount = rule.fixedFeeAmount
+    settlementFeeRoundingMode = rule.roundingMode.name
+    settlementFeeCurrencyPrecision = rule.currencyPrecision
+    settlementFeeCalculationAmount = amount
+    settlementFeeAmount = calculatedFee
+    settlementFeeFormedAt = formedAt
+}
+
+private fun Payment.requireSettlementFeeSnapshot() {
+    check(
+        settlementFeeFactIdentity != null &&
+            settlementFeeBasisPoints != null &&
+            settlementFixedFeeAmount != null &&
+            settlementFeeRoundingMode != null &&
+            settlementFeeCurrencyPrecision != null &&
+            settlementFeeCalculationAmount != null &&
+            settlementFeeAmount != null &&
+            settlementFeeFormedAt != null
+    ) { "payment $id has a success fact without a complete settlement fee snapshot" }
 }
 
 private fun PaymentNotificationReceipt.samePayload(

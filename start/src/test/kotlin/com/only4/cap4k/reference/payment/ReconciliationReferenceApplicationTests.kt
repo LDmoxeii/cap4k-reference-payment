@@ -3,7 +3,9 @@ package com.only4.cap4k.reference.payment
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.only4.cap4k.ddd.core.Mediator
+import com.only4.cap4k.reference.payment.adapter.application.capabilities.merchant_settlement.transfer.StartSettlementTransferHandler
 import com.only4.cap4k.reference.payment.adapter.application.capabilities.reconciliation.channel.ChannelStatementFixtureStore
+import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd
 import com.only4.cap4k.reference.payment.adapter.endpoints.payment.PaymentHttpErrorAdvice
 import com.only4.cap4k.reference.payment.application.commands.reconciliation.run.RunDailyReconciliationCmd
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
@@ -30,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -47,6 +50,12 @@ class ReconciliationReferenceApplicationTests(
     @param:Autowired private val transactionManager: PlatformTransactionManager,
     @param:Autowired private val jdbcTemplate: JdbcTemplate,
 ) {
+
+    @field:MockitoSpyBean
+    private lateinit var transferHandler: StartSettlementTransferHandler
+
+    @field:MockitoSpyBean
+    private lateinit var activationHandler: ActivateMerchantSettlementCmd.Handler
 
     @Test
     fun `daily reconciliation matches payment and refund facts and exposes one effective run`() {
@@ -472,6 +481,8 @@ class ReconciliationReferenceApplicationTests(
             dispositionRequest(
                 batchId = created.batchId,
                 itemId = currentItem.requiredText("itemId"),
+                merchantId = "M-001",
+                channelId = "C-001",
                 operatorIdentity = "operator-1",
                 operatorRole = "RECONCILIATION_OPERATOR",
                 disposedAt = "2026-08-19T06:30:00Z",
@@ -913,6 +924,8 @@ class ReconciliationReferenceApplicationTests(
     private fun dispositionRequest(
         batchId: String,
         itemId: String,
+        merchantId: String? = null,
+        channelId: String? = null,
         operatorIdentity: String,
         operatorRole: String,
         disposedAt: String,
@@ -923,6 +936,8 @@ class ReconciliationReferenceApplicationTests(
     ): Map<String, Any?> = mapOf(
         "batchId" to batchId,
         "itemId" to itemId,
+        "merchantId" to merchantId,
+        "channelId" to channelId,
         "operatorIdentity" to operatorIdentity,
         "operatorRole" to operatorRole,
         "conclusion" to conclusion,

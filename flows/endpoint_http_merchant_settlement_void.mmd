@@ -1,0 +1,8 @@
+flowchart TD
+  N1["ActivateMerchantSettlementCmd.Request"]
+  N2["VoidMerchantSettlementCmd.Request"]
+  N3["MerchantSettlementActivationRequestedDomainEvent"]
+  N4["merchant-settlement.void [POST /api/merchant-settlements/{settlementId}/voids]"]
+  N2 -->|CommandToDomainEvent| N3
+  N3 -->|DomainEventToCommand| N1
+  N4 -->|EndpointHttpBindingToCommand| N2

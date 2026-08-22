@@ -3,12 +3,14 @@ package com.only4.cap4k.reference.payment.domain
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.SettlementFeeRule
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.ChannelResultDisposition
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.recordChannelResult
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.startAttempt
 import com.only4.cap4k.reference.payment.domain.values.Money
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
@@ -52,6 +54,7 @@ class PaymentBehaviorTest {
             receivedAt = LocalDateTime.parse("2026-08-17T08:01:01"),
             verified = true,
             verificationSummary = "verified",
+            settlementFeeRule = feeRule(),
         )
         val duplicate = payment.recordChannelResult(
             paymentAttemptId = attempt.id,
@@ -87,6 +90,14 @@ class PaymentBehaviorTest {
         assertThat(conflict.accepted).isFalse()
         assertThat(payment.status).isEqualTo(PaymentStatus.SUCCEEDED)
         assertThat(payment.successFactFormed).isTrue()
+        assertThat(payment.settlementFeeFactIdentity).isEqualTo("payment:${payment.id}:settlement-fee")
+        assertThat(payment.settlementFeeBasisPoints).isEqualTo(200)
+        assertThat(payment.settlementFixedFeeAmount).isEqualByComparingTo("0")
+        assertThat(payment.settlementFeeRoundingMode).isEqualTo("HALF_UP")
+        assertThat(payment.settlementFeeCurrencyPrecision).isEqualTo(2)
+        assertThat(payment.settlementFeeCalculationAmount).isEqualByComparingTo("100.00")
+        assertThat(payment.settlementFeeAmount).isEqualByComparingTo("2.00")
+        assertThat(payment.settlementFeeFormedAt).isEqualTo(LocalDateTime.parse("2026-08-17T08:01:00"))
         assertThat(payment.merchantSuccessNotificationIntentCount).isEqualTo(1)
         assertThat(attempt.paymentNotificationReceipts).hasSize(2)
         assertThat(attempt.paymentNotificationReceipts.first().receiveCount).isEqualTo(2)
@@ -136,6 +147,14 @@ class PaymentBehaviorTest {
         assertThat(attempt.paymentNotificationReceipts.single().decision).isEqualTo(ChannelResultDisposition.REJECTED)
         assertThat(attempt.paymentNotificationReceipts.single().rejectionSummary).contains("does not match attempt channel")
     }
+
+    private fun feeRule(): SettlementFeeRule = SettlementFeeRule(
+        configurationId = "018f22a0-0000-7000-8000-000000000001",
+        basisPoints = 200,
+        fixedFeeAmount = BigDecimal.ZERO,
+        roundingMode = RoundingMode.HALF_UP,
+        currencyPrecision = 2,
+    )
 
     private fun payment(): Payment = Payment(
         merchantId = "M-001",

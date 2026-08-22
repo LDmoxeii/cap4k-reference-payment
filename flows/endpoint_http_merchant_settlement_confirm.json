@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:merchant-settlement.confirm",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.confirm.ConfirmMerchantSettlementCmd.Request",
+      "name": "ConfirmMerchantSettlementCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.confirm.ConfirmMerchantSettlementCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:merchant-settlement.confirm",
+      "name": "merchant-settlement.confirm [POST /api/merchant-settlements/{settlementId}/confirmations]",
+      "fullName": "endpoint-http:merchant-settlement.confirm",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:merchant-settlement.confirm",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.confirm.ConfirmMerchantSettlementCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

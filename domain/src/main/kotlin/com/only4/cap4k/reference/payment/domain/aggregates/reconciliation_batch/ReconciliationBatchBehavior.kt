@@ -106,7 +106,7 @@ fun ReconciliationBatch.appendDisposition(
                 val requiredConfirmation = requireNotNull(confirmation) {
                     "Platform confirmation conclusion requires a confirmation fact"
                 }
-                item.requireConfirmationEligibility(requiredConfirmation)
+                item.requireConfirmationEligibility(requiredConfirmation, channelId)
             } else {
                 require(confirmation == null) {
                     "A confirmation fact is only valid for CONFIRM_PLATFORM_FACT"
@@ -138,7 +138,12 @@ fun ReconciliationBatch.appendDisposition(
     return disposition
 }
 
-private fun ReconciliationItem.requireConfirmationEligibility(creation: ReconciliationConfirmationFactCreation) {
+private fun ReconciliationItem.requireConfirmationEligibility(
+    creation: ReconciliationConfirmationFactCreation,
+    expectedChannelId: String,
+) {
+    require(creation.merchantId.isNotBlank()) { "Confirmation merchant identity must not be blank" }
+    require(creation.channelId == expectedChannelId) { "Confirmation channel does not belong to this batch" }
     require(
         differenceType == ReconciliationDifferenceType.CHANNEL_ONLY ||
             differenceType == ReconciliationDifferenceType.STATUS_MISMATCH
@@ -160,9 +165,19 @@ private fun ReconciliationItem.requireConfirmationEligibility(creation: Reconcil
 fun ReconciliationItem.appendConfirmation(creation: ReconciliationConfirmationFactCreation): ReconciliationConfirmationFact {
     require(creation.sourceDifferenceIdentity == differenceIdentity) { "Confirmation source does not match item" }
     val fact = ReconciliationConfirmationFact(
-        creation.sourceDifferenceIdentity, creation.operatorIdentity, creation.confirmationReason,
-        creation.evidence, creation.transactionKind, creation.amount, creation.currency,
-        creation.externalTransactionIdentity, creation.paymentId, creation.refundId, creation.confirmedAt
+        sourceDifferenceIdentity = creation.sourceDifferenceIdentity,
+        merchantId = creation.merchantId,
+        channelId = creation.channelId,
+        operatorIdentity = creation.operatorIdentity,
+        confirmationReason = creation.confirmationReason,
+        evidence = creation.evidence,
+        transactionKind = creation.transactionKind,
+        amount = creation.amount,
+        currency = creation.currency,
+        externalTransactionIdentity = creation.externalTransactionIdentity,
+        paymentId = creation.paymentId,
+        refundId = creation.refundId,
+        confirmedAt = creation.confirmedAt,
     )
     reconciliationConfirmationFacts.add(fact)
     return fact

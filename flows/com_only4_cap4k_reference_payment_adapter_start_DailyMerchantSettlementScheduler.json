@@ -1,0 +1,27 @@
+{
+  "entryId": "com.only4.cap4k.reference.payment.adapter.start.DailyMerchantSettlementScheduler::settlePreviousBusinessDay",
+  "entryType": "temporaltriggermethod",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.adapter.start.DailyMerchantSettlementScheduler::settlePreviousBusinessDay",
+      "name": "DailyMerchantSettlementScheduler::settlePreviousBusinessDay",
+      "fullName": "com.only4.cap4k.reference.payment.adapter.start.DailyMerchantSettlementScheduler::settlePreviousBusinessDay",
+      "type": "temporaltriggermethod"
+    },
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.run.RunDailyMerchantSettlementCmd.Request",
+      "name": "RunDailyMerchantSettlementCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.run.RunDailyMerchantSettlementCmd.Request",
+      "type": "command"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "com.only4.cap4k.reference.payment.adapter.start.DailyMerchantSettlementScheduler::settlePreviousBusinessDay",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.merchant_settlement.run.RunDailyMerchantSettlementCmd.Request",
+      "type": "TemporalTriggerMethodToCommand"
+    }
+  ]
+}

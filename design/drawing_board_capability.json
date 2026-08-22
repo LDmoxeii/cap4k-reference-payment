@@ -1,6 +1,76 @@
 [
   {
     "tag": "capability",
+    "package": "merchant_settlement.candidate",
+    "name": "LoadMerchantSettlementCandidates",
+    "description": "Project eligible and excluded current-effective-run facts for a merchant settlement period",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "periodStart", "type": "java.time.Instant" },
+      { "name": "periodEnd", "type": "java.time.Instant" },
+      { "name": "businessTimezone", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "eligibleFacts", "type": "List<com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementCandidateFact>" },
+      { "name": "excludedCount", "type": "Int" },
+      { "name": "blockerSummaries", "type": "List<String>" }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "merchant_settlement.result",
+    "name": "VerifySettlementResult",
+    "description": "Verify and normalize one reference settlement result notification",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "notificationId", "type": "String" },
+      { "name": "settlementId", "type": "String" },
+      { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionGroupIdentity", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "externalSettlementIdentity", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" },
+      { "name": "result", "type": "String" },
+      { "name": "resultCode", "type": "String?" },
+      { "name": "occurredAt", "type": "java.time.Instant" },
+      { "name": "verificationMaterial", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "verified", "type": "Boolean" },
+      { "name": "normalizedResult", "type": "String" },
+      { "name": "verificationSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "capability",
+    "package": "merchant_settlement.transfer",
+    "name": "StartSettlementTransfer",
+    "description": "Submit one idempotent settlement transfer request to the reference provider",
+    "aggregates": ["MerchantSettlement"],
+    "fields": [
+      { "name": "settlementId", "type": "String" },
+      { "name": "executionAttemptId", "type": "String" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "executionGroupIdentity", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "accepted", "type": "Boolean" },
+      { "name": "externalSettlementIdentity", "type": "String?" },
+      { "name": "failureCode", "type": "String?" },
+      { "name": "diagnosticSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "capability",
     "package": "payment.channel",
     "name": "VerifyPaymentResult",
     "description": "Verify channel authenticity without placing credentials in the aggregate",

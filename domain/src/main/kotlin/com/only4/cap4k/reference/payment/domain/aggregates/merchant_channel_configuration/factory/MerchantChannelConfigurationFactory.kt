@@ -31,6 +31,12 @@ class MerchantChannelConfigurationFactory : AggregateFactory<MerchantChannelConf
             status = entityPayload.status,
             routingPriority = entityPayload.routingPriority,
             channelRuleSummary = entityPayload.channelRuleSummary,
+            refundWindowDays = entityPayload.refundWindowDays,
+            refundResultReviewAfterMinutes = entityPayload.refundResultReviewAfterMinutes,
+            settlementFeeBasisPoints = entityPayload.settlementFeeBasisPoints,
+            settlementFixedFeeAmount = entityPayload.settlementFixedFeeAmount,
+            settlementFeeRoundingMode = entityPayload.settlementFeeRoundingMode,
+            settlementResultReviewAfterMinutes = entityPayload.settlementResultReviewAfterMinutes,
             activatedAt = entityPayload.activatedAt,
             retiredAt = entityPayload.retiredAt
         )
@@ -45,6 +51,12 @@ class MerchantChannelConfigurationFactory : AggregateFactory<MerchantChannelConf
         val status: MerchantChannelConfigurationStatus,
         val routingPriority: Int = 100,
         val channelRuleSummary: String,
+        val refundWindowDays: Int = 180,
+        val refundResultReviewAfterMinutes: Int = 30,
+        val settlementFeeBasisPoints: Int = 200,
+        val settlementFixedFeeAmount: BigDecimal = BigDecimal.ZERO,
+        val settlementFeeRoundingMode: String = "HALF_UP",
+        val settlementResultReviewAfterMinutes: Int = 30,
         val activatedAt: LocalDateTime,
         val retiredAt: LocalDateTime?
     ) : AggregatePayload<MerchantChannelConfiguration>

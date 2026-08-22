@@ -243,5 +243,243 @@
         "type": "java.time.Instant"
       }
     ]
+  },
+  {
+    "name": "SettlementCandidateFact",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "description": "Immutable current-effective-run fact eligible or reviewable for one merchant settlement scope",
+    "fields": [
+      {
+        "name": "sourceKind",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementLineSourceKind"
+      },
+      {
+        "name": "transactionKind",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind"
+      },
+      {
+        "name": "sourceFactIdentity",
+        "type": "String"
+      },
+      {
+        "name": "feeFactIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "merchantId",
+        "type": "String"
+      },
+      {
+        "name": "channelId",
+        "type": "String"
+      },
+      {
+        "name": "currency",
+        "type": "String"
+      },
+      {
+        "name": "paymentId",
+        "type": "String?"
+      },
+      {
+        "name": "paymentAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "refundId",
+        "type": "String?"
+      },
+      {
+        "name": "refundAttemptId",
+        "type": "String?"
+      },
+      {
+        "name": "reconciliationBatchId",
+        "type": "String"
+      },
+      {
+        "name": "reconciliationRunId",
+        "type": "String"
+      },
+      {
+        "name": "reconciliationItemId",
+        "type": "String?"
+      },
+      {
+        "name": "reconciliationConfirmationFactId",
+        "type": "String?"
+      },
+      {
+        "name": "externalTransactionIdentity",
+        "type": "String"
+      },
+      {
+        "name": "grossAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "feeAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "signedNetAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "occurredAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "recordedAt",
+        "type": "java.time.Instant"
+      },
+      {
+        "name": "feeBasisPoints",
+        "type": "Int?"
+      },
+      {
+        "name": "feeFixedAmount",
+        "type": "java.math.BigDecimal?"
+      },
+      {
+        "name": "feeRoundingMode",
+        "type": "String?"
+      },
+      {
+        "name": "feeCurrencyPrecision",
+        "type": "Int?"
+      },
+      {
+        "name": "feeCalculationAmount",
+        "type": "java.math.BigDecimal?"
+      },
+      {
+        "name": "eligibilityBasis",
+        "type": "String"
+      },
+      {
+        "name": "confirmationReason",
+        "type": "String?"
+      },
+      {
+        "name": "confirmationEvidence",
+        "type": "String?"
+      },
+      {
+        "name": "adjustmentSourceIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "adjustmentEvidence",
+        "type": "String?"
+      }
+    ]
+  },
+  {
+    "name": "SettlementPreparationOutcome",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "description": "Domain outcome of idempotently preparing a merchant settlement scope",
+    "fields": [
+      {
+        "name": "settlementId",
+        "type": "String?"
+      },
+      {
+        "name": "status",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.MerchantSettlementStatus?"
+      },
+      {
+        "name": "created",
+        "type": "Boolean"
+      },
+      {
+        "name": "idempotentReplay",
+        "type": "Boolean"
+      },
+      {
+        "name": "noOp",
+        "type": "Boolean"
+      },
+      {
+        "name": "eligibleCount",
+        "type": "Int"
+      },
+      {
+        "name": "excludedCount",
+        "type": "Int"
+      },
+      {
+        "name": "blockerSummary",
+        "type": "String?"
+      },
+      {
+        "name": "paymentGrossAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "refundGrossAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "feeTotalAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "adjustmentTotalAmount",
+        "type": "java.math.BigDecimal"
+      },
+      {
+        "name": "netAmount",
+        "type": "java.math.BigDecimal"
+      }
+    ]
+  },
+  {
+    "name": "SettlementResultRecordingOutcome",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "description": "Domain outcome produced after recording and adjudicating a settlement result receipt",
+    "fields": [
+      {
+        "name": "settlementStatus",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.MerchantSettlementStatus"
+      },
+      {
+        "name": "attemptStatus",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementExecutionAttemptStatus?"
+      },
+      {
+        "name": "notificationReceiveCount",
+        "type": "Int"
+      },
+      {
+        "name": "disposition",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementResultDisposition"
+      },
+      {
+        "name": "rejectionSummary",
+        "type": "String?"
+      },
+      {
+        "name": "conflictSummary",
+        "type": "String?"
+      },
+      {
+        "name": "reviewSummary",
+        "type": "String?"
+      },
+      {
+        "name": "settledFactFormedNow",
+        "type": "Boolean"
+      }
+    ]
   }
 ]

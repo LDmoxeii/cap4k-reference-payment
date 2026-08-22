@@ -1,0 +1,15 @@
+[
+  {
+    "tag": "domain_event",
+    "package": "merchant_settlement.lifecycle",
+    "name": "MerchantSettlementActivationRequested",
+    "description": "Activate replacement settlement ownership after the predecessor release has been persisted",
+    "aggregates": ["MerchantSettlement"],
+    "persist": false,
+    "fields": [
+      { "name": "settlementId", "type": "String" }
+    ],
+    "resultFields": [
+    ]
+  }
+]

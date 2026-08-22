@@ -13,6 +13,8 @@ class DisposeReconciliationDifferenceEndpointHandler : EndpointHandler<DisposeRe
             DisposeReconciliationDifferenceCmd.Request(
                 batchId = request.batchId,
                 itemId = request.itemId,
+                merchantId = request.merchantId,
+                channelId = request.channelId,
                 operatorIdentity = request.operatorIdentity,
                 operatorRole = request.operatorRole,
                 conclusion = request.conclusion,

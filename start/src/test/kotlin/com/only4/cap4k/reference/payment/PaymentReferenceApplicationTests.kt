@@ -2,16 +2,20 @@ package com.only4.cap4k.reference.payment
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.only4.cap4k.reference.payment.adapter.application.capabilities.merchant_settlement.transfer.StartSettlementTransferHandler
 import com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler
+import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.SettlementFeeRule
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.recordChannelResult
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.reserveRefund
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.ChannelResultDisposition
 import jakarta.persistence.EntityManager
 import jakarta.persistence.OptimisticLockException
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.Collections
@@ -26,6 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -43,6 +48,12 @@ class PaymentReferenceApplicationTests(
     @param:Autowired private val jdbcTemplate: JdbcTemplate,
     @param:Autowired private val refundReviewScheduler: RefundReviewScheduler,
 ) {
+
+    @field:MockitoSpyBean
+    private lateinit var transferHandler: StartSettlementTransferHandler
+
+    @field:MockitoSpyBean
+    private lateinit var activationHandler: ActivateMerchantSettlementCmd.Handler
 
     @Test
     fun `create attempt confirm duplicate conflict and query form one durable payment chain`() {
@@ -391,6 +402,13 @@ class PaymentReferenceApplicationTests(
                                 receivedAt = LocalDateTime.parse("2026-08-17T10:00:01"),
                                 verified = true,
                                 verificationSummary = "concurrency test verified",
+                                settlementFeeRule = SettlementFeeRule(
+                                    configurationId = attempt.channelConfigurationId,
+                                    basisPoints = 200,
+                                    fixedFeeAmount = BigDecimal.ZERO,
+                                    roundingMode = RoundingMode.HALF_UP,
+                                    currencyPrecision = 2,
+                                ),
                             )
                             entityManager.flush()
                         }
@@ -731,8 +749,11 @@ class PaymentReferenceApplicationTests(
             )
         }
         assertThat(
-            requestResult.isFailure || requireNotNull(requestResult.getOrNull()).status >= 500
+            requestResult.isFailure || requireNotNull(requestResult.getOrNull()).status == 409
         ).isTrue()
+        requestResult.getOrNull()?.let { response ->
+            assertThat(response.body.requiredText("code")).isEqualTo("CONCURRENT_MODIFICATION")
+        }
         if (requestResult.isFailure) {
             assertThat(
                 requestResult.exceptionOrNull()!!.causalChain()

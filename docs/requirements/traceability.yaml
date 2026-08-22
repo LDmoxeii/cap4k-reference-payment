@@ -275,7 +275,7 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-014
     projection_ids: [PAY-CP-001, PAY-CP-004, PAY-CP-005]
     evidence_ids: [PAY-EV-002, PAY-EV-009, PAY-EV-010]
-    status: planned
+    status: verified
   PAY-AC-015:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-015
     projection_ids: [PAY-CP-001, PAY-CP-006]
@@ -385,47 +385,47 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-060
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016]
-    status: planned
+    status: verified
   PAY-AC-061:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-061
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016]
-    status: planned
+    status: verified
   PAY-AC-062:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-062
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016]
-    status: planned
+    status: verified
   PAY-AC-063:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-063
     projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010]
     evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
-    status: planned
+    status: verified
   PAY-AC-064:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-064
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
-    status: planned
+    status: verified
   PAY-AC-065:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-065
     projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010]
     evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
-    status: planned
+    status: verified
   PAY-AC-066:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-066
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016]
-    status: planned
+    status: verified
   PAY-AC-067:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-067
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016]
-    status: planned
+    status: verified
   PAY-AC-068:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-068
     projection_ids: [PAY-CP-004, PAY-CP-009]
     evidence_ids: [PAY-EV-009, PAY-EV-016]
-    status: planned
+    status: verified
   PAY-AC-080:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-080
     projection_ids: [PAY-CP-011, PAY-CP-012]
@@ -445,7 +445,7 @@ acceptance:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-083
     projection_ids: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-014]
     evidence_ids: [PAY-EV-022, PAY-EV-027]
-    status: planned
+    status: verified
   PAY-AC-084:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-084
     projection_ids: [PAY-CP-005, PAY-CP-011]
@@ -494,7 +494,7 @@ projections:
     acceptance_ids: [PAY-AC-014, PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-083]
     target_surfaces: [Runtime, Generator, Analyzer]
     evidence_ids: [PAY-EV-008, PAY-EV-009]
-    status: planned
+    status: verified
   PAY-CP-005:
     title: MerchantChannelConfiguration aggregate
     source: docs/requirements/projection/cap4k-current.md#pay-cp-005
@@ -534,7 +534,7 @@ projections:
     acceptance_ids: [PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-085]
     target_surfaces: [Runtime, Analyzer, IntegrationEvent]
     evidence_ids: [PAY-EV-016, PAY-EV-017]
-    status: planned
+    status: verified
   PAY-CP-010:
     title: Integration Event boundary
     source: docs/requirements/projection/cap4k-current.md#pay-cp-010
@@ -616,6 +616,16 @@ build_slices:
     acceptance_ids: [PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-046, PAY-AC-047, PAY-AC-082, PAY-AC-085]
     incremental_acceptance_ids: [PAY-AC-083]
     evidence_ids: [PAY-EV-006, PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-019, PAY-EV-021, PAY-EV-022, PAY-EV-023, PAY-EV-024]
+    cap4k_validation: explicit-local-composite
+    cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
+    repository_local_path: none
+    cap4k_commit: dcafcc43928aa47a0613bb839ba5f6010efa3414
+    published_coordinate_cold_start: deferred-to-B6
+  B4:
+    title: merchant daily settlement, transfer execution, and result adjudication
+    status: verified
+    acceptance_ids: [PAY-AC-014, PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-083, PAY-AC-085]
+    evidence_ids: [PAY-EV-008, PAY-EV-009, PAY-EV-016, PAY-EV-019, PAY-EV-021, PAY-EV-022, PAY-EV-023, PAY-EV-024]
     cap4k_validation: explicit-local-composite
     cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
     repository_local_path: none
@@ -727,12 +737,36 @@ evidence:
     status: verified
   PAY-EV-008:
     kind: generated-model
-    path: planned
-    status: not-built
+    path: design/schema.sql
+    related_paths:
+      - design/design.json
+      - design/enums.json
+      - design/value-objects.json
+      - domain/src/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/merchant_settlement
+      - domain/build/generated/cap4k/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/merchant_settlement
+      - adapter/build/generated/cap4k/main/kotlin/com/only4/cap4k/reference/payment/adapter/domain/repositories
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/merchant_settlement/api
+      - start/src/main/resources/schema.sql
+    command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
+    result: 170 total plan items from DB, Design JSON, enum manifest, and value-object manifest; 116 checked-in SKIP and 54 generated OVERWRITE items; the B4 increment contains 48 items (35 SKIP and 13 OVERWRITE) for MerchantSettlement, three owned entity levels, Strong IDs, repository, factory/behavior, settlement enums and values, commands, query, capabilities, domain event, and six Endpoint contracts
+    status: verified
   PAY-EV-009:
     kind: settlement-runtime-test
-    path: planned
-    status: not-built
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/MerchantSettlementReferenceApplicationTests.kt
+    related_paths:
+      - domain/src/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/merchant_settlement/MerchantSettlementBehavior.kt
+      - domain/src/test/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/merchant_settlement/MerchantSettlementBehaviorTest.kt
+      - application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/merchant_settlement
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/application/capabilities/merchant_settlement
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_settlement
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_settlement/MerchantSettlementEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_settlement/MerchantSettlementEndpointHttpConfigurationContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/start/MerchantSettlementSchedulerStructureTest.kt
+      - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
+    command: .\gradlew.bat clean build --no-daemon --console=plain
+    covers: [fee-snapshot-on-first-success, configuration-change-does-not-rewrite-fee, Asia-Shanghai-half-open-period, current-effective-run-candidates, transaction-level-exclusion, amount-127-net-124.46, source-fact-deduplication, composition-freeze, void-and-replacement, accepted-not-success, duplicate-callback-one-fact, unknown-review-and-manual-finalization, late-failure-conflict, negative-net-no-transfer, full-query, uow-rollback-and-concurrency]
+    result: 77 tests across 21 suites pass with zero failures or skips; B4 adds focused domain, adapter contract/structure, and HTTP/H2/JPA settlement evidence while all B1-B3 tests remain green
+    status: verified
   PAY-EV-010:
     kind: channel-configuration-test
     path: planned
@@ -792,8 +826,17 @@ evidence:
     status: verified
   PAY-EV-016:
     kind: settlement-schedule-test
-    path: planned
-    status: not-built
+    path: adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/start/DailyMerchantSettlementScheduler.kt
+    related_paths:
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/start/UnknownMerchantSettlementReviewScheduler.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/start/MerchantSettlementSchedulerStructureTest.kt
+      - flows/com_only4_cap4k_reference_payment_adapter_start_DailyMerchantSettlementScheduler.json
+      - flows/com_only4_cap4k_reference_payment_adapter_start_DailyMerchantSettlementScheduler.mmd
+      - flows/com_only4_cap4k_reference_payment_adapter_start_UnknownMerchantSettlementReviewS.json
+      - flows/com_only4_cap4k_reference_payment_adapter_start_UnknownMerchantSettlementReviewS.mmd
+    command: .\gradlew.bat :adapter:test cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
+    result: both handwritten schedulers contain one Scheduled method whose application action is static Mediator command dispatch; B4 contributes two Time roots and five Endpoint HTTP Actor roots without claiming reliable scheduling or Integration Event transport
+    status: verified
   PAY-EV-017:
     kind: settlement-outbound-event-test
     path: planned
@@ -809,18 +852,22 @@ evidence:
       - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api
       - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/refund/api
       - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/reconciliation/api
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/merchant_settlement/api
       - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment
       - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund
       - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/reconciliation
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_settlement
       - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHandlerStructureTest.kt
-      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
       - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund/RefundEndpointHandlerStructureTest.kt
-      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund/RefundEndpointHttpConfigurationContractTest.kt
       - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/reconciliation/ReconciliationEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_settlement/MerchantSettlementEndpointHandlerStructureTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfigurationContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/refund/RefundEndpointHttpConfigurationContractTest.kt
       - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/reconciliation/ReconciliationEndpointHttpConfigurationContractTest.kt
+      - adapter/src/test/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_settlement/MerchantSettlementEndpointHttpConfigurationContractTest.kt
       - contract/src/test/kotlin/com/only4/cap4k/reference/payment/contract/ContractDependencyLeafTest.kt
     command: .\gradlew.bat :adapter:test :contract:test :start:test --no-daemon --console=plain
-    result: ten one-class-per-file Endpoint Handlers use static Mediator; payment, refund, and reconciliation adapter guards lock explicit projection plus handwritten binding factory, method, path, status, and mapper semantics; contract remains a dependency leaf and all HTTP/H2/JPA integration tests pass
+    result: sixteen one-class-per-file Endpoint Handlers use static Mediator; payment, refund, reconciliation, and merchant-settlement adapter guards lock explicit projection plus handwritten binding factory, method, path, status, and mapper semantics; contract remains a dependency leaf and all HTTP/H2/JPA integration tests pass
     status: verified
   PAY-EV-020:
     kind: runtime-capability-suite
@@ -830,28 +877,35 @@ evidence:
     kind: generator-output-and-tests
     path: build/cap4k/plan.json
     command: .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources --no-daemon --console=plain
-    result: 118 plan items; 77 checked-in SKIP; 41 generated OVERWRITE; generators cover aggregate, command, query, capability, endpoint, enum, value object, and handlers across B1-B3
+    result: 170 plan items; 116 checked-in SKIP; 54 generated OVERWRITE; the B4 increment is 48 items (35 SKIP and 13 OVERWRITE); generators cover aggregate, command, query, capability, endpoint, domain event, enum, and value object artifacts across B1-B4
     determinism:
-      kotlin_source_differences: 0
-      generation_sha256: a487dff5d66dab8d620ec8d3cb4644c57575a9bf79cecd36edae6b4b371f4363
-      plan_sha256: 73a06ff79b6f56f05966da2e08af45049fe3c31c8ccd64999b51fbe0dd00a0b2
+      checked_in_source_differences: 0
+      generated_source_differences: 0
+      checked_in_manifest_sha256: ca7fe3202aece6524f2472da44137ccaa7601dab25b0d4d677168ae22578b59f
+      generated_manifest_sha256: aa1a35ed59d13ee4f57458d1313dec42203dd98095b9b8aa881dafd0ff6b7ebb
+      plan_sha256: 524007f6f5d18aa9e1b07b42c97a473ca86066da486e88ad95ef94d71d135243
     status: verified
   PAY-EV-022:
     kind: analyzer-output-and-tests
-    path: flows/com_only4_cap4k_reference_payment_adapter_start_DailyReconciliationScheduler_rec.json
+    path: flows/com_only4_cap4k_reference_payment_adapter_start_DailyMerchantSettlementScheduler.json
     related_paths:
+      - flows/com_only4_cap4k_reference_payment_adapter_start_UnknownMerchantSettlementReviewS.json
+      - flows/endpoint_http_merchant_settlement_prepare.json
+      - flows/endpoint_http_merchant_settlement_confirm.json
+      - flows/endpoint_http_merchant_settlement_execution_start.json
+      - flows/endpoint_http_merchant_settlement_result_confirm.json
+      - flows/endpoint_http_merchant_settlement_void.json
+      - flows/com_only4_cap4k_reference_payment_adapter_start_DailyReconciliationScheduler_rec.json
       - flows/endpoint_http_reconciliation_batch_rerun.json
       - flows/endpoint_http_reconciliation_difference_dispose.json
-      - flows/endpoint_http_refund_create.json
-      - flows/endpoint_http_refund_result_confirm.json
-      - flows/com_only4_cap4k_reference_payment_adapter_start_RefundReviewScheduler_review.json
       - design/drawing_board_command.json
       - design/drawing_board_query.json
       - design/drawing_board_endpoint.json
       - design/drawing_board_capability.json
+      - design/drawing_board_domain_event.json
       - design/drawing_board_aggregate_elements.json
     command: .\gradlew.bat cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
-    result: 24 analysis items and nine independent flows contain seven Endpoint HTTP Actor roots plus two Time roots; B3 contributes DailyReconciliationScheduler, reconciliation rerun, and difference disposition; all nine Mermaid documents pass Mermaid 11 parser smoke and no cross-entry process stitching is fabricated
+    result: 39 analysis outputs/items and sixteen independent flows contain twelve Endpoint HTTP Actor roots plus four Time roots; B4 contributes five HTTP Actor roots and two Time roots; all sixteen Mermaid documents use quoted labels and pass static syntax smoke; Command, Query, Capability, Domain Event, Endpoint, and Aggregate Structure remain separate evidence without fabricated cross-entry stitching
     status: verified
   PAY-EV-023:
     kind: pipeline-descriptor-and-task-facts
@@ -867,7 +921,7 @@ evidence:
       command_line_property_over_invalid_environment: passed
       blank_property_to_environment_fallback: passed
       no_local_input: selected-released-2.0.1-and-reached-known-unpublished-dsl-boundary
-    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 118 items and analysis plan has 24 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and machine-local Gradle properties remain outside repository and Comet evidence
+    result: six public Pipeline tasks; module roles resolve to adapter, application, contract, and domain; ordinary plan has 170 items and analysis plan has 39 items; tracked settings resolve nonblank cap4k.local.path before nonblank CAP4K_LOCAL_PATH and otherwise select released 2.0.1, while the repository contains no default machine path and machine-local Gradle properties remain outside repository and Comet evidence
     status: verified
   PAY-EV-024:
     kind: agent-facts-export-and-validation
@@ -877,7 +931,7 @@ evidence:
       - build/cap4k/agent/analysis.json
       - build/cap4k/agent/diagnostics.json
     command: .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
-    result: partial only because live DB input freshness is UNKNOWN; 118 ownership items; diagnostics are empty with zero errors, INVALID entries, or plan-evidence-invalid warnings; Analyzer status is ok with four IR input directories and 24 available outputs
+    result: partial only because live DB input freshness is UNKNOWN; 170 ownership items; diagnostics are empty with zero errors, INVALID entries, or plan-evidence-invalid warnings; Analyzer status is ok with four IR input directories and 39 available outputs
     status: verified
   PAY-EV-025:
     kind: merchant-notification-reliability-test
@@ -894,9 +948,11 @@ evidence:
 
 known_gaps:
   - B3 deliberately uses PullChannelStatement provider pull as the primary statement path; bill-arrival Integration Event transport remains deferred to B5.
-  - Published cap4k 2.0.1 does not expose the current mainline Pipeline DSL used by B1-B3; published-coordinate cold start remains deferred to B6.
-  - Current Analyzer output proves seven independent Endpoint HTTP Actor-to-Command flows and two Time roots. Command/Query/Capability anchors and Aggregate element structure are reviewed through independent Drawing Board partitions; hidden handlers/entity methods, runtime state transitions, and cross-entry process stitching are outside the default Flow contract.
-  - Agent Snapshot remains partial only because the DB source is live external input whose freshness is intentionally UNKNOWN; ordinary plan evidence is readable, ownership contains 118 items, Analyzer is ok, and diagnostics are empty with zero errors, INVALID entries, or plan-evidence-invalid warnings.
-  - Production authentication, real payment/refund/statement provider protocols, cryptographic verification, sensitive-data storage, merchant settlement, reliable asynchronous transport, and published-coordinate cold start remain outside B1-B3.
-  - Reconciliation scope and statement-revision composite uniqueness are enforced by the runtime H2 schema because the current aggregate generator does not emit composite unique constraints; generated entity ownership is not altered.
+  - Published cap4k 2.0.1 does not expose the current mainline Pipeline DSL used by B1-B4; published-coordinate cold start remains deferred to B6.
+  - Current Analyzer output proves twelve independent Endpoint HTTP Actor-to-Command roots and four Time roots. Command/Query/Capability/Domain Event anchors and Aggregate element structure are reviewed through independent Drawing Board partitions; hidden handlers/entity methods, runtime state transitions, and cross-entry process stitching remain outside the default Flow contract.
+  - Agent Snapshot remains partial only because the DB source is live external input whose freshness is intentionally UNKNOWN; ordinary plan evidence is readable, ownership contains 170 items, Analyzer is ok with 39 available outputs, and diagnostics are empty with zero errors, INVALID entries, or plan-evidence-invalid warnings.
+  - B4 ordinary schedulers plus synchronous Fake Transfer/Verifier prove only the reference settlement loop; they do not prove PAY-EV-017, Outbox, reliable Command/Event, Integration Event transport, persistent scheduling, lease/retry, or cross-instance exactly-once.
+  - Production authentication, real payment/refund/statement/bank/clearing protocols, cryptographic verification, sensitive-data storage, negative-net recovery, weekly settlement, reliable asynchronous transport, and published-coordinate cold start remain outside B1-B4.
+  - Reconciliation and merchant-settlement composite uniqueness is enforced by the runtime H2 schema where the current aggregate generator does not emit the required composite or effective-slot constraints; generated entity ownership is not altered.
+  - flows/index.json inputDirs remain machine-local locator metadata and are not treated as portable committed evidence; stable identity is tracked upstream.
   - Jimmer projection and only-engine addon verification remain explicitly deferred.

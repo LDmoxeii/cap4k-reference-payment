@@ -619,5 +619,248 @@
         "desc": "Statement covers the requested business scope"
       }
     ]
+  },
+  {
+    "name": "MerchantSettlementStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "PREPARING",
+        "desc": "Settlement composition is being prepared"
+      },
+      {
+        "value": 1,
+        "name": "REVIEW_REQUIRED",
+        "desc": "Prepared evidence requires operator review"
+      },
+      {
+        "value": 2,
+        "name": "PREPARED",
+        "desc": "Settlement composition and totals are ready for confirmation"
+      },
+      {
+        "value": 3,
+        "name": "CONFIRMED",
+        "desc": "Composition is frozen and ready for execution"
+      },
+      {
+        "value": 4,
+        "name": "PROCESSING",
+        "desc": "An external transfer request was accepted"
+      },
+      {
+        "value": 5,
+        "name": "SUCCEEDED",
+        "desc": "A verified transfer result completed the settlement"
+      },
+      {
+        "value": 6,
+        "name": "FAILED",
+        "desc": "The latest transfer attempt failed explicitly"
+      },
+      {
+        "value": 7,
+        "name": "RESULT_UNKNOWN",
+        "desc": "The transfer result is credible but unknown"
+      },
+      {
+        "value": 8,
+        "name": "NEGATIVE_REVIEW_REQUIRED",
+        "desc": "Net amount is negative and external transfer is prohibited"
+      },
+      {
+        "value": 9,
+        "name": "VOIDED",
+        "desc": "The settlement was voided before external execution"
+      },
+      {
+        "value": 10,
+        "name": "CONFLICT_REVIEW_REQUIRED",
+        "desc": "Conflicting execution evidence requires manual review"
+      }
+    ]
+  },
+  {
+    "name": "SettlementLineSourceKind",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "PAYMENT",
+        "desc": "A verified payment success fact"
+      },
+      {
+        "value": 1,
+        "name": "REFUND",
+        "desc": "A verified refund success fact"
+      },
+      {
+        "value": 2,
+        "name": "RECONCILIATION_CONFIRMATION",
+        "desc": "An authorized reconciliation confirmation fact"
+      },
+      {
+        "value": 3,
+        "name": "ADJUSTMENT",
+        "desc": "A traceable settlement adjustment fact"
+      }
+    ]
+  },
+  {
+    "name": "SettlementExecutionAttemptStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "PROCESSING",
+        "desc": "The transfer request was accepted and awaits a final result"
+      },
+      {
+        "value": 1,
+        "name": "SUCCEEDED",
+        "desc": "A verified success result was accepted"
+      },
+      {
+        "value": 2,
+        "name": "FAILED",
+        "desc": "A verified explicit failure result was accepted"
+      },
+      {
+        "value": 3,
+        "name": "RESULT_UNKNOWN",
+        "desc": "A verified unknown result was accepted"
+      },
+      {
+        "value": 4,
+        "name": "REVIEW_REQUIRED",
+        "desc": "The attempt requires authorized manual review"
+      },
+      {
+        "value": 5,
+        "name": "CONFLICT_REVIEW_REQUIRED",
+        "desc": "Conflicting evidence requires authorized manual review"
+      }
+    ]
+  },
+  {
+    "name": "SettlementExecutionFinalResult",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "SUCCESS",
+        "desc": "The external settlement completed successfully"
+      },
+      {
+        "value": 1,
+        "name": "FAILED",
+        "desc": "The external settlement failed explicitly"
+      },
+      {
+        "value": 2,
+        "name": "GATEWAY_REJECTED",
+        "desc": "The transfer request was rejected before processing"
+      },
+      {
+        "value": 3,
+        "name": "UNKNOWN",
+        "desc": "The external settlement result is unknown"
+      }
+    ]
+  },
+  {
+    "name": "SettlementResultDisposition",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
+    "aggregates": [
+      "MerchantSettlement"
+    ],
+    "fields": [
+      {
+        "name": "group",
+        "type": "String"
+      },
+      {
+        "name": "terminal",
+        "type": "Boolean"
+      }
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "RECEIVED",
+        "desc": "The result notification was durably received",
+        "group": "pending",
+        "terminal": false
+      },
+      {
+        "value": 1,
+        "name": "REJECTED",
+        "desc": "The notification failed verification or business matching",
+        "group": "rejected",
+        "terminal": true
+      },
+      {
+        "value": 2,
+        "name": "SUCCESS_ACCEPTED",
+        "desc": "A verified successful settlement result was accepted",
+        "group": "accepted",
+        "terminal": true
+      },
+      {
+        "value": 3,
+        "name": "FAILURE_ACCEPTED",
+        "desc": "A verified failed settlement result was accepted",
+        "group": "accepted",
+        "terminal": true
+      },
+      {
+        "value": 4,
+        "name": "UNKNOWN_ACCEPTED",
+        "desc": "A verified unknown settlement result was accepted",
+        "group": "review",
+        "terminal": true
+      },
+      {
+        "value": 5,
+        "name": "ACCEPTED_DUPLICATE",
+        "desc": "A duplicate notification repeated accepted facts",
+        "group": "accepted",
+        "terminal": true
+      },
+      {
+        "value": 6,
+        "name": "REJECTED_DUPLICATE",
+        "desc": "A duplicate notification repeated rejected facts",
+        "group": "rejected",
+        "terminal": true
+      },
+      {
+        "value": 7,
+        "name": "CONFLICT",
+        "desc": "A notification identity was reused with conflicting facts",
+        "group": "conflict",
+        "terminal": true
+      },
+      {
+        "value": 8,
+        "name": "ATTEMPT_NOT_FOUND",
+        "desc": "The referenced attempt does not belong to the settlement",
+        "group": "rejected",
+        "terminal": true
+      }
+    ]
   }
 ]

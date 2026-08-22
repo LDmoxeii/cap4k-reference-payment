@@ -37,7 +37,11 @@ data class Money private constructor(
             "CNY" to 2,
         )
 
-        private fun fractionDigits(currency: String): Int =
-            requireNotNull(SUPPORTED_FRACTION_DIGITS[currency]) { "unsupported payment currency: $currency" }
+        fun fractionDigits(currency: String): Int {
+            val normalizedCurrency = currency.trim().uppercase()
+            return requireNotNull(SUPPORTED_FRACTION_DIGITS[normalizedCurrency]) {
+                "unsupported payment currency: $normalizedCurrency"
+            }
+        }
     }
 }
