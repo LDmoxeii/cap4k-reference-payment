@@ -1,10 +1,10 @@
-# Payment Reference B1+B2+B3+B4+B5 可运行实现规格
+# Payment Reference B1+B2+B3+B4+B5 + Payment Timeout/Conflict Review 可运行实现规格
 
 ## 1. 目标状态
 
-`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账、商户结算与最小可靠 HTTP Integration Event 系统。它在 B1 支付、B2 退款、B3 日终对账与差异处置、B4 单币种商户日结与资金划拨结果裁决之上增加 B5 入站账单 available event、出站 settlement completed event、可靠 Event/JPA 状态、HTTP transport、失败重试与业务幂等，证明独立 contract leaf、多个 Aggregate Root、Strong ID、Value Object、Command/Query/Capability/Endpoint、Domain Event、Integration Event、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在一条真实业务链中协同工作。
+`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账、商户结算与最小可靠 HTTP Integration Event 系统。它在 B1 支付、B2 退款、B3 日终对账与差异处置、B4 单币种商户日结与资金划拨结果裁决、B5 最小可靠 HTTP Integration Event 之上，闭合 Payment 业务到期、未知结果、迟到/重复/冲突回执、人工 review、商户订单成功唯一性，以及 review 对 B3/B4 资格的传播，证明独立 contract leaf、多个 Aggregate Root、Strong ID、Value Object、Command/Query/Capability/Endpoint、Domain Event、Integration Event、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在一条真实业务链中协同工作。
 
-该状态是完整支付引用项目的前五个实现投影，不改变 `docs/requirements/**` 中的业务真源。B5 只声称 cap4k reliable Event/JPA 与 HTTP Integration Event transport 的最小可运行经验，不声称 broker、reliable Command、通用 Outbox/Inbox、持久化 scheduler、lease、跨实例 exactly-once、only-engine、生产银行/清算网络、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
+该状态包含完整支付引用项目的前五个已接受切片与 GitHub #4 Payment timeout/conflict-review lifecycle，不改变 `docs/requirements/**` 中的业务真源。B5 仍只声称 cap4k reliable Event/JPA 与 HTTP Integration Event transport 的最小可运行经验；#4 的 ordinary scheduler 也不声称 broker、reliable Command、通用 Outbox/Inbox、持久化 scheduler、lease、跨实例 exactly-once、only-engine、生产银行/清算网络、生产商户通知、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
 
 ## 2. 工程与依赖合同
 
@@ -53,8 +53,8 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所
 `design/enums.json` 是 B1/B2/B3/B4/B5 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
 
 - `PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、`CLOSED(4)`、`RESULT_UNKNOWN(5)`。
-- `PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。
-- `PaymentAttemptFinalResult`：`SUCCESS(0)`、`FAILED(1)`、`GATEWAY_REJECTED(2)`。
+- `PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`、`RESULT_UNKNOWN(3)`。
+- `PaymentAttemptFinalResult`：`SUCCESS(0)`、`FAILED(1)`、`GATEWAY_REJECTED(2)`、`RESULT_UNKNOWN(3)`。
 - `MerchantChannelConfigurationStatus`：`ACTIVE(0)`、`RETIRED(1)`。
 - `ChannelResultDisposition`：`RECEIVED(0)`、`REJECTED(1)`、`SUCCESS_ACCEPTED(2)`、`FAILURE_ACCEPTED(3)`、`ACCEPTED_DUPLICATE(4)`、`REJECTED_DUPLICATE(5)`、`CONFLICT(6)`、`ATTEMPT_NOT_FOUND(7)`。
 
@@ -633,9 +633,104 @@ B4 至少包含以下应用入口：
 
 - B5 不实现 reliable Command、通用 Outbox/Inbox 产品层、broker transport、广播、动态服务发现、全局顺序、框架级 DLQ UI、持久化 scheduler、lease 或跨实例 scheduler/exactly-once。
 - B5 不依赖 only-engine，也不执行 only-engine addon gate。only-engine、Jimmer/aggregateProjection、Endpoint Handler generator 与 published-coordinate cold start 分别保留为独立后续验证。
-- B5 不处理 Payment timeout/late-result/conflict-review（GitHub #4），不完成最终 composition audit（GitHub #8），不实现大额退款审批、超期人工例外、负净额追偿、周结、真实银行/清分清算网络或生产 merchant notification service。
+- accepted B5 baseline 本身不处理 Payment timeout/late-result/conflict-review；该缺口由本规格 10E 的 GitHub #4 change 闭合。最终 composition audit（GitHub #8）、大额退款审批、超期人工例外、负净额追偿、周结、真实银行/清分清算网络和生产 merchant notification service 仍不在当前 change。
 - 当前实现必须保留稳定业务身份、event version 与可替换 transport边界，但不得预建无需求的通用分布式基础设施。
+
+## 10E. GitHub #4 Payment timeout、late-result 与 conflict-review 完整目标合同
+
+### 10E.1 目标与责任边界
+
+- 本节闭合 REFPAY-2 中仍未完成的 Payment timeout、result unknown、late、duplicate/conflicting-result 与 payment-specific review 行为，并提供聚焦 REFPAY-6 证据。
+- Payment timeout 是 `expiresAt` 业务生命周期超时，不是 B5 HTTP publisher response timeout。B5 reliable Event/JPA 与 HTTP Integration Event transport 保持不变。
+- #4 完成后仍不执行 #8 的 cross-slice clean-checkout、accepted-lineage 与最终 composition audit。
+
+### 10E.2 Payment 状态与 merchant-order success identity
+
+- `PaymentStatus` 既有 numeric value 保持稳定：PENDING、PROCESSING、SUCCEEDED、FAILED、CLOSED、RESULT_UNKNOWN。
+- accepted success 必须同时形成 stable merchant-order success identity，推荐规范化为 merchant + merchantOrderNumber 的不可变 identity，并由数据库唯一约束保护。相同 order 的不同 idempotency key 不能绕过已成功约束。
+- `CreatePayment` 保留 merchant + idempotencyKey 幂等；在创建前拒绝已存在 accepted merchant-order success identity，返回稳定 `ORDER_ALREADY_PAID`。accepted success 竞争失败映射为稳定业务/并发冲突并保留当前 callback/review evidence。
+- 本 change 只冻结“已成功订单不得第二次成功收款”；失败或关闭后是否允许新支付的更宽 PAY-BR-003 产品策略不扩张。
+
+### 10E.3 到期扫描与关闭裁决
+
+- 新增 ordinary `PaymentExpiryScheduler`（具体命名可按现有风格调整），只向应用层发送扫描 Command，不直接操作 Repository。
+- Command 使用注入 Clock，按 UTC persisted `expiresAt` 选择候选，并在每次裁决前重新装载 Payment。业务展示与对账/结算日期继续使用 `Asia/Shanghai`。
+- 到期、仍为 PENDING、且没有 PROCESSING/RESULT_UNKNOWN attempt 时，Payment 原子进入 CLOSED，保存 closedAt 与稳定 close reason。重复扫描幂等。
+- 到期且存在 PROCESSING/RESULT_UNKNOWN attempt 时，不得 CLOSED/FAILED；Payment 进入 RESULT_UNKNOWN，相关 attempt 进入 RESULT_UNKNOWN，并创建 stable expiry review case。
+- expiry review identity 至少由 paymentId + expiresAt + triggering attempt identities 稳定确定。scheduler 重复、并发 callback 或补跑不得创建重复 case。
+- `StartPaymentAttempt` 在创建 attempt 前再次检查 expiresAt、Payment status 与 blocking review。到期后不主动创建新 attempt。
+
+### 10E.4 Payment review 持久化模型
+
+- PaymentReviewCase 是 Payment-owned child，至少保存 review identity、type、status、openedAt、triggering Payment/attempt/receipt identities、Payment status snapshot、summary、settlement impact 与审计字段。
+- review type 至少区分 `EXPIRY_RESULT_UNKNOWN`、`LATE_SUCCESS_AFTER_TERMINAL`、`MULTIPLE_ATTEMPT_SUCCESS`、`SUCCESS_AFTER_FAILURE_CONFLICT`、`FAILURE_OR_UNKNOWN_AFTER_SUCCESS`、`NOTIFICATION_PAYLOAD_CONFLICT`、`MERCHANT_ORDER_SUCCESS_CONFLICT`。
+- PaymentReviewDecision 是 case-owned append-only child，至少保存 decision identity、decision type、actor/operator、role、authorization outcome、reason、evidence、decidedAt 与 settlement eligibility impact。
+- case、decision、attempt、receipt 不删除、不 soft-delete、不以“最新摘要”覆盖旧 evidence。更正通过追加 decision 完成；查询显示完整历史与当前派生状态。
+- open review 默认 settlement-blocking。当前 eligibility 从所有当前有效 review cases 与最新授权 decisions 派生，不能以 Payment 单一布尔字段作为真源。
+
+### 10E.5 迟到、重复与冲突 callback 裁决
+
+- 同 notification identity 同 payload 重放只增加 receive count；同 identity 不同 payload 把 receipt 标为 CONFLICT，并创建/关联 `NOTIFICATION_PAYLOAD_CONFLICT` review。
+- Payment 为 PENDING/PROCESSING 时的首次可信成功按既有路径形成 accepted success。Payment 为 RESULT_UNKNOWN 时的可信最终结果追加系统 review decision并关闭 unknown review；成功只形成一次 success fact，失败进入 FAILED。
+- CLOSED/FAILED 后可信成功保存为 accepted external evidence，但不立即覆盖 Payment 终态；创建 `LATE_SUCCESS_AFTER_TERMINAL`/`SUCCESS_AFTER_FAILURE_CONFLICT` review，notification intent 保持 HELD_FOR_REVIEW。
+- SUCCEEDED 后可信失败或未知结果不回退 Payment、succeededAt、channelTransactionId、fee snapshot 或 success identity；保存 conflict receipt 并创建/关联 `FAILURE_OR_UNKNOWN_AFTER_SUCCESS` review。
+- 同一 Payment 的另一 attempt 返回可信成功时，第二 attempt/receipt 保存真实 success evidence并进入 conflict-review 状态；Payment 的 accepted revenue、fee snapshot、merchant-order success identity 与 notification intent identity仍只有一份。
+- 同 attempt 已 final 后的相同 payload新 notification identity可以保存为 conflict/duplicate evidence，但不得再次形成 accepted success。具体 duplicate 分类必须保持现有 notification identity 规则可解释且有测试锁定。
+
+### 10E.6 授权人工核对
+
+- Endpoint/Command 接受 paymentId、reviewId、decision、operator identity、role/authorization material、reason、evidence 与 decidedAt；adapter 只映射 contract 并发送 Command。
+- `ACCEPT_LATE_SUCCESS` 只允许 late-success review 存在可信 success receipt 且 Payment 尚未形成 success fact时执行；必须在同一 UoW 获取 merchant-order success identity、冻结 fee snapshot、形成 stable notification intent，并追加 decision。
+- `CONFIRM_FAILURE` 只允许尚未形成 success fact 的 RESULT_UNKNOWN review；Payment 进入 FAILED，历史 attempt/receipt/review 不删除。
+- `KEEP_CURRENT_TERMINAL` 保持 CLOSED/FAILED，保留 late success evidence；`KEEP_ACCEPTED_SUCCESS_WITH_REMEDIATION` 保持首个 SUCCEEDED，并记录第二成功/冲突的补救 reference。两者是否解除结算阻断由授权 decision 的 eligibility impact 与完整 evidence 决定。
+- 未授权、缺少 evidence、decision 与 review type 不匹配、或 merchant-order success identity 被另一 Payment 占用时明确拒绝，不修改当前事实。
+
+### 10E.7 Merchant success notification business intent
+
+- Payment 保存 stable merchant-success notification intent identity，推荐由 paymentId + versioned intent type 派生；重复 callback、review 重放或 transport retry 不创建新 identity。
+- intent state 至少表达 `READY`、`HELD_FOR_REVIEW`、`CANCELLED`。普通首次 accepted success进入 READY；late/double/conflicting success 在 review 未决时为 HELD_FOR_REVIEW；授权接受 success 后可 READY，授权保留非成功终态后可 CANCELLED。
+- 状态变化由 review/callback evidence解释并可查询。本 change 不发送 Integration Event、不调用 merchant endpoint、不实现 delivery attempt、retry、DLQ 或生产 notification service。
+
+### 10E.8 B3/B4 settlement eligibility 传播
+
+- LoadPlatformReconciliationFacts 对 Payment success fact 同时投影 unresolved review identities/type/reason 与 settlement eligibility。匹配算法不得因金额/渠道相符而丢弃 review blocker。
+- ReconciliationItem 保存本 run 的 Payment review evidence snapshot；blocking review 使 item `settlementBlocked=true` 且当前 run 不得被解释为自动可结算。review 解除后需要新 run 或授权 disposition形成可观察闭环，旧 run 不改写。
+- LoadMerchantSettlementCandidates 除 current effective run/item/disposition 外，必须在候选时重新读取 Payment 当前 review eligibility。review 在 reconciliation 后新建仍立即排除；当前仍 blocking 时不得通过 reconciliation confirmation 或旧 matched item 绕过。
+- Payment `settlementBlocked` 字段如果为兼容保留，只能由 review evidence 派生/展示。B3/B4 tests 必须证明改变该单一字段不能在缺少 review eligibility evidence 时授权结算。
+
+### 10E.9 PAY-AC-011 顺序与并发 closure
+
+- sequential create：已成功 merchant order 使用新 idempotency key 返回 `ORDER_ALREADY_PAID`，不创建第二个可执行 Payment。
+- concurrent create/callback：merchant-order success identity 的数据库唯一约束、Payment optimistic version 与同一 UoW 保证最多一个 Payment 可形成 accepted success。失败竞争保留各自 receipt/review，并返回稳定 conflict，而不是两个成功或 500。
+- 同一 Payment 多 attempt success 由 10E.5 的 success-once 规则处理；跨 Payment 的同 order success 由 merchant-order success identity 处理。两个不变量都必须有独立测试。
+
+### 10E.10 Query、HTTP 与错误合同
+
+- GetPayment 返回 status/times、attempts、receipts、success/fee facts、merchant-order success identity、review cases/decisions、current settlement eligibility、merchant notification intent identity/state 与派生摘要；不暴露 JPA aggregate/proxy。
+- review adjudication 使用独立 contract Endpoint；每个 Handler 一类一文件并使用静态 Mediator。expiry scheduler 不伪造 HTTP Endpoint。
+- 稳定错误至少区分 `ORDER_ALREADY_PAID`、`PAYMENT_EXPIRED`、`PAYMENT_REVIEW_REQUIRED`、`REVIEW_NOT_FOUND`、`REVIEW_DECISION_NOT_ALLOWED`、`REVIEW_DECISION_IDEMPOTENCY_CONFLICT`、`REVIEW_UNAUTHORIZED`、`CONCURRENT_MODIFICATION` 与现有 validation/not-found/callback rejection。
+
+### 10E.11 UoW、并发与持久化
+
+- Payment root、attempts、receipts、review cases/decisions、success identity、fee snapshot 与 notification intent 状态推进共用 cap4k JPA UoW 和同一 Hibernate persistence context。
+- 任一 invariant、unique constraint 或 authorization 失败整体回滚，不留下 partial review、无 fee 的 success、READY intent 无 success fact或幽灵 order claim。
+- focused H2/JPA tests 覆盖 scheduler/callback race、双 callback、两个 attempt success、跨 Payment 同 order success、review/callback race、重复 adjudication 和 rollback。
+- 典型 optimistic/unique conflict 映射为稳定 409；允许 application 在明确幂等边界内重读/收敛，但不通过无限自动重试掩盖业务冲突。
+
+### 10E.12 Generator、Analyzer、AgentFacts 与证据
+
+- schema/design/enums/value-objects 登记 PaymentReviewCase/Decision、attempt 新状态、merchant-order success identity 与 merchant notification intent state。existing numeric values不变，checked-in source重复 generation仍 SKIP。
+- Analyzer 生成 Payment expiry scheduler Time root 和 review adjudication HTTP Actor-to-Command Flow，并保留 create/attempt/callback/query/B1-B5 现有输出。不得虚构 durable scheduling、exactly-once或跨入口 stitching。
+- Drawing Board/Aggregate Structure展示 Payment/Attempt/Receipt/Review 与真实 Command/Endpoint anchors。Agent Snapshot ownership非空、analysis ok、diagnostics无 INVALID/error/plan-evidence-invalid；live DB freshness UNKNOWN可保持 PARTIAL。
+- traceability 为 PAY-AC-007/008/009/010/011/015 记录实际测试、路径、命令与状态。PAY-AC-015 使用既有 no-rollback evidence + 本 change review/eligibility evidence共同验收。
+
+### 10E.13 回归、文档与后续边界
+
+- accepted B1-B5 的 84 tests / 22 suites / 0 failures / 0 skips 是进入本 change 的回归基线；新增测试后全量 clean build 必须全部通过，不得降低既有覆盖。
+- README/current projection/traceability/canonical target Spec必须明确区分 Payment business timeout 与 B5 HTTP response timeout，并声明 ordinary scheduler边界。
+- #4 不新增 broker、generic Inbox/Outbox、reliable Command、only-engine、Jimmer、生产认证、生产 merchant notification、published-coordinate cold start或通用 workflow engine。
+- #4 完成、Verify、Archive、PR、CI与 merge后，只更新 #4 与父 #2 的实现证据；#8 仍单独负责所有 required commits位于同一 accepted main lineage后的最终 composition audit。
 
 ## 11. 后续边界
 
-Payment timeout/late-result/conflict-review、最终 accepted-lineage composition、published-coordinate cold start、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine addon verification、Jimmer/aggregateProjection、Endpoint Handler generator 和生产 transport/auth 分别保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP Integration Event 体验。
+Payment timeout/late-result/conflict-review 已由本 change 闭合；最终 accepted-lineage composition、published-coordinate cold start、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine addon verification、Jimmer/aggregateProjection、Endpoint Handler generator 和生产 transport/auth 仍保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP Integration Event 体验，#4 仅证明 Payment 业务生命周期 timeout/review closure。
