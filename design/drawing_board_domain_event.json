@@ -1,6 +1,25 @@
 [
   {
     "tag": "domain_event",
+    "package": "merchant_settlement.completion",
+    "name": "MerchantSettlementCompleted",
+    "description": "A merchant settlement formed its first accepted terminal success fact",
+    "aggregates": ["MerchantSettlement"],
+    "persist": false,
+    "fields": [
+      { "name": "eventIdentity", "type": "String" },
+      { "name": "settlementId", "type": "String" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "netAmount", "type": "Big_decimal" },
+      { "name": "completedAt", "type": "java.time.LocalDateTime" }
+    ],
+    "resultFields": [
+    ]
+  },
+  {
+    "tag": "domain_event",
     "package": "merchant_settlement.lifecycle",
     "name": "MerchantSettlementActivationRequested",
     "description": "Activate replacement settlement ownership after the predecessor release has been persisted",

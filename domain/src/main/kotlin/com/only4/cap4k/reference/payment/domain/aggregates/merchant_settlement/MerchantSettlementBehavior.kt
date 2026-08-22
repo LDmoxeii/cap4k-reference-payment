@@ -6,6 +6,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.e
 import com.only4.cap4k.ddd.core.domain.event.DomainEventSupervisor
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementResultDisposition
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementActivationRequestedDomainEvent
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementCompletedDomainEvent
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome
 import java.math.BigDecimal
 import java.security.MessageDigest
@@ -51,8 +52,7 @@ fun MerchantSettlement.confirmComposition(
     status = when {
         netAmount.signum() < 0 -> MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED
         netAmount.signum() == 0 -> {
-            settledFactFormed = true
-            completedAt = confirmedAt
+            formSettledSuccess(confirmedAt)
             MerchantSettlementStatus.SUCCEEDED
         }
         else -> MerchantSettlementStatus.CONFIRMED
@@ -260,10 +260,7 @@ fun MerchantSettlement.recordSettlementResult(
             receipt.decision = SettlementResultDisposition.SUCCESS_ACCEPTED
             attempt.status = SettlementExecutionAttemptStatus.SUCCEEDED
             attempt.finalResult = SettlementExecutionFinalResult.SUCCESS
-            status = MerchantSettlementStatus.SUCCEEDED
-            completedAt = occurredAt
-            val formedNow = !settledFactFormed
-            settledFactFormed = true
+            val formedNow = formSettledSuccess(occurredAt)
             resultOutcome(attempt, SettlementResultDisposition.SUCCESS_ACCEPTED, settledFactFormedNow = formedNow)
         }
         "FAILED" -> {
@@ -352,10 +349,7 @@ fun MerchantSettlement.adjudicateUnknownResult(
     return if (normalizedResult == "SUCCESS") {
         attempt.status = SettlementExecutionAttemptStatus.SUCCEEDED
         attempt.finalResult = SettlementExecutionFinalResult.SUCCESS
-        status = MerchantSettlementStatus.SUCCEEDED
-        completedAt = adjudicatedAt
-        val formedNow = !settledFactFormed
-        settledFactFormed = true
+        val formedNow = formSettledSuccess(adjudicatedAt)
         resultOutcome(attempt, SettlementResultDisposition.SUCCESS_ACCEPTED, reviewSummary = summary, settledFactFormedNow = formedNow)
     } else {
         attempt.status = SettlementExecutionAttemptStatus.FAILED
@@ -446,6 +440,27 @@ fun MerchantSettlement.linkPredecessor(predecessorId: MerchantSettlementId) {
         "settlement $id predecessor cannot change"
     }
     predecessorSettlementId = predecessorId.toString()
+}
+
+private fun MerchantSettlement.formSettledSuccess(completedAt: LocalDateTime): Boolean {
+    status = MerchantSettlementStatus.SUCCEEDED
+    this.completedAt = completedAt
+    if (settledFactFormed) return false
+
+    settledFactFormed = true
+    DomainEventSupervisor.instance.attach(
+        MerchantSettlementCompletedDomainEvent(
+            eventIdentity = stableIdentity("MerchantSettlementCompleted:v1", id.toString()),
+            settlementId = id.toString(),
+            merchantId = merchantId,
+            channelId = channelId,
+            currency = currency,
+            netAmount = netAmount,
+            completedAt = completedAt,
+        ),
+        this,
+    )
+    return true
 }
 
 private fun MerchantSettlement.requireAuthorized(operatorIdentity: String, operatorRole: String) {

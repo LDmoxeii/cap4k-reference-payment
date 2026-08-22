@@ -60,18 +60,21 @@ class ReconciliationBatchBehaviorTest {
     @Test
     fun `same statement identity and revision is idempotent while a new revision supersedes and retains history`() {
         val batch = batch()
-        val first = batch.appendTestRun(statement(revision = "1"), listOf(fact("matched", "tx-matched")), NOW)
-        val replay = batch.appendTestRun(statement(revision = "1"), listOf(fact("different", "tx-other")), NOW.plusMinutes(1))
-        val revised = batch.appendTestRun(statement(revision = "2"), listOf(fact("matched", "tx-matched")), NOW.plusMinutes(2))
+        val first = batch.appendTestRun(statement(revision = "2"), listOf(fact("matched", "tx-matched")), NOW)
+        val replay = batch.appendTestRun(statement(revision = "2"), listOf(fact("different", "tx-other")), NOW.plusMinutes(1))
+        val revised = batch.appendTestRun(statement(revision = "3"), listOf(fact("matched", "tx-matched")), NOW.plusMinutes(2))
+        val lateOlder = batch.appendTestRun(statement(revision = "1"), listOf(fact("older", "tx-older")), NOW.plusMinutes(3))
 
         assertThat(replay.idempotentReplay).isTrue()
         assertThat(replay.run).isSameAs(first.run)
-        assertThat(batch.reconciliationRuns).hasSize(2)
+        assertThat(batch.reconciliationRuns).hasSize(3)
         assertThat(first.run.status).isEqualTo(ReconciliationRunStatus.SUPERSEDED)
         assertThat(first.run.reconciliationItems).hasSize(1)
         assertThat(revised.run.status).isEqualTo(ReconciliationRunStatus.COMPLETED)
+        assertThat(lateOlder.run.status).isEqualTo(ReconciliationRunStatus.SUPERSEDED)
         assertThat(batch.currentEffectiveRunId).isEqualTo(revised.run.id.toString())
         assertThat(batch.currentEffectiveRunId).isNotEqualTo(first.run.id.toString())
+        assertThat(batch.currentEffectiveRunId).isNotEqualTo(lateOlder.run.id.toString())
     }
 
     @Test

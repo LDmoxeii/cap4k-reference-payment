@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.only4.cap4k.reference.payment.adapter.application.capabilities.merchant_settlement.transfer.StartSettlementTransferHandler
 import com.only4.cap4k.reference.payment.adapter.start.RefundReviewScheduler
 import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd
+import com.only4.cap4k.reference.payment.application.subscribers.domain.merchant_settlement.MerchantSettlementCompletedDomainEventSubscriber
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
@@ -54,6 +55,9 @@ class PaymentReferenceApplicationTests(
 
     @field:MockitoSpyBean
     private lateinit var activationHandler: ActivateMerchantSettlementCmd.Handler
+
+    @field:MockitoSpyBean
+    private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
     @Test
     fun `create attempt confirm duplicate conflict and query form one durable payment chain`() {

@@ -27,11 +27,20 @@ class ChannelStatementFixtureStore {
         }
     }
 
-    fun latest(channelId: String, currency: String, reconciliationDate: LocalDate): ChannelStatement =
-        statements[Scope(channelId, currency.uppercase(), reconciliationDate)]?.lastOrNull()
+    fun latest(channelId: String, currency: String, reconciliationDate: LocalDate): ChannelStatement {
+        val candidates = statements[Scope(channelId, currency.uppercase(), reconciliationDate)]
             ?: throw ChannelStatementUnavailableException(channelId, currency, reconciliationDate)
+        val latestIdentity = candidates.last().statementIdentity
+        return candidates.asSequence()
+            .filter { it.statementIdentity == latestIdentity }
+            .maxWithOrNull(compareBy<ChannelStatement> { revisionOrder(it.statementRevision) }.thenBy { it.fetchedAt })
+            ?: throw ChannelStatementUnavailableException(channelId, currency, reconciliationDate)
+    }
 
     fun clear() = statements.clear()
+
+    private fun revisionOrder(revision: String) = revision.toBigIntegerOrNull()
+        ?: throw IllegalArgumentException("statement revision must be a positive integer: $revision")
 
     private data class Scope(
         val channelId: String,

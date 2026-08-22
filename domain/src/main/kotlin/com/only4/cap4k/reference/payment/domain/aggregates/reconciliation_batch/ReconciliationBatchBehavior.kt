@@ -51,8 +51,16 @@ internal fun ReconciliationBatch.appendReconciliationRun(
         it.statementIdentity == statement.statementIdentity && it.statementRevision == statement.statementRevision
     }?.let { return ReconciliationRunResult(it, true) }
 
-    reconciliationRuns.filter { it.status != ReconciliationRunStatus.FAILED }
-        .forEach { it.status = ReconciliationRunStatus.SUPERSEDED }
+    val effectiveRun = reconciliationRuns.lastOrNull {
+        it.status != ReconciliationRunStatus.SUPERSEDED && it.status != ReconciliationRunStatus.FAILED
+    }
+    val isLateOlderRevision = effectiveRun != null &&
+        effectiveRun.statementIdentity == statement.statementIdentity &&
+        compareStatementRevision(statement.statementRevision, effectiveRun.statementRevision) < 0
+    if (!isLateOlderRevision) {
+        reconciliationRuns.filter { it.status != ReconciliationRunStatus.FAILED }
+            .forEach { it.status = ReconciliationRunStatus.SUPERSEDED }
+    }
 
     val items = classify(statement.records, platformFacts)
     val matched = items.count { it.differenceType == ReconciliationDifferenceType.MATCHED }
@@ -63,7 +71,7 @@ internal fun ReconciliationBatch.appendReconciliationRun(
         statementIdentity = statement.statementIdentity,
         statementRevision = statement.statementRevision,
         statementCompleteness = statement.completeness,
-        status = ReconciliationRunStatus.COMPLETED,
+        status = if (isLateOlderRevision) ReconciliationRunStatus.SUPERSEDED else ReconciliationRunStatus.COMPLETED,
         fetchedAt = LocalDateTime.ofInstant(statement.fetchedAt, ZoneOffset.UTC),
         startedAt = startedAt,
         completedAt = completedAt,
@@ -77,8 +85,10 @@ internal fun ReconciliationBatch.appendReconciliationRun(
     run.id = runId
     items.forEach(run.reconciliationItems::add)
     reconciliationRuns.add(run)
-    currentEffectiveRunId = runId.toString()
-    applyEffectiveRun(run, completedAt)
+    if (!isLateOlderRevision) {
+        currentEffectiveRunId = runId.toString()
+        applyEffectiveRun(run, completedAt)
+    }
     return ReconciliationRunResult(run, false)
 }
 
@@ -188,6 +198,16 @@ fun ReconciliationBatch.recalculateCompletion(at: LocalDateTime = LocalDateTime.
 private fun ReconciliationBatch.effectiveRun(): ReconciliationRun =
     reconciliationRuns.lastOrNull { it.status != ReconciliationRunStatus.SUPERSEDED }
         ?: throw IllegalStateException("Batch has no effective reconciliation run")
+
+private fun compareStatementRevision(left: String, right: String): Int {
+    val leftNumeric = left.toBigIntegerOrNull()
+    val rightNumeric = right.toBigIntegerOrNull()
+    return if (leftNumeric != null && rightNumeric != null) {
+        leftNumeric.compareTo(rightNumeric)
+    } else {
+        left.compareTo(right)
+    }
+}
 
 private fun ReconciliationBatch.recalculate(run: ReconciliationRun, at: LocalDateTime) {
     run.unresolvedDifferenceCount = run.reconciliationItems.count { !it.resolved }

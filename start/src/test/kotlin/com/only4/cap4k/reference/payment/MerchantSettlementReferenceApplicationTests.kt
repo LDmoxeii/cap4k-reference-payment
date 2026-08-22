@@ -3,6 +3,11 @@ package com.only4.cap4k.reference.payment
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.only4.cap4k.ddd.core.Mediator
+import com.only4.cap4k.ddd.core.application.command.Command
+import com.only4.cap4k.ddd.core.application.command.CommandHandler
+import com.only4.cap4k.ddd.core.application.event.IntegrationEventEnvelope
+import com.only4.cap4k.ddd.core.application.event.IntegrationEventEnvelopeCodec
+import com.only4.cap4k.ddd.core.domain.event.ReliableEventCoordinator
 import com.only4.cap4k.reference.payment.adapter.application.capabilities.merchant_settlement.transfer.StartSettlementTransferHandler
 import com.only4.cap4k.reference.payment.adapter.application.capabilities.reconciliation.channel.ChannelStatementFixtureStore
 import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.adjustment.ReturnMerchantSettlementForAdjustmentCmd
@@ -11,17 +16,24 @@ import com.only4.cap4k.reference.payment.application.capabilities.merchant_settl
 import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.review.AdjudicateMerchantSettlementResultCmd
 import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.review.ReviewUnknownMerchantSettlementsCmd
 import com.only4.cap4k.reference.payment.application.commands.reconciliation.run.RunDailyReconciliationCmd
+import com.only4.cap4k.reference.payment.application.subscribers.domain.merchant_settlement.MerchantSettlementCompletedDomainEventSubscriber
+import com.only4.cap4k.reference.payment.contract.events.integration.outbound.merchant_settlement.MerchantSettlementCompletedIntegrationEvent
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.StatementCompleteness
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatement
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatementRecord
+import com.sun.net.httpserver.HttpServer
 import java.math.BigDecimal
+import java.net.InetSocketAddress
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -30,6 +42,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.stereotype.Service
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -44,6 +57,7 @@ class MerchantSettlementReferenceApplicationTests(
     @param:Autowired private val objectMapper: ObjectMapper,
     @param:Autowired private val statements: ChannelStatementFixtureStore,
     @param:Autowired private val jdbcTemplate: JdbcTemplate,
+    @param:Autowired private val reliableEventCoordinator: ReliableEventCoordinator,
 ) {
 
     @field:MockitoSpyBean
@@ -51,6 +65,9 @@ class MerchantSettlementReferenceApplicationTests(
 
     @field:MockitoSpyBean
     private lateinit var activationHandler: ActivateMerchantSettlementCmd.Handler
+
+    @field:MockitoSpyBean
+    private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
     @Test
     fun `merchant settlement lifecycle produces net 127 and preserves callback evidence`() {
@@ -172,6 +189,7 @@ class MerchantSettlementReferenceApplicationTests(
         assertThat(attempt.requiredText("status")).isEqualTo("CONFLICT_REVIEW_REQUIRED")
         assertThat(attempt["notificationReceiveCount"].asInt()).isEqualTo(3)
         assertThat(attempt["receipts"]).hasSize(2)
+        assertThat(completedEventCount(settlementId)).isEqualTo(1L)
         assertThat(attempt["receipts"].arrayItem("notificationIdentity", "N-B4-LIFECYCLE-SUCCESS")["receiveCount"].asInt()).isEqualTo(2)
         assertThat(attempt["receipts"].arrayItem("notificationIdentity", "N-B4-LIFECYCLE-LATE-FAILURE").requiredText("decision"))
             .isEqualTo("CONFLICT")
@@ -244,6 +262,196 @@ class MerchantSettlementReferenceApplicationTests(
         assertThat(settlement["attempts"]).hasSize(1)
         assertThat(settlement["attempts"][0]["receipts"]).hasSize(2)
         assertThat(settlement["attempts"][0]["finalResult"].asText()).isEqualTo("SUCCESS")
+        assertThat(completedEventCount(settlementId)).isEqualTo(1L)
+    }
+
+    @Test
+    fun `settlement success and outbound event record roll back together when the completion subscriber fails`() {
+        val date = LocalDate.parse("2026-06-28")
+        val payment = createSucceededPayment("B5-OUTBOX-ROLLBACK", "100.00", "2026-06-28T02:00:00Z")
+        reconcile(date, "statement-b5-outbox-rollback", payments = listOf(payment to "100.00"))
+        val settlementId = prepare(date, "b5-outbox-rollback").requiredText("settlementId")
+        confirm(settlementId, "2026-06-29T02:00:00Z")
+        val execution = startExecution(settlementId, "2026-06-29T03:00:00Z")
+
+        Mockito.doAnswer { invocation ->
+            invocation.callRealMethod()
+            throw IllegalStateException("force rollback after outbound event enqueue")
+        }.`when`(completedSubscriber).on(mockitoAny())
+        val result = try {
+            postJsonResult(
+                "/api/channel/settlement-results",
+                settlementResultRequest(
+                    settlementId = settlementId,
+                    attemptId = execution.requiredText("attemptId"),
+                    groupIdentity = execution.requiredText("executionGroupIdentity"),
+                    requestIdentity = execution.requiredText("requestIdentity"),
+                    externalIdentity = "STL-${execution.requiredText("requestIdentity")}",
+                    notificationId = "N-B5-OUTBOX-ROLLBACK",
+                    amount = "98.00",
+                    result = "SUCCESS",
+                    occurredAt = "2026-06-29T03:05:00Z",
+                    receivedAt = "2026-06-29T03:05:30Z",
+                ),
+            )
+        } finally {
+            Mockito.reset(completedSubscriber)
+        }
+        assertThat(result.status).isNotIn(200, 201)
+
+        val settlement = getJson("/api/merchant-settlements/$settlementId")
+        assertThat(settlement.requiredText("status")).isEqualTo("PROCESSING")
+        assertThat(settlement["settledFactFormed"].asBoolean()).isFalse()
+        assertThat(settlement["attempts"][0].requiredText("status")).isEqualTo("PROCESSING")
+        assertThat(settlement["attempts"][0]["finalResult"].isNull).isTrue()
+        assertThat(completedEventCount(settlementId)).isZero()
+    }
+
+    @Test
+    fun `outbound HTTP event keeps one identity across failed handoff and durable retry`() {
+        val receivedBodies = CopyOnWriteArrayList<String>()
+        val responseStatus = AtomicInteger(503)
+        val receiverPort = requireNotNull(System.getProperty("payment.reference.test.integration-event-port")) {
+            "The Gradle test task must provide payment.reference.test.integration-event-port"
+        }.toInt()
+        val receiver = HttpServer.create(InetSocketAddress("127.0.0.1", receiverPort), 0)
+        receiver.createContext("/cap4k/integration-events") { exchange ->
+            try {
+                receivedBodies += exchange.requestBody.readBytes().toString(Charsets.UTF_8)
+                exchange.sendResponseHeaders(responseStatus.get(), -1)
+            } finally {
+                exchange.close()
+            }
+        }
+        receiver.start()
+
+        val eventIdentity = "merchant-settlement-completed-http-retry"
+        val event = MerchantSettlementCompletedIntegrationEvent(
+            eventIdentity = eventIdentity,
+            settlementId = "settlement-http-retry",
+            merchantId = "M-001",
+            channelId = "C-001",
+            currency = "CNY",
+            netAmount = BigDecimal("127.00"),
+            completedAt = Instant.parse("2026-08-22T04:00:00Z"),
+        )
+
+        try {
+            Mediator.commands.send(EnqueueMerchantSettlementCompletedForTestCmd.Request(event))
+
+            val failed = awaitReliableEvent(eventIdentity, expectedState = -9, minimumTriedTimes = 1)
+            val firstEnvelope = awaitEventEnvelopes(receivedBodies, eventIdentity, minimumCount = 1).single()
+            assertThat(firstEnvelope.eventId).isEqualTo(failed.eventUuid)
+            assertThat(firstEnvelope.eventType).isEqualTo(MerchantSettlementCompletedIntegrationEvent.EVENT_NAME)
+            assertThat(firstEnvelope.deliveryAttempt).isEqualTo(1)
+
+            responseStatus.set(204)
+            val delivered = awaitReliableEvent(
+                eventIdentity = eventIdentity,
+                expectedState = 1,
+                minimumTriedTimes = 2,
+                retrySignal = {
+                    jdbcTemplate.update(
+                        "update __event set next_try_time = current_timestamp where event_uuid = ?",
+                        failed.eventUuid,
+                    )
+                    reliableEventCoordinator.wake()
+                },
+            )
+            val envelopes = awaitEventEnvelopes(receivedBodies, eventIdentity, minimumCount = 2)
+                .sortedBy { it.deliveryAttempt }
+            assertThat(delivered.eventUuid).isEqualTo(failed.eventUuid)
+            assertThat(delivered.triedTimes).isEqualTo(2)
+            assertThat(envelopes.map { it.eventId }).containsOnly(failed.eventUuid)
+            assertThat(envelopes.map { it.eventType }).containsOnly(MerchantSettlementCompletedIntegrationEvent.EVENT_NAME)
+            assertThat(envelopes.map { it.deliveryAttempt }).containsExactly(1, 2)
+            assertThat(envelopes.map { it.payloadJson }.distinct()).hasSize(1)
+        } finally {
+            receiver.stop(0)
+        }
+    }
+
+    @Test
+    fun `outbound HTTP event remains retryable after response timeout and recovers with the same identity`() {
+        val receivedBodies = CopyOnWriteArrayList<String>()
+        val delayFirstResponse = AtomicBoolean(true)
+        val firstRequestStarted = CountDownLatch(1)
+        val releaseFirstResponse = CountDownLatch(1)
+        val firstRequestFinished = CountDownLatch(1)
+        val receiverPort = requireNotNull(System.getProperty("payment.reference.test.integration-event-port")) {
+            "The Gradle test task must provide payment.reference.test.integration-event-port"
+        }.toInt()
+        val receiver = HttpServer.create(InetSocketAddress("127.0.0.1", receiverPort), 0)
+        receiver.createContext("/cap4k/integration-events") { exchange ->
+            val delayedAttempt = delayFirstResponse.compareAndSet(true, false)
+            try {
+                receivedBodies += exchange.requestBody.readBytes().toString(Charsets.UTF_8)
+                if (delayedAttempt) {
+                    firstRequestStarted.countDown()
+                    check(releaseFirstResponse.await(20, TimeUnit.SECONDS)) {
+                        "The timeout test did not release the delayed HTTP response"
+                    }
+                }
+                exchange.sendResponseHeaders(204, -1)
+            } finally {
+                if (delayedAttempt) firstRequestFinished.countDown()
+                exchange.close()
+            }
+        }
+        receiver.start()
+
+        val eventIdentity = "merchant-settlement-completed-http-timeout-retry"
+        val event = MerchantSettlementCompletedIntegrationEvent(
+            eventIdentity = eventIdentity,
+            settlementId = "settlement-http-timeout-retry",
+            merchantId = "M-001",
+            channelId = "C-001",
+            currency = "CNY",
+            netAmount = BigDecimal("127.00"),
+            completedAt = Instant.parse("2026-08-22T05:00:00Z"),
+        )
+
+        try {
+            Mediator.commands.send(EnqueueMerchantSettlementCompletedForTestCmd.Request(event))
+            assertThat(firstRequestStarted.await(2, TimeUnit.SECONDS)).isTrue()
+
+            val failed = awaitReliableEvent(eventIdentity, expectedState = -9, minimumTriedTimes = 1)
+            assertThat(firstRequestFinished.count).isEqualTo(1L)
+            val failureFacts = jdbcTemplate.queryForObject(
+                "select failure_facts from __event where event_uuid = ?",
+                String::class.java,
+                failed.eventUuid,
+            )
+            assertThat(failureFacts)
+                .contains("HttpIntegrationEventHandoffException")
+                .contains("\"retryable\":true")
+
+            releaseFirstResponse.countDown()
+            assertThat(firstRequestFinished.await(2, TimeUnit.SECONDS)).isTrue()
+            val delivered = awaitReliableEvent(
+                eventIdentity = eventIdentity,
+                expectedState = 1,
+                minimumTriedTimes = 2,
+                retrySignal = {
+                    jdbcTemplate.update(
+                        "update __event set next_try_time = current_timestamp where event_uuid = ?",
+                        failed.eventUuid,
+                    )
+                    reliableEventCoordinator.wake()
+                },
+            )
+            val envelopes = awaitEventEnvelopes(receivedBodies, eventIdentity, minimumCount = 2)
+                .sortedBy { it.deliveryAttempt }
+            assertThat(delivered.eventUuid).isEqualTo(failed.eventUuid)
+            assertThat(delivered.triedTimes).isEqualTo(2)
+            assertThat(envelopes.map { it.eventId }).containsOnly(failed.eventUuid)
+            assertThat(envelopes.map { it.eventType }).containsOnly(MerchantSettlementCompletedIntegrationEvent.EVENT_NAME)
+            assertThat(envelopes.map { it.deliveryAttempt }).containsExactly(1, 2)
+            assertThat(envelopes.map { it.payloadJson }.distinct()).hasSize(1)
+        } finally {
+            releaseFirstResponse.countDown()
+            receiver.stop(0)
+        }
     }
 
     @Test
@@ -873,6 +1081,69 @@ class MerchantSettlementReferenceApplicationTests(
         "verificationMaterial" to "settlement-secret",
     )
 
+    private fun awaitReliableEvent(
+        eventIdentity: String,
+        expectedState: Int,
+        minimumTriedTimes: Int,
+        retrySignal: (() -> Unit)? = null,
+    ): ReliableEventRow {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15)
+        var latest: ReliableEventRow? = null
+        var pollCount = 0
+        while (System.nanoTime() < deadline) {
+            if (retrySignal != null && pollCount++ % 5 == 0) {
+                retrySignal()
+            }
+            latest = jdbcTemplate.query(
+                "select event_uuid, event_state, tried_times from __event where event_type = ? and data like ?",
+                { resultSet, _ ->
+                    ReliableEventRow(
+                        eventUuid = resultSet.getString("event_uuid"),
+                        state = resultSet.getInt("event_state"),
+                        triedTimes = resultSet.getInt("tried_times"),
+                    )
+                },
+                MerchantSettlementCompletedIntegrationEvent.EVENT_NAME,
+                "%\"eventIdentity\":\"$eventIdentity\"%",
+            ).firstOrNull()
+            if (latest?.state == expectedState && latest.triedTimes >= minimumTriedTimes) {
+                return latest
+            }
+            Thread.sleep(50)
+        }
+        error(
+            "Timed out waiting for eventIdentity=$eventIdentity state=$expectedState " +
+                "minimumTriedTimes=$minimumTriedTimes; latest=$latest"
+        )
+    }
+
+    private fun awaitEventEnvelopes(
+        receivedBodies: List<String>,
+        eventIdentity: String,
+        minimumCount: Int,
+    ): List<IntegrationEventEnvelope> {
+        val codec = IntegrationEventEnvelopeCodec()
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15)
+        var matching = emptyList<IntegrationEventEnvelope>()
+        while (System.nanoTime() < deadline) {
+            matching = receivedBodies.map(codec::decode)
+                .filter { it.payloadJson.contains("\"eventIdentity\":\"$eventIdentity\"") }
+            if (matching.size >= minimumCount) {
+                return matching
+            }
+            Thread.sleep(50)
+        }
+        error("Timed out waiting for $minimumCount HTTP envelopes for eventIdentity=$eventIdentity; actual=${matching.size}")
+    }
+
+    private fun completedEventCount(settlementId: String): Long =
+        jdbcTemplate.queryForObject(
+            "select count(*) from __event where event_type = ? and data like ?",
+            Long::class.java,
+            "payment.merchant-settlement.completed.v1",
+            "%\"settlementId\":\"$settlementId\"%",
+        ) ?: 0L
+
     private fun postJson(path: String, payload: Any, expectedStatus: Int): JsonNode {
         val result = mockMvc.perform(
             post(path)
@@ -916,6 +1187,12 @@ class MerchantSettlementReferenceApplicationTests(
         return null as T
     }
 
+    private data class ReliableEventRow(
+        val eventUuid: String,
+        val state: Int,
+        val triedTimes: Int,
+    )
+
     private data class HttpJsonResult(
         val status: Int,
         val body: JsonNode,
@@ -932,4 +1209,17 @@ class MerchantSettlementReferenceApplicationTests(
         val channelRefundId: String,
         val occurredAt: String,
     )
+}
+internal object EnqueueMerchantSettlementCompletedForTestCmd {
+    @Service
+    class Handler : CommandHandler<Request, Boolean> {
+        override fun handle(command: Request): Boolean {
+            Mediator.events.enqueue(command.event)
+            return true
+        }
+    }
+
+    data class Request(
+        val event: MerchantSettlementCompletedIntegrationEvent,
+    ) : Command<Boolean>
 }

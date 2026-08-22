@@ -3,11 +3,16 @@ package com.only4.cap4k.reference.payment
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.only4.cap4k.ddd.core.Mediator
+import com.only4.cap4k.ddd.core.application.event.IntegrationEventEnvelope
+import com.only4.cap4k.ddd.core.application.event.IntegrationEventEnvelopeCodec
+import com.only4.cap4k.ddd.core.share.json.RuntimeJson
 import com.only4.cap4k.reference.payment.adapter.application.capabilities.merchant_settlement.transfer.StartSettlementTransferHandler
 import com.only4.cap4k.reference.payment.adapter.application.capabilities.reconciliation.channel.ChannelStatementFixtureStore
 import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.lifecycle.ActivateMerchantSettlementCmd
 import com.only4.cap4k.reference.payment.adapter.endpoints.payment.PaymentHttpErrorAdvice
 import com.only4.cap4k.reference.payment.application.commands.reconciliation.run.RunDailyReconciliationCmd
+import com.only4.cap4k.reference.payment.application.subscribers.domain.merchant_settlement.MerchantSettlementCompletedDomainEventSubscriber
+import com.only4.cap4k.reference.payment.contract.events.integration.inbound.reconciliation.ChannelStatementAvailableIntegrationEvent
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.appendReconciliationRun
@@ -56,6 +61,9 @@ class ReconciliationReferenceApplicationTests(
 
     @field:MockitoSpyBean
     private lateinit var activationHandler: ActivateMerchantSettlementCmd.Handler
+
+    @field:MockitoSpyBean
+    private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
     @Test
     fun `daily reconciliation matches payment and refund facts and exposes one effective run`() {
@@ -512,6 +520,59 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    fun `inbound statement event replays once and a newer revision becomes effective without late rollback`() {
+        val date = LocalDate.parse("2026-07-20")
+        val identity = "statement-b5-inbound-revision"
+        statements.publish(statement(identity, "1", date, StatementCompleteness.COMPLETE, emptyList()))
+        val revisionOne = channelStatementAvailableEvent("B5-INBOUND-REV-1", date, identity, "1")
+
+        postIntegrationEvent(revisionOne, expectedStatus = 200)
+        postIntegrationEvent(revisionOne.copy(eventIdentity = "B5-INBOUND-REV-1-REPLAY"), expectedStatus = 200)
+        assertThat(runCount(date, identity, "1")).isEqualTo(1L)
+
+        statements.publish(statement(identity, "2", date, StatementCompleteness.COMPLETE, emptyList()))
+        postIntegrationEvent(channelStatementAvailableEvent("B5-INBOUND-REV-2", date, identity, "2"), expectedStatus = 200)
+        assertThat(runCount(date, identity, "2")).isEqualTo(1L)
+
+        postIntegrationEvent(revisionOne.copy(eventIdentity = "B5-INBOUND-LATE-REV-1"), expectedStatus = 200)
+        val batch = getJson("/api/reconciliation-batches/${batchId(date)}")
+        assertThat(batch["runs"]).hasSize(2)
+        val effectiveRun = batch["runs"].arrayItem("runId", batch.requiredText("currentEffectiveRunId"))
+        assertThat(effectiveRun.requiredText("statementRevision")).isEqualTo("2")
+    }
+
+    @Test
+    fun `inbound statement event retries after provider recovery and converges with scheduler and rerun`() {
+        val date = LocalDate.parse("2026-07-21")
+        val identity = "statement-b5-provider-recovery"
+        val event = channelStatementAvailableEvent("B5-INBOUND-RECOVERY", date, identity, "1")
+
+        postIntegrationEvent(event, expectedStatus = 500)
+        assertThat(batchCount(date)).isZero()
+
+        val scheduled = Mediator.commands.send(
+            RunDailyReconciliationCmd.Request(
+                channelId = "C-001",
+                currency = "CNY",
+                triggeredAt = Instant.parse("2026-07-22T04:00:00Z"),
+            )
+        )
+        assertThat(scheduled.batchStatus).isEqualTo("FETCH_FAILED")
+
+        statements.publish(statement(identity, "1", date, StatementCompleteness.COMPLETE, emptyList()))
+        postIntegrationEvent(event, expectedStatus = 200)
+        assertThat(runCount(date, identity, "1")).isEqualTo(1L)
+
+        val rerun = postJson(
+            "/api/reconciliation-batches/${scheduled.batchId}/reruns",
+            rerunRequest(scheduled.batchId, "2026-07-23T04:00:00Z"),
+            expectedStatus = 200,
+        )
+        assertThat(rerun["idempotentReplay"].asBoolean()).isTrue()
+        assertThat(runCount(date, identity, "1")).isEqualTo(1L)
+    }
+
+    @Test
     fun `unavailable and incomplete statements remain queryable and cannot complete`() {
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
@@ -914,6 +975,78 @@ class ReconciliationReferenceApplicationTests(
         occurredAt = Instant.parse(occurredAt),
         receivedAt = Instant.parse(occurredAt).plusSeconds(30),
     )
+
+    private fun channelStatementAvailableEvent(
+        eventIdentity: String,
+        date: LocalDate,
+        statementIdentity: String,
+        revision: String,
+    ) = ChannelStatementAvailableIntegrationEvent(
+        eventIdentity = eventIdentity,
+        channelId = "C-001",
+        currency = "CNY",
+        reconciliationDate = date,
+        statementIdentity = statementIdentity,
+        statementRevision = revision,
+        publishedAt = date.plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Shanghai")).toInstant(),
+        correlationIdentity = "reconciliation:$date",
+        causationIdentity = null,
+    )
+
+    private fun postIntegrationEvent(
+        event: ChannelStatementAvailableIntegrationEvent,
+        expectedStatus: Int,
+    ): JsonNode {
+        val envelope = IntegrationEventEnvelope(
+            eventId = event.eventIdentity,
+            eventType = ChannelStatementAvailableIntegrationEvent.EVENT_NAME,
+            originService = "reference-channel",
+            publishedAt = event.publishedAt,
+            deliveryAttempt = 1,
+            executionContext = emptyList(),
+            payloadJson = RuntimeJson.write(event),
+        )
+        val result = mockMvc.perform(
+            post("/cap4k/integration-events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(IntegrationEventEnvelopeCodec().encode(envelope))
+        )
+            .andExpect(status().`is`(expectedStatus))
+            .andReturn()
+        return result.response.contentAsByteArray.takeIf { it.isNotEmpty() }
+            ?.let(objectMapper::readTree)
+            ?: objectMapper.createObjectNode()
+    }
+
+    private fun batchCount(date: LocalDate): Long = jdbcTemplate.queryForObject(
+        "select count(*) from reconciliation_batch where channel_id = ? and currency = ? and reconciliation_date = ?",
+        Long::class.java,
+        "C-001",
+        "CNY",
+        java.sql.Date.valueOf(date),
+    ) ?: 0L
+
+    private fun batchId(date: LocalDate): String = requireNotNull(
+        jdbcTemplate.queryForObject(
+            "select id from reconciliation_batch where channel_id = ? and currency = ? and reconciliation_date = ?",
+            String::class.java,
+            "C-001",
+            "CNY",
+            java.sql.Date.valueOf(date),
+        )
+    )
+
+    private fun runCount(date: LocalDate, identity: String, revision: String): Long = jdbcTemplate.queryForObject(
+        "select count(*) from reconciliation_run r join reconciliation_batch b on b.id = r.batch_id " +
+            "where b.channel_id = ? and b.currency = ? and b.reconciliation_date = ? " +
+            "and r.statement_identity = ? and r.statement_revision = ?",
+        Long::class.java,
+        "C-001",
+        "CNY",
+        java.sql.Date.valueOf(date),
+        identity,
+        revision,
+    ) ?: 0L
 
     private fun rerunRequest(batchId: String, requestedAt: String): Map<String, Any> = mapOf(
         "batchId" to batchId,
