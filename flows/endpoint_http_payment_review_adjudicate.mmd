@@ -1,0 +1,5 @@
+flowchart TD
+  N1["AdjudicatePaymentReviewCmd.Request"]
+  N2["payment.review.adjudicate [POST /api/payments/{paymentId}/reviews/{reviewId}/decisions]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

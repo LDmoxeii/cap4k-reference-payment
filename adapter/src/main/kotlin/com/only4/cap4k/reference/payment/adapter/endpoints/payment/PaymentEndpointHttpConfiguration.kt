@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcBinding
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcRequestMapper
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcResponsePolicy
+import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.AdjudicatePaymentReviewEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.ConfirmPaymentResultEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.CreatePaymentEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.GetPaymentEndpoint
@@ -52,6 +53,23 @@ class PaymentEndpointHttpConfiguration {
             responseType = ConfirmPaymentResultEndpoint.Response::class,
             method = HttpMethod.POST,
             path = "/api/channel/payment-results",
+        )
+
+    @Bean
+    fun adjudicatePaymentReviewHttpBinding(): EndpointMvcBinding<AdjudicatePaymentReviewEndpoint.Request, AdjudicatePaymentReviewEndpoint.Response> =
+        EndpointMvcBinding.special(
+            operationName = AdjudicatePaymentReviewEndpoint.OPERATION_NAME,
+            requestType = AdjudicatePaymentReviewEndpoint.Request::class,
+            responseType = AdjudicatePaymentReviewEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/payments/{paymentId}/reviews/{reviewId}/decisions",
+            requestMapper = EndpointMvcRequestMapper { request ->
+                request.body(AdjudicatePaymentReviewEndpoint.Request::class).copy(
+                    paymentId = request.path("paymentId", String::class),
+                    reviewId = request.path("reviewId", String::class),
+                )
+            },
+            responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
         )
 
     @Bean

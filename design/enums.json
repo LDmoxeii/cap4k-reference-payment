@@ -59,6 +59,11 @@
         "value": 2,
         "name": "FAILED",
         "desc": "The channel attempt completed unsuccessfully"
+      },
+      {
+        "value": 3,
+        "name": "RESULT_UNKNOWN",
+        "desc": "The channel attempt has no final result and requires review"
       }
     ]
   },
@@ -83,6 +88,11 @@
         "value": 2,
         "name": "GATEWAY_REJECTED",
         "desc": "The gateway rejected the attempt before a channel result"
+      },
+      {
+        "value": 3,
+        "name": "RESULT_UNKNOWN",
+        "desc": "The channel attempt expired without a trustworthy final result"
       }
     ]
   },
@@ -860,6 +870,170 @@
         "desc": "The referenced attempt does not belong to the settlement",
         "group": "rejected",
         "terminal": true
+      }
+    ]
+  },
+  {
+    "name": "PaymentReviewType",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": [
+      "Payment"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "EXPIRY_RESULT_UNKNOWN",
+        "desc": "An expired processing attempt requires result review"
+      },
+      {
+        "value": 1,
+        "name": "LATE_SUCCESS_AFTER_TERMINAL",
+        "desc": "A trustworthy success arrived after closed or failed terminal state"
+      },
+      {
+        "value": 2,
+        "name": "MULTIPLE_ATTEMPT_SUCCESS",
+        "desc": "More than one attempt contains trustworthy success evidence"
+      },
+      {
+        "value": 3,
+        "name": "SUCCESS_AFTER_FAILURE_CONFLICT",
+        "desc": "Success evidence arrived after an accepted failure"
+      },
+      {
+        "value": 4,
+        "name": "FAILURE_OR_UNKNOWN_AFTER_SUCCESS",
+        "desc": "Failure or unknown evidence arrived after accepted success"
+      },
+      {
+        "value": 5,
+        "name": "NOTIFICATION_PAYLOAD_CONFLICT",
+        "desc": "One notification identity was reused with a different payload"
+      },
+      {
+        "value": 6,
+        "name": "MERCHANT_ORDER_SUCCESS_CONFLICT",
+        "desc": "Another payment already owns the merchant-order accepted-success claim"
+      }
+    ]
+  },
+  {
+    "name": "PaymentReviewStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": [
+      "Payment"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "OPEN",
+        "desc": "The review remains unresolved"
+      },
+      {
+        "value": 1,
+        "name": "RESOLVED",
+        "desc": "An authorized or deterministic decision resolved the review"
+      }
+    ]
+  },
+  {
+    "name": "PaymentReviewSettlementImpact",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": [
+      "Payment"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "BLOCKS_SETTLEMENT",
+        "desc": "The review blocks automatic reconciliation and settlement eligibility"
+      },
+      {
+        "value": 1,
+        "name": "ALLOWS_SETTLEMENT",
+        "desc": "The review no longer blocks automatic settlement eligibility"
+      }
+    ]
+  },
+  {
+    "name": "PaymentReviewDecisionType",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": [
+      "Payment"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "SYSTEM_ACCEPT_SUCCESS",
+        "desc": "A deterministic result resolved an unknown review as success"
+      },
+      {
+        "value": 1,
+        "name": "SYSTEM_CONFIRM_FAILURE",
+        "desc": "A deterministic result resolved an unknown review as failure"
+      },
+      {
+        "value": 2,
+        "name": "ACCEPT_LATE_SUCCESS",
+        "desc": "An authorized operator accepted trustworthy late success"
+      },
+      {
+        "value": 3,
+        "name": "CONFIRM_FAILURE",
+        "desc": "An authorized operator confirmed failure for an unknown result"
+      },
+      {
+        "value": 4,
+        "name": "KEEP_CURRENT_TERMINAL",
+        "desc": "An authorized operator kept the existing closed or failed terminal state"
+      },
+      {
+        "value": 5,
+        "name": "KEEP_ACCEPTED_SUCCESS_WITH_REMEDIATION",
+        "desc": "An authorized operator kept the first success and recorded remediation"
+      }
+    ]
+  },
+  {
+    "name": "PaymentReviewEligibilityImpact",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": [
+      "Payment"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "KEEP_BLOCKED",
+        "desc": "The decision keeps settlement blocked"
+      },
+      {
+        "value": 1,
+        "name": "ALLOW_SETTLEMENT",
+        "desc": "The decision permits settlement after review"
+      }
+    ]
+  },
+  {
+    "name": "PaymentNotificationIntentState",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
+    "aggregates": [
+      "Payment"
+    ],
+    "items": [
+      {
+        "value": 0,
+        "name": "READY",
+        "desc": "The stable merchant-success intent may be delivered by a future transport"
+      },
+      {
+        "value": 1,
+        "name": "HELD_FOR_REVIEW",
+        "desc": "The intent exists but cannot be delivered while review is unresolved"
+      },
+      {
+        "value": 2,
+        "name": "CANCELLED",
+        "desc": "The intent must not be delivered"
       }
     ]
   }

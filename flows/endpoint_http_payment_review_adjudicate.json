@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:payment.review.adjudicate",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.payment.review.AdjudicatePaymentReviewCmd.Request",
+      "name": "AdjudicatePaymentReviewCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.payment.review.AdjudicatePaymentReviewCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:payment.review.adjudicate",
+      "name": "payment.review.adjudicate [POST /api/payments/{paymentId}/reviews/{reviewId}/decisions]",
+      "fullName": "endpoint-http:payment.review.adjudicate",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:payment.review.adjudicate",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.payment.review.AdjudicatePaymentReviewCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

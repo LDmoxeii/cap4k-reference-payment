@@ -25,5 +25,8 @@ data class PlatformReconciliationFact(
     val currency: String,
     val rawStatus: String,
     val occurredAt: Instant,
-    val recordedAt: Instant
+    val recordedAt: Instant,
+    val paymentReviewIdentitySnapshot: String? = null,
+    val paymentReviewSummary: String? = null,
+    val settlementEligible: Boolean = true,
 )

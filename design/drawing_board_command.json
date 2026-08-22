@@ -228,6 +228,21 @@
   },
   {
     "tag": "command",
+    "package": "payment.expiry",
+    "name": "ExpirePayments",
+    "description": "Idempotently close expired payments without pending attempts or move pending attempts into result review",
+    "aggregates": ["Payment"],
+    "fields": [
+      { "name": "now", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "inspectedCount", "type": "Int" },
+      { "name": "closedCount", "type": "Int" },
+      { "name": "reviewOpenedCount", "type": "Int" }
+    ]
+  },
+  {
+    "tag": "command",
     "package": "payment.result",
     "name": "ConfirmPaymentResult",
     "description": "Record, verify, deduplicate, and adjudicate a channel payment result",
@@ -246,6 +261,34 @@
     ],
     "resultFields": [
       { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.review",
+    "name": "AdjudicatePaymentReview",
+    "description": "Append an authorized decision to one payment review without deleting evidence",
+    "aggregates": ["Payment"],
+    "fields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "reviewId", "type": "String" },
+      { "name": "decisionIdentity", "type": "String" },
+      { "name": "decision", "type": "String" },
+      { "name": "operatorIdentity", "type": "String" },
+      { "name": "operatorRole", "type": "String" },
+      { "name": "authorizationMaterial", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "decidedAt", "type": "java.time.Instant" },
+      { "name": "eligibilityImpact", "type": "String" },
+      { "name": "remediationReference", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "paymentStatus", "type": "String" },
+      { "name": "reviewStatus", "type": "String" },
+      { "name": "decisionCount", "type": "Int" },
+      { "name": "settlementEligible", "type": "Boolean" },
+      { "name": "notificationIntentState", "type": "String?" }
     ]
   },
   {

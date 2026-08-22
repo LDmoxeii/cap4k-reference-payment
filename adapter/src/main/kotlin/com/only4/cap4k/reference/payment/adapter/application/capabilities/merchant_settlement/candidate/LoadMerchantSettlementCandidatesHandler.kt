@@ -7,6 +7,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.e
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementCandidateFact
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationConfirmationFact
@@ -110,8 +111,17 @@ class LoadMerchantSettlementCandidatesHandler(
             val paymentId = item.paymentId ?: return blocked(blockers, item, "matched payment is missing paymentId")
             val payment = entityManager.find(Payment::class.java, PaymentId.parse(paymentId))
                 ?: return blocked(blockers, item, "payment $paymentId was not found")
-            paymentFact(request, batch, run, item, payment)
-                ?: blocked(blockers, item, "payment $paymentId lacks merchant/channel/fee eligibility")
+            val reviewEligibility = payment.currentReviewEligibility()
+            if (!reviewEligibility.settlementEligible) {
+                blocked(
+                    blockers,
+                    item,
+                    "payment $paymentId has unresolved review ${reviewEligibility.blockingReviewIdentities.joinToString(",")}",
+                )
+            } else {
+                paymentFact(request, batch, run, item, payment)
+                    ?: blocked(blockers, item, "payment $paymentId lacks merchant/channel/fee eligibility")
+            }
         }
         ReconciliationTransactionKind.REFUND -> {
             val refundId = item.refundId ?: return blocked(blockers, item, "matched refund is missing refundId")
@@ -141,6 +151,16 @@ class LoadMerchantSettlementCandidatesHandler(
         }
         if (payment != null && payment.merchantId != request.merchantId) {
             return blocked(blockers, item, "confirmation payment merchant attribution mismatch")
+        }
+        if (payment != null) {
+            val eligibility = payment.currentReviewEligibility()
+            if (!eligibility.settlementEligible) {
+                return blocked(
+                    blockers,
+                    item,
+                    "payment ${payment.id} has unresolved review ${eligibility.blockingReviewIdentities.joinToString(",")}",
+                )
+            }
         }
         if (refund != null && (refund.merchantId != request.merchantId || refund.channelId != request.channelId)) {
             return blocked(blockers, item, "confirmation refund attribution mismatch")
@@ -199,6 +219,7 @@ class LoadMerchantSettlementCandidatesHandler(
     ): SettlementCandidateFact? {
         if (payment.status != PaymentStatus.SUCCEEDED || payment.merchantId != request.merchantId ||
             payment.currency != request.currency.uppercase()) return null
+        if (!payment.currentReviewEligibility().settlementEligible) return null
         val attempt = payment.attempts.firstOrNull { it.id.toString() == item.paymentAttemptId && it.channelId == request.channelId }
             ?: return null
         val occurred = payment.succeededAt ?: return null

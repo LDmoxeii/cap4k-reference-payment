@@ -58,6 +58,32 @@ class ReconciliationBatchBehaviorTest {
     }
 
     @Test
+    fun `matched payment with blocking review remains unresolved and preserves the run snapshot`() {
+        val blockedFact = fact("matched-review", "tx-matched-review").copy(
+            paymentReviewIdentitySnapshot = "payment-review:one,payment-review:two",
+            paymentReviewSummary = "late success requires authorized review",
+            settlementEligible = false,
+        )
+
+        val batch = batch()
+        val result = batch.appendTestRun(
+            statement(records = listOf(record("matched-review", "tx-matched-review"))),
+            listOf(blockedFact),
+            NOW,
+        )
+        val item = result.run.reconciliationItems.single()
+
+        assertThat(item.differenceType).isEqualTo(ReconciliationDifferenceType.MATCHED)
+        assertThat(item.resolved).isFalse()
+        assertThat(item.settlementBlocked).isTrue()
+        assertThat(item.paymentReviewIdentitySnapshot).isEqualTo("payment-review:one,payment-review:two")
+        assertThat(item.paymentReviewSummary).isEqualTo("late success requires authorized review")
+        assertThat(result.run.unresolvedDifferenceCount).isEqualTo(1)
+        assertThat(result.run.status).isEqualTo(ReconciliationRunStatus.COMPLETED)
+        assertThat(batch.status).isEqualTo(ReconciliationBatchStatus.AWAITING_DISPOSITION)
+    }
+
+    @Test
     fun `same statement identity and revision is idempotent while a new revision supersedes and retains history`() {
         val batch = batch()
         val first = batch.appendTestRun(statement(revision = "2"), listOf(fact("matched", "tx-matched")), NOW)

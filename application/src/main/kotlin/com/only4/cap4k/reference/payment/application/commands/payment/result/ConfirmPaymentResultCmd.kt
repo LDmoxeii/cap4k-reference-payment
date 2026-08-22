@@ -5,13 +5,16 @@ import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.capability.CapabilitySupervisor
 import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
+import com.only4.cap4k.ddd.domain.repo.schema.and
 import com.only4.cap4k.reference.payment.application.capabilities.payment.channel.VerifyPaymentResult
+import com.only4.cap4k.reference.payment.application.capabilities.payment.order.SerializeMerchantOrderSuccess
 import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundException
 import com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration.SMerchantChannelConfiguration
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfigurationId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.SettlementFeeRule
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.recordChannelResult
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome
@@ -65,6 +68,20 @@ object ConfirmPaymentResultCmd {
             ) ?: throw PaymentNotFoundException(command.paymentId)
             val paymentAttemptId = PaymentAttemptId.parse(command.paymentAttemptId)
             val attempt = payment.attempts.firstOrNull { it.id == paymentAttemptId }
+            val trustworthySuccess = command.result.trim().equals("SUCCESS", ignoreCase = true) && verification.verified
+            if (trustworthySuccess) {
+                capabilities.call(SerializeMerchantOrderSuccess.Request(payment.merchantId))
+            }
+            val merchantOrderSuccessAvailable = if (trustworthySuccess) {
+                val successfulOrderPayment = Mediator.repositories.findOne(
+                    SPayment.predicate { schema ->
+                        (schema.merchantId eq payment.merchantId) and
+                            (schema.merchantOrderNumber eq payment.merchantOrderNumber) and
+                            (schema.status eq PaymentStatus.SUCCEEDED)
+                    }
+                )
+                successfulOrderPayment == null || successfulOrderPayment.id == payment.id
+            } else true
             val settlementFeeRule = if (
                 command.result.trim().equals("SUCCESS", ignoreCase = true) &&
                 attempt != null &&
@@ -121,6 +138,7 @@ object ConfirmPaymentResultCmd {
                 verified = verification.verified,
                 verificationSummary = verification.verificationSummary,
                 settlementFeeRule = settlementFeeRule,
+                merchantOrderSuccessAvailable = merchantOrderSuccessAvailable,
             )
             return Response(outcome = decision)
         }

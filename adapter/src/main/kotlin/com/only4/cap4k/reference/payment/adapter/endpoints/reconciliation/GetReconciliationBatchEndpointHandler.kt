@@ -65,6 +65,8 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                             platformRawStatus = item.platformRawStatus,
                             platformOccurredAt = item.platformOccurredAt,
                             platformRecordedAt = item.platformRecordedAt,
+                            paymentReviewIdentitySnapshot = item.paymentReviewIdentitySnapshot,
+                            paymentReviewSummary = item.paymentReviewSummary,
                             matchingBasis = item.matchingBasis,
                             auxiliaryMatchApproved = item.auxiliaryMatchApproved,
                             resolved = item.resolved,

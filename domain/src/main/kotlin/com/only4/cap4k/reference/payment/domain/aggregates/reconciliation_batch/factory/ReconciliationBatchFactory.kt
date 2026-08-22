@@ -111,6 +111,8 @@ class ReconciliationBatchFactory : AggregateFactory<ReconciliationBatchFactory.P
             platformRawStatus = creation.platformRawStatus,
             platformOccurredAt = creation.platformOccurredAt,
             platformRecordedAt = creation.platformRecordedAt,
+            paymentReviewIdentitySnapshot = creation.paymentReviewIdentitySnapshot,
+            paymentReviewSummary = creation.paymentReviewSummary,
             matchingBasis = creation.matchingBasis,
             auxiliaryMatchApproved = creation.auxiliaryMatchApproved,
             resolved = creation.resolved,

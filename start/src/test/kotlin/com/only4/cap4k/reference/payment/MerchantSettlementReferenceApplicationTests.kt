@@ -623,6 +623,55 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    fun `payment review opened after reconciliation excludes the candidate despite a stale false boolean`() {
+        val date = LocalDate.parse("2026-05-30")
+        val payment = createSucceededPayment("B4-LATE-REVIEW-BLOCK", "73.00", "2026-05-30T02:00:00Z")
+        reconcile(date, "statement-b4-late-review-block", payments = listOf(payment to "73.00"))
+        val attemptId = requireNotNull(
+            jdbcTemplate.queryForObject(
+                "select id from payment_attempt where payment_id = ?",
+                String::class.java,
+                payment.paymentId,
+            )
+        )
+        val conflictingFailure = postJson(
+            "/api/channel/payment-results",
+            mapOf(
+                "channelId" to "C-001",
+                "notificationId" to "N-B4-LATE-REVIEW-BLOCK-FAILURE",
+                "paymentId" to payment.paymentId,
+                "paymentAttemptId" to attemptId,
+                "channelTransactionId" to payment.channelTransactionId,
+                "amount" to BigDecimal("73.00"),
+                "currency" to "CNY",
+                "result" to "FAILED",
+                "occurredAt" to Instant.parse("2026-05-30T03:00:00Z"),
+                "verificationMaterial" to "test-secret",
+            ),
+            expectedStatus = 200,
+        )
+        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
+        val reviewIdentity = conflictingFailure.requiredText("reviewIdentity")
+
+        jdbcTemplate.update("update payment set settlement_blocked = false where id = ?", payment.paymentId)
+        val prepared = prepare(date, "b4-late-review-block")
+        assertThat(prepared["noOp"].asBoolean()).isTrue()
+        assertThat(prepared["settlementId"].isNull).isTrue()
+        assertThat(prepared["eligibleCount"].asInt()).isZero()
+        assertThat(prepared["excludedCount"].asInt()).isEqualTo(1)
+        assertThat(prepared.requiredText("blockerSummary"))
+            .contains("unresolved review")
+            .contains(reviewIdentity)
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from merchant_settlement where scope_identity = ?",
+                Long::class.java,
+                "DAILY|M-001|C-001|CNY|$date",
+            )
+        ).isZero()
+    }
+
+    @Test
     fun `negative and zero net settlements never invoke the transfer provider`() {
         val negativeDate = LocalDate.parse("2026-06-20")
         val negativePayment = createSucceededPayment("B4-NEGATIVE", "100.00", "2026-06-20T02:00:00Z")

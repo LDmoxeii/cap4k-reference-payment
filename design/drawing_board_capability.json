@@ -108,6 +108,19 @@
   },
   {
     "tag": "capability",
+    "package": "payment.order",
+    "name": "SerializeMerchantOrderSuccess",
+    "description": "Serialize accepted-success decisions for one merchant before evaluating the merchant-order claim",
+    "aggregates": ["Payment", "MerchantChannelConfiguration"],
+    "fields": [
+      { "name": "merchantId", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "lockedConfigurationCount", "type": "Int" }
+    ]
+  },
+  {
+    "tag": "capability",
     "package": "reconciliation.channel",
     "name": "PullChannelStatement",
     "description": "Pull one immutable revisioned channel statement for a reconciliation scope",

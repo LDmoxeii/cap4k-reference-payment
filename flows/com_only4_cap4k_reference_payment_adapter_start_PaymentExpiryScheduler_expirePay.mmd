@@ -1,0 +1,5 @@
+flowchart TD
+  N1["PaymentExpiryScheduler::expirePayments"]
+  N2["ExpirePaymentsCmd.Request"]
+  N1 -->|TemporalTriggerMethodToCommand| N2
+

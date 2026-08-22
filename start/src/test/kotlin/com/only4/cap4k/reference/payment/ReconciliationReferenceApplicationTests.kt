@@ -149,6 +149,81 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    fun `matched payment with blocking review stays unresolved and snapshots review evidence`() {
+        val date = LocalDate.parse("2026-05-31")
+        val payment = createSucceededPayment(
+            prefix = "B3-PAYMENT-REVIEW-BLOCK",
+            amount = "61.00",
+            occurredAt = "2026-05-31T02:00:00Z",
+        )
+        val attemptId = requireNotNull(
+            jdbcTemplate.queryForObject(
+                "select id from payment_attempt where payment_id = ?",
+                String::class.java,
+                payment.paymentId,
+            )
+        )
+        val conflictingFailure = postJson(
+            "/api/channel/payment-results",
+            mapOf(
+                "channelId" to "C-001",
+                "notificationId" to "N-B3-PAYMENT-REVIEW-BLOCK-FAILURE",
+                "paymentId" to payment.paymentId,
+                "paymentAttemptId" to attemptId,
+                "channelTransactionId" to payment.channelTransactionId,
+                "amount" to BigDecimal("61.00"),
+                "currency" to "CNY",
+                "result" to "FAILED",
+                "occurredAt" to Instant.parse("2026-05-31T03:00:00Z"),
+                "verificationMaterial" to "test-secret",
+            ),
+            expectedStatus = 200,
+        )
+        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(conflictingFailure["settlementEligible"].asBoolean()).isFalse()
+        val reviewIdentity = conflictingFailure.requiredText("reviewIdentity")
+
+        jdbcTemplate.update("update payment set settlement_blocked = false where id = ?", payment.paymentId)
+        statements.publish(
+            statement(
+                identity = "statement-b3-payment-review-block",
+                revision = "1",
+                date = date,
+                completeness = StatementCompleteness.COMPLETE,
+                records = listOf(
+                    record(
+                        identity = "record-b3-payment-review-block",
+                        kind = ReconciliationTransactionKind.PAYMENT,
+                        transactionIdentity = payment.channelTransactionId,
+                        amount = "61.00",
+                        occurredAt = "2026-05-31T02:00:00Z",
+                    )
+                ),
+            )
+        )
+
+        val response = Mediator.commands.send(
+            RunDailyReconciliationCmd.Request(
+                channelId = "C-001",
+                currency = "CNY",
+                triggeredAt = Instant.parse("2026-06-01T04:00:00Z"),
+            )
+        )
+        assertThat(response.batchStatus).isEqualTo("AWAITING_DISPOSITION")
+        assertThat(response.unresolvedDifferenceCount).isEqualTo(1)
+
+        val batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        val item = batch["runs"][0]["items"].arrayItem("transactionKind", "PAYMENT")
+        assertThat(item.requiredText("differenceType")).isEqualTo("MATCHED")
+        assertThat(item["resolved"].asBoolean()).isFalse()
+        assertThat(item["settlementBlocked"].asBoolean()).isTrue()
+        assertThat(item.requiredText("paymentReviewIdentitySnapshot")).contains(reviewIdentity)
+        assertThat(item.requiredText("paymentReviewSummary"))
+            .contains("FAILURE_OR_UNKNOWN_AFTER_SUCCESS")
+            .contains("settlement-blocking")
+    }
+
+    @Test
     fun `unknown refund and successful channel statement form confirmation without rewriting original refund`() {
         val payment = createSucceededPayment(
             prefix = "B3-STATUS-PAYMENT",

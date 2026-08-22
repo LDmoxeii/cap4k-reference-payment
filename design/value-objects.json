@@ -49,6 +49,18 @@
       {
         "name": "successFactFormedNow",
         "type": "Boolean"
+      },
+      {
+        "name": "reviewIdentity",
+        "type": "String?"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "notificationIntentState",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentNotificationIntentState?"
       }
     ]
   },
@@ -241,6 +253,18 @@
       {
         "name": "recordedAt",
         "type": "java.time.Instant"
+      },
+      {
+        "name": "reviewIdentitySnapshot",
+        "type": "String?"
+      },
+      {
+        "name": "reviewSummary",
+        "type": "String?"
+      },
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
       }
     ]
   },
@@ -479,6 +503,54 @@
       {
         "name": "settledFactFormedNow",
         "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "name": "PaymentReviewEligibility",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values",
+    "aggregates": [
+      "Payment"
+    ],
+    "description": "Derived current automatic-settlement eligibility from append-preserving payment review evidence",
+    "fields": [
+      {
+        "name": "settlementEligible",
+        "type": "Boolean"
+      },
+      {
+        "name": "blockingReviewIdentities",
+        "type": "List<String>"
+      },
+      {
+        "name": "blockingReviewSummaries",
+        "type": "List<String>"
+      }
+    ]
+  },
+  {
+    "name": "PaymentExpiryOutcome",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values",
+    "aggregates": [
+      "Payment"
+    ],
+    "description": "Transient outcome returned after idempotently adjudicating one payment expiry",
+    "fields": [
+      {
+        "name": "paymentStatus",
+        "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus"
+      },
+      {
+        "name": "closedNow",
+        "type": "Boolean"
+      },
+      {
+        "name": "reviewOpenedNow",
+        "type": "Boolean"
+      },
+      {
+        "name": "reviewIdentity",
+        "type": "String?"
       }
     ]
   }

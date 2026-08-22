@@ -44,7 +44,10 @@ object ConfirmPaymentResultEndpoint {
         val conflicting: Boolean,
         val rejectionSummary: String?,
         val conflictSummary: String?,
-        val successFactFormedNow: Boolean
+        val successFactFormedNow: Boolean,
+        val reviewIdentity: String?,
+        val settlementEligible: Boolean,
+        val notificationIntentState: String?
     )
 
 }
