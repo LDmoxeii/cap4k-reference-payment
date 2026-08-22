@@ -1,10 +1,10 @@
-# Payment Reference B1+B2+B3 可运行实现规格
+# Payment Reference B1+B2+B3+B4 可运行实现规格
 
 ## 1. 目标状态
 
-`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付与退款系统。它在 B1 支付与 B2 退款闭环上增加 B3 日终对账与差异处置闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate Root、多层 owned child、Strong ID、Value Object、生成并类型化的业务枚举、Repository/UoW、跨聚合弱引用事实、Command/Query/Capability/Endpoint、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
+`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账与商户结算系统。它在 B1 支付、B2 退款和 B3 日终对账与差异处置闭环上增加 B4 单币种商户日结、确认、资金划拨执行与结果裁决闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate Root、多层 owned child、Strong ID、Value Object、生成并类型化的业务枚举、Repository/UoW、跨聚合弱引用事实、Command/Query/Capability/Endpoint、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
 
-该状态是完整支付引用项目的前三个实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称商户结算、可靠异步、大额退款审批、超期人工例外或生产级账单 transport 已经可用。
+该状态是完整支付引用项目的前四个实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称可靠异步、真实 Integration Event transport、生产银行/清算网络、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
 
 ## 2. 工程与依赖合同
 
@@ -13,10 +13,10 @@
 项目必须包含：
 
 - `contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request 与 Response，只依赖轻量 `cap4k-contract-api` 及编译期分析 metadata，不依赖任何项目内模块、Spring、JPA 或 transport 实现。
-- `domain`：Payment、Refund 与 Reconciliation 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
-- `application`：支付、退款与日终对账的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑和查询输入/处理器；支付/退款 Gateway、结果验证与渠道账单 Capability。
-- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund Gateway、Fake Channel Statement Provider、渠道结果验证器、普通 scheduled reaction 和 JPA 适配。
-- `start`：Spring Boot 组装、H2 配置、包含退款与对账规则的最小渠道配置/账单 fixture 和端到端测试。
+- `domain`：Payment、Refund、Reconciliation 与 MerchantSettlement 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
+- `application`：支付、退款、日终对账与商户结算的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑、确认、执行和查询输入/处理器；支付/退款 Gateway、结果验证、渠道账单、结算候选、资金划拨与划拨结果验证 Capability。
+- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund Gateway、Fake Channel Statement Provider、Fake Settlement Transfer Provider、渠道/划拨结果验证器、普通 scheduled reaction 和 JPA 适配。
+- `start`：Spring Boot 组装、H2 配置、包含退款、对账、手续费与结算结果阈值的最小渠道配置/账单/划拨 fixture 和端到端测试。
 
 项目内依赖方向必须为：
 
@@ -27,7 +27,7 @@
 - `domain` 不依赖 contract/application/adapter/start；
 - application/domain 不依赖 start 或具体 Web 配置。
 
-Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint contract 必须物理位于该模块；既有 payment/refund FQN 保持不变，B3 reconciliation contract 使用同一发布边界下的稳定 FQN。
+Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint contract 必须物理位于该模块；既有 payment/refund FQN 保持不变，B3 reconciliation 与 B4 merchant-settlement contract 使用同一发布边界下的稳定 FQN。
 
 ### 2.2 版本与解析
 
@@ -36,7 +36,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所
 - Spring Boot：3.5.6。
 - 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
 - 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
-- B1/B2/B3 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3 验收，保留给 B6。
+- B1/B2/B3/B4 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3/B4 验收，保留给 B6。
 
 ### 2.3 Pipeline ownership
 
@@ -50,7 +50,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所
 
 ### 3.1 Enum manifest
 
-`design/enums.json` 是 B1/B2/B3 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
+`design/enums.json` 是 B1/B2/B3/B4 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
 
 - `PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、`CLOSED(4)`、`RESULT_UNKNOWN(5)`。
 - `PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。
@@ -459,6 +459,122 @@ B3 至少包含以下应用入口：
 - 证据至少包括 domain invariant tests、H2/JPA/UoW aggregate graph/rollback/concurrency tests、HTTP integration tests、scheduler/provider tests、enum/converter/VO tests、plan/generation determinism、Analyzer Flow/Time root、AgentFacts 和 traceability 实际路径。
 - B1/B2 已验收行为是回归基线，B3 不得破坏支付、退款、contract leaf、Mermaid flow 或 Composite Build 解析合同。
 
+## 10C. B4 商户日结与资金划拨目标合同
+
+### 10C.1 聚合边界与范围身份
+
+- `MerchantSettlement` 是独立 Aggregate Root，以 Strong `MerchantSettlementId` 标识。Payment、Refund、ReconciliationBatch 不进入 Settlement ORM graph；结算侧只保存 Strong ID、稳定外部 identity、当前有效对账 identity 和形成结算时的不可变快照。
+- B4 只实现日结。业务时区固定为 `Asia/Shanghai`，周期使用明确的 `[periodStart, periodEnd)`；周期模型可保存 type/start/end/timezone，但不提供周结 scheduler、周结 API 或周结验收。
+- 同一 `merchantId + channelId + currency + periodStart + periodEnd` 任一时刻最多存在一个有效 Settlement。数据库唯一约束、领域幂等和 optimistic version 共同保护；scheduler、HTTP 和重试并发不得形成双有效单。
+- MerchantSettlement 至少拥有 `SettlementLine`、`SettlementExecutionAttempt` 和 `SettlementResultReceipt`。三类 child 均属于强引用 owned graph，并由同一 cap4k JPA UoW 原子保存；历史 attempt/receipt 不得覆盖。
+- Settlement 保存 predecessor/replacement identity、作废原因、operator 和时间。作废重建只允许在尚未提交外部执行的 PREPARED/REVIEW_REQUIRED 状态；PROCESSING、RESULT_UNKNOWN、SUCCEEDED 不得通过作废规避历史。
+
+### 10C.2 支付手续费事实
+
+- `MerchantChannelConfiguration` 增加 settlement fee basis points 与 settlement result review threshold。reference seed 使用 `200` basis points、零固定费用、`HALF_UP` 到币种精度，result review threshold 为 30 分钟。
+- Payment 首次形成成功事实时必须冻结 fee rule 与 fee result，至少保存 rate/basis points、固定费用、舍入模式、币种精度、计算金额和形成时间。配置以后修改或退役不得改变既有 Payment fee fact。
+- 退款不返还已冻结的支付手续费。Settlement 不在日结时读取当前配置重新计算；每个 PAYMENT SettlementLine 复制 Payment 成功时冻结的规则和结果，REFUND line 不产生负手续费返还。
+- 正常示例必须得到：支付 100 + 支付 50 - 退款 20 - 手续费 2 - 手续费 1 = 净结算 127。
+
+### 10C.3 候选资格与对账消费
+
+- B4 通过结算专用 Capability/JPA projection 读取 B3 当前有效 run，形成 `SettlementCandidateFact`。它必须携带 merchant/channel/currency、source kind、source fact identity、Payment/Refund/Attempt/Confirmation 弱引用、reconciliation batch/run/item identity、外部交易 identity、金额、费用、业务发生时间、记录时间与 eligibility basis。
+- 只消费 current effective run 中已核对且不再阻断结算的事实。Payment/Refund 的原始状态、current run item、authorized disposition 与 confirmation 是资格依据；不得扫描旧 run 作为当前结果，也不得让 Payment/Refund 上的单一 `settlementBlocked` 字段成为完整资格真源。
+- PAY-AC-061 采用交易粒度排除：有未决差异的资金项不进入本次 Settlement，其他已匹配或获授权明确放行的候选继续结算。Settlement 记录 eligible/excluded counts 和 blocker summaries；不得因一个受影响交易阻断整个商户周期。
+- `ReconciliationConfirmationFact` 必须保存 merchantId 和 channelId。存在 Payment/Refund 弱引用时，归属必须与原始聚合一致；CHANNEL_ONLY 且没有平台弱引用时，只允许已授权处置显式给出 merchant/channel，并永久保存依据。
+- confirmation 作为独立 source fact 进入 SettlementLine，不反向改写 Payment/Refund。PAYMENT confirmation 为正向收入，REFUND confirmation 为负向扣减。
+- 相同 source fact identity 不得重复进入一个 Settlement，也不得被两个有效 Settlement 消费。SettlementLine 的稳定 identity 至少区分 PAYMENT、REFUND 与 RECONCILIATION_CONFIRMATION。
+
+### 10C.4 SettlementLine 与金额不变量
+
+- 每条 SettlementLine 至少保存：line/source identity、source/transaction kind、Payment/PaymentAttempt/Refund/RefundAttempt 弱引用、reconciliation batch/run/item/confirmation identity、external transaction identity、gross amount、fee amount、signed net amount、currency、occurredAt、recordedAt、fee rule snapshot、eligibility basis、confirmation reason/evidence。
+- Payment line 的 signed net 为 `amount - frozen fee`；Refund line 为 `-amount`；Payment confirmation 为 `amount - frozen fee`；Refund confirmation 为 `-amount`。
+- Root 的 payment gross、refund gross、fee total、adjustment total 与 net amount 必须精确等于 lines 的对应汇总；所有 line 币种必须与 Settlement currency 一致，不支持换汇或跨币种抵扣。
+- 净额小于零时完整保存组成并进入 `NEGATIVE_REVIEW_REQUIRED`；不得创建或提交资金划拨 attempt。顺延抵扣、商户补款与追偿产品流程后置。
+- 净额为零时允许完成准备和确认，但不得调用外部 Transfer；以零金额结算完成事实结束，并保留组成证据。
+
+### 10C.5 准备、复核、确认与冻结
+
+- 日结 scheduler 只发送 `RunDailyMerchantSettlement` Command；scheduled method 不直接访问 Repository、Query 或 Capability。
+- Prepare/Run Command 按 merchant/channel/currency/date 幂等装载或创建 Settlement，读取候选，冻结 SettlementLine 和汇总。没有 eligible candidate 时返回明确 no-op，不创建空 Settlement。
+- 状态至少表达 PREPARING、REVIEW_REQUIRED、PREPARED、CONFIRMED、PROCESSING、SUCCEEDED、FAILED、RESULT_UNKNOWN、NEGATIVE_REVIEW_REQUIRED、VOIDED 与 CONFLICT_REVIEW_REQUIRED。
+- 确认前允许授权人员退回并重新准备；确认后 merchant、channel、currency、period、line composition、fee facts 和 totals 冻结。后续退款、费用或对账变化不得原位修改已确认 Settlement，而应进入下一周期 adjustment 或受控 replacement。
+- reference 使用单一授权 operator fixture 证明确认、作废和结果核对边界；不实现通用 RBAC、双人复核、审批工作流或人工任务中心。
+
+### 10C.6 资金划拨执行与重试
+
+- 确认后的正净额 Settlement 才能提交 `StartSettlementTransfer` Capability。每个 Settlement 拥有稳定 `executionGroupIdentity`；每次请求新增独立 ExecutionAttempt 与 request identity，历史失败不覆盖。
+- Gateway `ACCEPTED` 只表示请求已受理并进入 PROCESSING，不等于资金到账或结算成功。
+- 外部明确失败后允许授权人员在同一个 Settlement/execution group 下人工重试。重试新增 attempt 与 request identity，保留旧 attempt 的失败 code、summary 和时间；不得创建新 Settlement 逃避原执行历史。
+- RESULT_UNKNOWN 状态禁止自动或人工创建新 attempt、禁止更换 request/execution identity、禁止新 Settlement 或等额重付，直至授权核对追加最终结论。
+- B4 使用同步 Fake Transfer Capability 证明边界，不声称真实银行网络、可靠 enqueue、自动 retry 或 transport delivery。
+
+### 10C.7 执行结果、未知与冲突裁决
+
+- callback 至少携带 channel、notification identity、SettlementId、ExecutionAttemptId、executionGroupIdentity、request identity、external settlement identity、amount、currency、raw result、occurredAt 和验证材料。
+- Handler 在 UoW 内调用 `VerifySettlementResult` Capability，再由聚合追加 SettlementResultReceipt 并裁决 attempt/root。
+- 同 notification identity 同 payload 重放只增加 receive count，不产生第二次资金效果；同 identity 不同 payload 形成 CONFLICT。
+- 首次可信成功把 attempt 与 Settlement 确认为 SUCCEEDED，记录 external identity 和 completedAt，并且只形成一次 settled fact。
+- 明确失败把当前 attempt 置为 FAILED；是否重试只由显式人工 Command 触发，不自动创建 attempt。
+- 可信未知把 attempt/root 置为 RESULT_UNKNOWN。MerchantChannelConfiguration 的 `settlementResultReviewAfterMinutes` 为规则真源，reference seed 为 30；attempt 冻结当次阈值。普通 scheduled scan 在超过阈值后进入 `CONFLICT_REVIEW_REQUIRED/REVIEW_REQUIRED`，但仍不得重付。
+- 成功后迟到失败或未知不得回退 SUCCEEDED；必须追加双方 raw result、接收/发生时间和 conflict disposition，冻结自动动作并进入人工核对视图。
+- 授权核对可在同一 Settlement 上追加最终成功或失败结论，不删除原 receipt；最终事实与全部历史可查询。
+
+### 10C.8 生成类型、Domain Outcome 与 ownership
+
+- schema/design 必须生成 MerchantSettlement aggregate graph、Strong IDs、Repository、Factory/Behavior、Command/Query/Capability/Endpoint 与有限业务 enum。
+- B4 enum 至少覆盖 settlement status、line source kind、execution attempt status/final result 与 result disposition。内部有限状态使用整数列和完整 `@Type` 绑定；numeric value 进入持久化后保持稳定。外部 raw status/code/identity 保持开放标量。
+- 跨层 immutable values 至少包括 SettlementCandidateFact、SettlementPreparationOutcome 与 SettlementResultRecordingOutcome；value-object manifest 不配置 persistence。Domain VO 可以直接成为 Command Response 字段，contract leaf 由 adapter 显式投影。
+- generated Entity/Schema/Repository 是 build-owned；enum、VO、Endpoint contract、Behavior、Factory/Creation、Command/Query/Capability skeleton 是 checked-in/skip。Endpoint Handler、HTTP binding、Scheduler、Capability Handler 与业务投影手写维护。
+
+### 10C.9 应用入口、Endpoint 与查询
+
+B4 至少包含以下应用入口：
+
+1. `RunDailyMerchantSettlement` / `PrepareMerchantSettlement`：按日结范围幂等形成 eligible lines 与 totals。
+2. `ConfirmMerchantSettlement`：授权确认并冻结组成。
+3. `StartMerchantSettlementExecution`：提交或在明确失败后人工重试。
+4. `ConfirmMerchantSettlementResult`：验证并裁决渠道 callback。
+5. `ReviewUnknownMerchantSettlements`：普通 scheduled scan，把超过 30 分钟阈值的未知结果送入人工核对状态，不重付。
+6. `VoidMerchantSettlement`：仅在未提交外部执行的允许状态作废，并可形成 replacement chain。
+7. `GetMerchantSettlement`：返回范围、状态、构成、lines、excluded/blockers、fee facts、attempts、receipts、冲突和 replacement 轨迹。
+
+独立 contract module 至少提供：
+
+- `POST /api/merchant-settlements`：显式准备/运行日结；
+- `POST /api/merchant-settlements/{settlementId}/confirmations`：确认冻结；
+- `POST /api/merchant-settlements/{settlementId}/executions`：首次提交或明确失败后的人工重试；
+- `POST /api/channel/settlement-results`：接收 reference 渠道结果；
+- `POST /api/merchant-settlements/{settlementId}/voids`：受控作废；
+- `GET /api/merchant-settlements/{settlementId}`：查询完整结算证据。
+
+每个 Endpoint Handler 一类一文件并使用静态 Mediator；HTTP binding 保持手写。该风格是 reference authoring preference，不是 cap4k 对全部项目的强制规则。Query 不返回 domain/JPA aggregate 或 proxy。
+
+### 10C.10 UoW、并发与错误合同
+
+- MerchantSettlement root 与完整 owned graph 的创建、状态推进、attempt/receipt 追加共用 cap4k JPA UoW 和同一 Hibernate persistence context；不使用 detached merge、跨 ORM bridge 或分散 save。
+- root/lines 任一 invariant、费用计算、source identity 或唯一约束失败时整体回滚，不留下空 root、部分 lines 或幽灵 PROCESSING。
+- 同范围 prepare、相同 source fact consumption、execution start 与 callback 由真实双事务/H2/JPA/MockMvc 测试证明不会双写。
+- 典型 optimistic/unique conflict 映射为稳定 409 `CONCURRENT_MODIFICATION`，而不是静默覆盖或 500。
+- 候选不可用、B3 current run 不存在、merchant attribution 不完整、fee snapshot 缺失或币种不一致时返回明确业务错误，不把异常数据当作零金额结算。
+
+### 10C.11 Analyzer、AgentFacts 与证据
+
+- Analyzer 必须生成日结 scheduler 到 Command 的独立 Time root，以及确认、提交、callback、作废等真实 HTTP Command Actor-to-Command Flow。Query 只在 graph/design projection 中出现，不要求默认 Flow。
+- Command/Query/Capability/Endpoint anchors 与 MerchantSettlement Aggregate Structure 分别由 Drawing Board/Aggregate Structure output 证明；不把运行时状态、可靠投递或跨入口过程伪造成默认 Flow stitching。
+- Mermaid 必须可解析。B4 新 Flow 不能复用 B1-B3 输出冒充证据。
+- Agent Snapshot 必须保留 B4 plan ownership、analysis 与 diagnostics。live DB freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或 plan-evidence-invalid。
+- B4 验收覆盖 PAY-AC-060..068，并补齐 PAY-AC-014 的 fee snapshot、PAY-AC-083 的支付→退款→对账→结算轨迹和 PAY-AC-085 的业务时区边界。
+- 证据至少包括 enum/converter/VO tests、domain invariant tests、H2/JPA/UoW aggregate graph/rollback/concurrency tests、HTTP integration tests、scheduler/fake provider tests、plan/generation determinism、Analyzer Time/Actor Flow、AgentFacts 和 traceability 实际路径。
+- B1/B2/B3 已验收行为是回归基线，B4 不得破坏支付、退款、对账、contract leaf、Composite Build、Mermaid、Analyzer 或 AgentFacts 合同。
+
+### 10C.12 B5 与后续边界
+
+- B4 可形成本地 Domain Event、稳定 outbound event identity 或 contract shape，但不宣称 Outbox、reliable Command/Event、Integration Event transport、broker/HTTP delivery、持久化调度、lease/retry 或跨实例 exactly-once。
+- 不实现真实银行/清分清算网络、商户余额账户或总账系统。
+- 不实现负净额追偿、商户补款或顺延抵扣产品流程，不实现周结，不实现通用审批/RBAC。
+- only-engine gate、Jimmer/aggregateProjection、Endpoint Handler generator 与 published-coordinate cold start 继续分别作为后续 change。
+
 ## 11. 后续边界
 
-商户结算、可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
+可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
