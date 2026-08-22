@@ -1,10 +1,10 @@
-# Payment Reference B1+B2+B3+B4 可运行实现规格
+# Payment Reference B1+B2+B3+B4+B5 可运行实现规格
 
 ## 1. 目标状态
 
-`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账与商户结算系统。它在 B1 支付、B2 退款和 B3 日终对账与差异处置闭环上增加 B4 单币种商户日结、确认、资金划拨执行与结果裁决闭环，证明四个业务层模块加独立 contract leaf、多个独立 Aggregate Root、多层 owned child、Strong ID、Value Object、生成并类型化的业务枚举、Repository/UoW、跨聚合弱引用事实、Command/Query/Capability/Endpoint、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在同一真实业务链中协同工作。
+`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账、商户结算与最小可靠 HTTP Integration Event 系统。它在 B1 支付、B2 退款、B3 日终对账与差异处置、B4 单币种商户日结与资金划拨结果裁决之上增加 B5 入站账单 available event、出站 settlement completed event、可靠 Event/JPA 状态、HTTP transport、失败重试与业务幂等，证明独立 contract leaf、多个 Aggregate Root、Strong ID、Value Object、Command/Query/Capability/Endpoint、Domain Event、Integration Event、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在一条真实业务链中协同工作。
 
-该状态是完整支付引用项目的前四个实现投影，不改变 `docs/requirements/**` 中的业务真源，也不声称可靠异步、真实 Integration Event transport、生产银行/清算网络、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
+该状态是完整支付引用项目的前五个实现投影，不改变 `docs/requirements/**` 中的业务真源。B5 只声称 cap4k reliable Event/JPA 与 HTTP Integration Event transport 的最小可运行经验，不声称 broker、reliable Command、通用 Outbox/Inbox、持久化 scheduler、lease、跨实例 exactly-once、only-engine、生产银行/清算网络、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
 
 ## 2. 工程与依赖合同
 
@@ -12,22 +12,22 @@
 
 项目必须包含：
 
-- `contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request 与 Response，只依赖轻量 `cap4k-contract-api` 及编译期分析 metadata，不依赖任何项目内模块、Spring、JPA 或 transport 实现。
+- `contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request/Response 与稳定 Integration Event published language，只依赖轻量 `cap4k-contract-api` 及编译期分析 metadata，不依赖任何项目内模块、Spring、JPA 或 transport 实现。
 - `domain`：Payment、Refund、Reconciliation 与 MerchantSettlement 领域模型、Value Object、生成 enum、领域事实与 Repository 契约。
-- `application`：支付、退款、日终对账与商户结算的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑、确认、执行和查询输入/处理器；支付/退款 Gateway、结果验证、渠道账单、结算候选、资金划拨与划拨结果验证 Capability。
-- `adapter`：Endpoint Handler、手写 HTTP binding、Fake Payment/Refund Gateway、Fake Channel Statement Provider、Fake Settlement Transfer Provider、渠道/划拨结果验证器、普通 scheduled reaction 和 JPA 适配。
-- `start`：Spring Boot 组装、H2 配置、包含退款、对账、手续费与结算结果阈值的最小渠道配置/账单/划拨 fixture 和端到端测试。
+- `application`：支付、退款、日终对账与商户结算的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑、确认、执行和查询输入/处理器；支付/退款 Gateway、结果验证、渠道账单、结算候选、资金划拨与划拨结果验证 Capability；入站 Integration Event listener 与 Domain Event 到 published Integration Event 的映射/发布编排。
+- `adapter`：Endpoint Handler、手写业务 HTTP binding、Fake Payment/Refund Gateway、Fake Channel Statement Provider、Fake Settlement Transfer Provider、渠道/划拨结果验证器、普通 scheduled reaction 和 JPA 适配；Integration Event HTTP wire protocol 由 cap4k starter 拥有，不在 adapter 手写第二套协议。
+- `start`：Spring Boot 组装、H2 配置、cap4k reliable Event/JPA owner 与 HTTP Integration Event starter、静态 event route、包含退款/对账/手续费/结算结果阈值的 fixture，以及动态 fake HTTP receiver 和端到端测试。
 
 项目内依赖方向必须为：
 
-- `application -> domain`；
+- `application -> contract + domain`；
 - `adapter -> contract + application + domain`；
 - `start -> adapter`；
 - `contract` 不依赖任何项目内模块；
 - `domain` 不依赖 contract/application/adapter/start；
 - application/domain 不依赖 start 或具体 Web 配置。
 
-Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint contract 必须物理位于该模块；既有 payment/refund FQN 保持不变，B3 reconciliation 与 B4 merchant-settlement contract 使用同一发布边界下的稳定 FQN。
+Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint contract 与 B5 Integration Event published language 必须物理位于该模块；既有 payment/refund FQN 保持不变，B3 reconciliation、B4 merchant-settlement 与 B5 event contract 使用同一 dependency-leaf 发布边界下的稳定 FQN。
 
 ### 2.2 版本与解析
 
@@ -36,7 +36,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所
 - Spring Boot：3.5.6。
 - 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
 - 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
-- B1/B2/B3/B4 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3/B4 验收，保留给 B6。
+- B1/B2/B3/B4/B5 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline 完成构建、测试和分析验收。解析顺序固定为：先读取并规范化非空 Gradle property `cap4k.local.path`，再读取并规范化非空环境变量 `CAP4K_LOCAL_PATH`，二者均未提供时继续使用正式版 `2.0.1`；本地分支使用 `999.0.0-local` plugin marker 并对同一路径执行 `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3/B4/B5 验收，保留给最终发布后验证。
 
 ### 2.3 Pipeline ownership
 
@@ -50,7 +50,7 @@ Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所
 
 ### 3.1 Enum manifest
 
-`design/enums.json` 是 B1/B2/B3/B4 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
+`design/enums.json` 是 B1/B2/B3/B4/B5 有限业务枚举的 authoring source，并通过 `types.enumManifest` 注册。至少声明以下 aggregate-owned enum：
 
 - `PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、`CLOSED(4)`、`RESULT_UNKNOWN(5)`。
 - `PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`。
@@ -568,13 +568,74 @@ B4 至少包含以下应用入口：
 - 证据至少包括 enum/converter/VO tests、domain invariant tests、H2/JPA/UoW aggregate graph/rollback/concurrency tests、HTTP integration tests、scheduler/fake provider tests、plan/generation determinism、Analyzer Time/Actor Flow、AgentFacts 和 traceability 实际路径。
 - B1/B2/B3 已验收行为是回归基线，B4 不得破坏支付、退款、对账、contract leaf、Composite Build、Mermaid、Analyzer 或 AgentFacts 合同。
 
-### 10C.12 B5 与后续边界
+## 10D. B5 最小可靠 HTTP Integration Event
 
-- B4 可形成本地 Domain Event、稳定 outbound event identity 或 contract shape，但不宣称 Outbox、reliable Command/Event、Integration Event transport、broker/HTTP delivery、持久化调度、lease/retry 或跨实例 exactly-once。
-- 不实现真实银行/清分清算网络、商户余额账户或总账系统。
-- 不实现负净额追偿、商户补款或顺延抵扣产品流程，不实现周结，不实现通用审批/RBAC。
-- only-engine gate、Jimmer/aggregateProjection、Endpoint Handler generator 与 published-coordinate cold start 继续分别作为后续 change。
+### 10D.1 B5 目标与 published language
+
+- B5 只实现两个业务 Integration Event：入站 `ChannelStatementAvailableIntegrationEvent` 与出站 `MerchantSettlementCompletedIntegrationEvent`。
+- 两者是 contract module 的 dependency-leaf published language，并使用显式稳定 v1 event name。payload 只包含标量、业务 Strong ID 的公开表示、金额/币种、statement identity/revision、event/correlation/causation identity 和 occurrence time；不得暴露 JPA Entity、聚合对象、Repository、Capability 实现或 transport 配置。
+- `ChannelStatementAvailableIntegrationEvent` 表达“指定渠道账单版本已经可获取”，不是完整账单内容。`MerchantSettlementCompletedIntegrationEvent` 表达“指定 Settlement 首次形成 accepted terminal success fact”，不是资金网络最终全局完成承诺。
+- contract 不依赖 domain/application/adapter/start、Spring、JPA 或 HTTP starter。application 为发布和监听 event 可以依赖 `contract + domain`；domain 不依赖 contract。
+
+### 10D.2 入站账单 available event
+
+- cap4k HTTP Integration Event receiver 解码 `ChannelStatementAvailableIntegrationEvent` 后交给 checked-in application listener。listener 必须保持薄壳，只做输入规范化、追踪信息传递和 Command/application operation dispatch，不直接访问 Repository、EntityManager 或 HTTP client。
+- event 至少包含稳定 event identity、channelId、currency、reconciliationDate、statementIdentity、revision、publishedAt，以及可选 correlation/causation identity；空 identity、非法 revision、未知 channel/currency 组合必须被明确拒绝或进入可诊断失败，不得静默创建批次。
+- listener 进入既有 Reconciliation 应用路径，完整 statement 仍通过 `PullChannelStatement` Capability 取得。event payload 不得成为账单真源，也不得绕过 statement completeness、identity/revision、match/disposition 和 current effective run 规则。
+- 同 event identity 重放、不同 event identity 指向同 statement/revision、scheduler 同日触发、人工 rerun 和并发请求都必须汇合到同一 batch/run 幂等边界。同 identity/revision 只形成一次有效 run；更高 revision 追加历史并成为 effective run；旧 revision 迟到不回退当前 effective run。
+- event 先于 statement 可读取时，处理保持失败可诊断并允许相同 event identity 后续重试；恢复后不得创建重复有效批次。
+
+### 10D.3 Push、Pull、scheduler 与 rerun 共存
+
+- B5 不用 Integration Event 替换 provider Pull、日终 scheduler 或人工 rerun。四个入口可以同时存在：Push 提高时效性，Pull 提供权威完整数据，scheduler 提供漏通知/停机/不支持推送渠道的最终发现，manual rerun 提供运维恢复。
+- 四个入口必须共享 channel + currency + business date 的 batch scope、statement identity + revision 的 run identity、数据库唯一约束与 optimistic-lock 语义；不得创建 event-only 聚合、event-only effective pointer 或第二套对账状态机。
+- Analyzer/Flow 可以分别展示真实 HTTP Integration Event listener root、Time scheduler root 与显式 HTTP rerun root，但不得把它们伪造成单一 exactly-once stitched flow。
+
+### 10D.4 Settlement completed 事实与出站事件
+
+- MerchantSettlement 首次形成 accepted `SUCCEEDED` settled fact 时，必须同时形成稳定 completion event identity 与 completion occurrence time。推荐身份由 event type + settlementId 稳定派生或显式冻结；重放后保持不变。
+- FAILED、RESULT_UNKNOWN、REVIEW_REQUIRED、CONFLICT_REVIEW_REQUIRED、NEGATIVE_REVIEW_REQUIRED、VOIDED、gateway rejection、未验证 callback、重复 callback 和成功后的迟到失败不得形成新的 completed event。
+- 如果 Settlement 可以通过渠道 SUCCESS callback或受控 unknown adjudication首次形成 accepted success，两条路径必须调用同一领域事实形成逻辑，保证只产生一次 local completion fact/event intent。
+- domain 可以形成本地 `MerchantSettlementCompletedDomainEvent`，application Domain Event subscriber 负责映射为 published `MerchantSettlementCompletedIntegrationEvent` 并调用 cap4k Integration Event supervisor；不得让 domain 依赖 contract。
+
+### 10D.5 可靠 Event/JPA 与事务原子性
+
+- published outbound event 必须通过当前 cap4k `Mediator.events.enqueue/schedule/delay` 合同及其 reliable Event/JPA owner记录；不得退化成 Command Handler 中直接调用 `RestClient`、`WebClient` 或自定义线程发送。
+- settlement success business transition、稳定 event identity 与 reliable outbound event record 必须在同一 UoW 中原子提交。强制业务事务回滚后，Settlement success 与可投递 event record 都不存在；提交成功后两者都可从真实 H2/JPA 状态验证。
+- cap4k HTTP publisher 缺少 `ReliableEventCoordinator`、`EventRecordRepository` 或其他必需 provider 时必须 fail fast；项目不得注入内存/no-op fallback 冒充可靠投递。
+- reliable provider 的 handoff 成功只表示 provider 接受/HTTP 2xx，不表示所有下游业务处理完成。B5 只承诺 at-least-once transport handoff + stable identity + 业务幂等，不承诺端到端 exactly-once。
+
+### 10D.6 HTTP Integration Event transport
+
+- B5 只启用 cap4k 当前生产 HTTP Integration Event publisher/receiver；不启用 RabbitMQ、RocketMQ 或多 publisher fallback。应用任一时刻只允许一个 active outbound Integration Event publisher。
+- 入站使用 cap4k canonical fixed receive path `/cap4k/integration-events` 与 canonical envelope。项目不得在业务 adapter 中定义第二套 `/api/...` event envelope、反序列化器或 provider identity。
+- 出站 route 以稳定 event name映射到 URI；仓库不提交机器绝对地址、端口或凭据。端到端测试通过动态配置指向可控 fake HTTP receiver；生产默认配置通过环境/部署注入目标 URI。
+- fake receiver 必须能够按测试脚本返回 2xx、非 2xx、延迟/超时并记录 envelope identity。它是测试证据，不作为第二个生产 Spring Boot 应用或真实 merchant notification service。
+- 首次非 2xx、连接失败或超时后，reliable event 保持可观察的待重试/失败状态；receiver 恢复后使用相同 event identity 重试并成功交付。不得通过创建新业务 event 绕过失败记录。
+
+### 10D.7 幂等、重复与安全边界
+
+- outbound settlement event 的重复 callback、publisher retry 与 HTTP replay不得形成第二个业务 completion fact；测试 receiver 可以接收重复 envelope，但 identity 与 payload fingerprint 必须稳定。
+- inbound statement event 至少一次投递依赖 Reconciliation 业务唯一性实现幂等。B5 不新增通用 Inbox，但必须验证重复 event envelope、scheduler 和 rerun不会重复 effective run。
+- transport 不拥有商户授权、渠道签名、银行密钥或敏感凭据。生产级认证、签名和 secret rotation 后置；B5 测试仅使用明确的本地 fixture，不把假 secret 写入 published contract。
+- event payload 的原始外部状态保持开放标量；有限领域状态继续使用现有生成 enum。不得因 transport 需要创建重复业务 enum 或把错误码全部封闭化。
+
+### 10D.8 Generator、Analyzer、AgentFacts 与证据
+
+- design 输入必须登记两个 Integration Event published contracts/anchors，并保持 event contract 为 checked-in authoring source；具体 runtime reliable-event record 和 HTTP protocol 由 cap4k Runtime/starter 拥有，不由业务 schema 伪造第二套 Outbox。
+- Endpoint Handler、Integration Event listener、Domain Event subscriber 和业务 Command Handler 继续是一类一文件的 checked-in source；HTTP Integration Event wire handler 属于 starter，不在项目手写。
+- Pipeline plan/generation 必须保持确定性；B1-B4 已演进的 checked-in 文件不得被覆盖。clean 后 build-owned generated source 可重建。
+- Analyzer 必须能观察真实 outbound Integration Event send 与 inbound listener/event-handler关系；如果当前 Analyzer合同不能完整表达某条 transport边，必须如实记录 verified gap，不通过虚构 generic sender node或跨入口 stitching规避。
+- Agent Snapshot 必须保留 plan ownership、analysis 和 diagnostics。live DB freshness UNKNOWN 可以导致 PARTIAL，但 ownership不得为空，analysis不得 INVALID，diagnostics不得出现 error或 plan-evidence-invalid。
+- B5 证据至少包括 contract leaf/serialization、入站 replay/revision、Push+Pull+scheduler/rerun convergence、settlement single event、UoW rollback、HTTP failure/retry/recovery、stable envelope identity、full B1-B4 regression、plan/generation determinism、Mermaid、Analyzer 和 AgentFacts。
+
+### 10D.9 B5 非目标与后续边界
+
+- B5 不实现 reliable Command、通用 Outbox/Inbox 产品层、broker transport、广播、动态服务发现、全局顺序、框架级 DLQ UI、持久化 scheduler、lease 或跨实例 scheduler/exactly-once。
+- B5 不依赖 only-engine，也不执行 only-engine addon gate。only-engine、Jimmer/aggregateProjection、Endpoint Handler generator 与 published-coordinate cold start 分别保留为独立后续验证。
+- B5 不处理 Payment timeout/late-result/conflict-review（GitHub #4），不完成最终 composition audit（GitHub #8），不实现大额退款审批、超期人工例外、负净额追偿、周结、真实银行/清分清算网络或生产 merchant notification service。
+- 当前实现必须保留稳定业务身份、event version 与可替换 transport边界，但不得预建无需求的通用分布式基础设施。
 
 ## 11. 后续边界
 
-可靠异步、Integration Event transport、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine integration gate、Jimmer/aggregateProjection、Endpoint Handler generator 和 published-coordinate cold start 分别保留为后续可独立验收的 change。当前实现必须给这些后续链路保留稳定业务身份和事件语义，但不得预建无需求的通用框架。
+Payment timeout/late-result/conflict-review、最终 accepted-lineage composition、published-coordinate cold start、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine addon verification、Jimmer/aggregateProjection、Endpoint Handler generator 和生产 transport/auth 分别保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP Integration Event 体验。
