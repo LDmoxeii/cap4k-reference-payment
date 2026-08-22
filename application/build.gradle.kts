@@ -15,6 +15,7 @@ dependencies {
     implementation(platform(libs.spring.boot.dependencies))
 
     implementation(project(":domain"))
+    implementation(project(":contract"))
     implementation(libs.cap4k.ddd.core)
     compileOnly(libs.cap4k.analysis.metadata)
     cap4kAnalysisCompiler(libs.cap4k.analysis.compiler)

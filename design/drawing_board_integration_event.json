@@ -1,0 +1,50 @@
+[
+  {
+    "tag": "integration_event",
+    "package": "merchant_settlement",
+    "name": "MerchantSettlementCompleted",
+    "description": "A merchant settlement formed its first accepted terminal success fact",
+    "aggregates": ["MerchantSettlement"],
+    "eventName": "payment.merchant-settlement.completed.v1",
+    "fields": [
+      { "name": "eventIdentity", "type": "String" },
+      { "name": "settlementId", "type": "String" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "netAmount", "type": "Big_decimal" },
+      { "name": "completedAt", "type": "java.time.Instant" },
+      { "name": "correlationIdentity", "type": "String?", "defaultValue": "null" },
+      { "name": "causationIdentity", "type": "String?", "defaultValue": "null" }
+    ],
+    "resultFields": [
+    ]
+  },
+  {
+    "tag": "integration_event",
+    "package": "reconciliation",
+    "name": "ChannelStatementAvailable",
+    "description": "Signal that a revisioned channel statement is available for authoritative pull",
+    "aggregates": ["ReconciliationBatch"],
+    "artifacts": [{
+      "family": "integration-event",
+      "variant": "inbound"
+    }, {
+      "family": "integration-subscriber"
+    }],
+    "eventName": "payment.reconciliation.channel-statement-available.v1",
+    "fields": [
+      { "name": "eventIdentity", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "reconciliationDate", "type": "java.time.LocalDate" },
+      { "name": "statementIdentity", "type": "String" },
+      { "name": "statementRevision", "type": "String" },
+      { "name": "publishedAt", "type": "java.time.Instant" },
+      { "name": "correlationIdentity", "type": "String?", "defaultValue": "null" },
+      { "name": "causationIdentity", "type": "String?", "defaultValue": "null" }
+    ],
+    "resultFields": [
+    ]
+  }
+]

@@ -470,3 +470,21 @@
 **当**：无权限人员尝试确认，随后获授权人员完成确认。
 
 **则**：第一次操作被拒绝并留痕；第二次操作记录操作人、时间、理由和依据，后续影响可追踪。
+
+<a id="pay-ac-087"></a>
+### PAY-AC-087 账单可用事件与权威拉取收敛
+
+**前提**：渠道已经声明一个确定 identity/revision 的账单可获取，日终 scheduler、事件重投和人工 rerun 可能并发或乱序发生。
+
+**当**：系统通过 Integration Event 接收入站可用性信号，并继续通过 `PullChannelStatement` 获取完整权威账单。
+
+**则**：相同 identity/revision 只形成一次有效 run；更高 revision 成为 current effective run；迟到旧 revision 不回退当前事实；provider 暂不可读时失败可诊断，并可用同一稳定事件身份重试恢复。
+
+<a id="pay-ac-088"></a>
+### PAY-AC-088 结算完成事件原子提交并保持稳定身份重试
+
+**前提**：商户结算首次形成已接受的终态成功事实，且首次 HTTP Integration Event handoff 可能失败。
+
+**当**：业务事务提交、重复 callback 到达或可靠事件执行后续重试。
+
+**则**：结算成功事实与可靠事件记录同事务提交或共同回滚；重复或冲突结果不形成第二个 completion fact；失败恢复使用相同 event identity 与 payload 重试。测试接收器只证明 transport 行为，不代表生产商户通知服务。

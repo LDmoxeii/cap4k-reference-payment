@@ -7,6 +7,8 @@ spring-boot = "3.5.6"
 cap4k-ddd-core = { module = "io.github.ldmoxeii:ddd-core", version.ref = "cap4k" }
 cap4k-ddd-domain-repo-jpa = { module = "io.github.ldmoxeii:ddd-domain-repo-jpa", version.ref = "cap4k" }
 cap4k-ddd-jpa-starter = { module = "io.github.ldmoxeii:cap4k-ddd-jpa-starter", version.ref = "cap4k" }
+cap4k-ddd-domain-event-jpa-starter = { module = "io.github.ldmoxeii:cap4k-ddd-domain-event-jpa-starter", version.ref = "cap4k" }
+cap4k-ddd-integration-event-http-starter = { module = "io.github.ldmoxeii:cap4k-ddd-integration-event-http-starter", version.ref = "cap4k" }
 cap4k-contract-api = { module = "io.github.ldmoxeii:cap4k-contract-api", version.ref = "cap4k" }
 cap4k-ddd-endpoint-http = { module = "io.github.ldmoxeii:ddd-endpoint-http", version.ref = "cap4k" }
 cap4k-ddd-endpoint-http-starter = { module = "io.github.ldmoxeii:cap4k-ddd-endpoint-http-starter", version.ref = "cap4k" }

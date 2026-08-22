@@ -1,6 +1,9 @@
 package com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement
 
+import com.only4.cap4k.ddd.core.domain.event.DomainEventSupervisor
+import com.only4.cap4k.ddd.core.domain.event.DomainEventSupervisorSupport
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.MerchantSettlementStatus
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.events.MerchantSettlementCompletedDomainEvent
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementExecutionAttemptStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementExecutionFinalResult
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementLineSourceKind
@@ -11,9 +14,23 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class MerchantSettlementBehaviorTest {
+    private lateinit var domainEvents: RecordingDomainEventSupervisor
+
+    @BeforeEach
+    fun configureDomainEvents() {
+        domainEvents = RecordingDomainEventSupervisor()
+        DomainEventSupervisorSupport.configure(domainEvents)
+    }
+
+    @AfterEach
+    fun releaseDomainEvents() {
+        DomainEventSupervisorSupport.release(domainEvents)
+    }
     @Test
     fun `confirmation freezes positive composition while zero completes without transfer and negative remains review-only`() {
         val positive = settlement("127.00")
@@ -27,6 +44,7 @@ class MerchantSettlementBehaviorTest {
         assertThat(zero.settledFactFormed).isTrue()
         assertThat(zero.completedAt).isEqualTo(NOW)
         assertThat(zero.settlementExecutionAttempts).isEmpty()
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
         assertThatThrownBy { zero.startAttempt() }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("no positive amount")
@@ -56,6 +74,7 @@ class MerchantSettlementBehaviorTest {
         assertThat(attempt.notificationReceiveCount).isEqualTo(2)
         assertThat(attempt.settlementResultReceipts).hasSize(1)
         assertThat(attempt.settlementResultReceipts.single().receiveCount).isEqualTo(2)
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
     }
 
     @Test
@@ -86,6 +105,7 @@ class MerchantSettlementBehaviorTest {
         assertThat(attempt.finalResult).isEqualTo(SettlementExecutionFinalResult.SUCCESS)
         assertThat(attempt.settlementResultReceipts).hasSize(2)
         assertThat(attempt.conflictingNotificationCount).isEqualTo(2)
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
     }
 
     @Test
@@ -119,6 +139,7 @@ class MerchantSettlementBehaviorTest {
         assertThat(attempt.finalResult).isEqualTo(SettlementExecutionFinalResult.SUCCESS)
         assertThat(attempt.settlementResultReceipts).hasSize(2)
         assertThat(attempt.settlementResultReceipts.last().resultCode).isEqualTo("MANUAL_ADJUDICATION")
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
         assertThatThrownBy {
             settlement.adjudicateUnknownResult(
                 attempt.id, OPERATOR, ROLE, "FAILED", attempt.reviewAfterAt.plusMinutes(2), "duplicate review"
@@ -315,6 +336,33 @@ class MerchantSettlementBehaviorTest {
         ).also {
             it.id = MerchantSettlementId.parse("018f22a0-0000-7000-8000-000000000001")
             it.onCreate()
+        }
+    }
+
+    private class RecordingDomainEventSupervisor : DomainEventSupervisor {
+        val attached = mutableListOf<Any>()
+
+        override fun <DOMAIN_EVENT : Any, ENTITY : Any> attach(
+            domainEventPayload: DOMAIN_EVENT,
+            entity: ENTITY,
+            schedule: LocalDateTime,
+        ) {
+            attached += domainEventPayload
+        }
+
+        override fun <DOMAIN_EVENT : Any, ENTITY : Any> attach(
+            entity: ENTITY,
+            schedule: LocalDateTime,
+            domainEventPayloadSupplier: () -> DOMAIN_EVENT,
+        ) {
+            attached += domainEventPayloadSupplier()
+        }
+
+        override fun <DOMAIN_EVENT : Any, ENTITY : Any> detach(
+            domainEventPayload: DOMAIN_EVENT,
+            entity: ENTITY,
+        ) {
+            attached.remove(domainEventPayload)
         }
     }
 

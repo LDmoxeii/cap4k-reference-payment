@@ -1,0 +1,27 @@
+{
+  "entryId": "com.only4.cap4k.reference.payment.contract.events.integration.inbound.reconciliation.ChannelStatementAvailableIntegrationEvent",
+  "entryType": "integrationevent",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.reconciliation.integration.ProcessAvailableChannelStatementCmd.Request",
+      "name": "ProcessAvailableChannelStatementCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.reconciliation.integration.ProcessAvailableChannelStatementCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "com.only4.cap4k.reference.payment.contract.events.integration.inbound.reconciliation.ChannelStatementAvailableIntegrationEvent",
+      "name": "ChannelStatementAvailableIntegrationEvent",
+      "fullName": "com.only4.cap4k.reference.payment.contract.events.integration.inbound.reconciliation.ChannelStatementAvailableIntegrationEvent",
+      "type": "integrationevent"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "com.only4.cap4k.reference.payment.contract.events.integration.inbound.reconciliation.ChannelStatementAvailableIntegrationEvent",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.reconciliation.integration.ProcessAvailableChannelStatementCmd.Request",
+      "type": "IntegrationEventToCommand"
+    }
+  ]
+}

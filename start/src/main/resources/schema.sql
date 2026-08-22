@@ -1,5 +1,11 @@
 -- Runtime H2 projection of composite invariants that are present in design/schema.sql but are not
 -- currently emitted as JPA @Table(uniqueConstraints = ...) by the aggregate entity generator.
+-- The reliable-event runtime owns __event; these alterations preserve its published text-column schema
+-- when Hibernate create-drop derives shorter varchar columns from the current entity annotations.
+alter table __event alter column data text;
+alter table __event alter column execution_context text;
+alter table __event alter column retry_policy text;
+
 alter table reconciliation_batch
     add constraint uk_reconciliation_batch_scope unique (channel_id, currency, reconciliation_date);
 

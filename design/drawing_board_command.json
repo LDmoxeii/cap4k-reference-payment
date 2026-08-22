@@ -279,6 +279,30 @@
   },
   {
     "tag": "command",
+    "package": "reconciliation.integration",
+    "name": "ProcessAvailableChannelStatement",
+    "description": "Pull and reconcile the exact statement revision announced by an inbound availability event",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      { "name": "eventIdentity", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "reconciliationDate", "type": "java.time.LocalDate" },
+      { "name": "statementIdentity", "type": "String" },
+      { "name": "statementRevision", "type": "String" },
+      { "name": "publishedAt", "type": "java.time.Instant" },
+      { "name": "correlationIdentity", "type": "String?" },
+      { "name": "causationIdentity", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "batchId", "type": "String" },
+      { "name": "runId", "type": "String" },
+      { "name": "batchStatus", "type": "String" },
+      { "name": "idempotentReplay", "type": "Boolean" }
+    ]
+  },
+  {
+    "tag": "command",
     "package": "reconciliation.run",
     "name": "RerunReconciliationBatch",
     "description": "Explicitly pull and process a statement revision for an existing reconciliation batch",

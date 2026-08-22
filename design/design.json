@@ -4795,5 +4795,92 @@
         "type": "String"
       }
     ]
+  },
+
+  {
+    "tag": "integration_event",
+    "package": "reconciliation",
+    "name": "ChannelStatementAvailable",
+    "description": "Signal that a revisioned channel statement is available for authoritative pull",
+    "eventName": "payment.reconciliation.channel-statement-available.v1",
+    "aggregates": ["ReconciliationBatch"],
+    "artifacts": [
+      {"family": "integration-event", "variant": "inbound"},
+      {"family": "integration-subscriber"}
+    ],
+    "fields": [
+      {"name": "eventIdentity", "type": "String"},
+      {"name": "channelId", "type": "String"},
+      {"name": "currency", "type": "String"},
+      {"name": "reconciliationDate", "type": "java.time.LocalDate"},
+      {"name": "statementIdentity", "type": "String"},
+      {"name": "statementRevision", "type": "String"},
+      {"name": "publishedAt", "type": "java.time.Instant"},
+      {"name": "correlationIdentity", "type": "String?", "defaultValue": "null"},
+      {"name": "causationIdentity", "type": "String?", "defaultValue": "null"}
+    ]
+  },
+  {
+    "tag": "integration_event",
+    "package": "merchant_settlement",
+    "name": "MerchantSettlementCompleted",
+    "description": "A merchant settlement formed its first accepted terminal success fact",
+    "eventName": "payment.merchant-settlement.completed.v1",
+    "aggregates": ["MerchantSettlement"],
+    "artifacts": [
+      {"family": "integration-event", "variant": "outbound"}
+    ],
+    "fields": [
+      {"name": "eventIdentity", "type": "String"},
+      {"name": "settlementId", "type": "String"},
+      {"name": "merchantId", "type": "String"},
+      {"name": "channelId", "type": "String"},
+      {"name": "currency", "type": "String"},
+      {"name": "netAmount", "type": "java.math.BigDecimal"},
+      {"name": "completedAt", "type": "java.time.Instant"},
+      {"name": "correlationIdentity", "type": "String?", "defaultValue": "null"},
+      {"name": "causationIdentity", "type": "String?", "defaultValue": "null"}
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reconciliation.integration",
+    "name": "ProcessAvailableChannelStatement",
+    "description": "Pull and reconcile the exact statement revision announced by an inbound availability event",
+    "aggregates": ["ReconciliationBatch"],
+    "fields": [
+      {"name": "eventIdentity", "type": "String"},
+      {"name": "channelId", "type": "String"},
+      {"name": "currency", "type": "String"},
+      {"name": "reconciliationDate", "type": "java.time.LocalDate"},
+      {"name": "statementIdentity", "type": "String"},
+      {"name": "statementRevision", "type": "String"},
+      {"name": "publishedAt", "type": "java.time.Instant"},
+      {"name": "correlationIdentity", "type": "String?"},
+      {"name": "causationIdentity", "type": "String?"}
+    ],
+    "resultFields": [
+      {"name": "batchId", "type": "String"},
+      {"name": "runId", "type": "String"},
+      {"name": "batchStatus", "type": "String"},
+      {"name": "idempotentReplay", "type": "Boolean"}
+    ]
+  },
+  {
+    "tag": "domain_event",
+    "package": "merchant_settlement.completion",
+    "name": "MerchantSettlementCompleted",
+    "description": "A merchant settlement formed its first accepted terminal success fact",
+    "aggregates": ["MerchantSettlement"],
+    "persist": false,
+    "fields": [
+      {"name": "eventIdentity", "type": "String"},
+      {"name": "settlementId", "type": "String"},
+      {"name": "merchantId", "type": "String"},
+      {"name": "channelId", "type": "String"},
+      {"name": "currency", "type": "String"},
+      {"name": "netAmount", "type": "java.math.BigDecimal"},
+      {"name": "completedAt", "type": "java.time.LocalDateTime"}
+    ]
   }
 ]

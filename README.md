@@ -1,11 +1,12 @@
 # cap4k-reference-payment
 
-`cap4k-reference-payment` 是一个 **requirements-first、reference-first** 的支付领域引用项目。长期业务范围覆盖支付、退款、日终对账与商户结算；当前已完成四个可运行切片：
+`cap4k-reference-payment` 是一个 **requirements-first、reference-first** 的支付领域引用项目。长期业务范围覆盖支付、退款、日终对账、商户结算与最小 Integration Event 边界；当前已完成五个可运行切片：
 
 - **B1**：创建支付 → 发起支付尝试 → 渠道结果回调 → 查询支付；
 - **B2**：全额/部分退款 → 渠道退款结果 → 超期复核 → 查询退款；
 - **B3**：日终账单拉取 → 支付/退款事实核对 → 差异处置/确认 → 查询与重跑；
-- **B4**：商户日结准备 → 确认冻结 → 同步 Fake 资金划拨 → 结果裁决/未知复核 → 查询与受控作废。
+- **B4**：商户日结准备 → 确认冻结 → 同步 Fake 资金划拨 → 结果裁决/未知复核 → 查询与受控作废；
+- **B5**：渠道账单可用 Integration Event → 权威账单拉取/版本收敛；商户结算完成事实 → JPA reliable-event → HTTP 投递与失败重试。
 
 ## 当前状态
 
@@ -20,9 +21,10 @@
 - 每个 Endpoint Handler 一类一文件并默认使用静态 Mediator；HTTP binding 始终手写；
 - H2/JPA 真实持久化、乐观锁、复合唯一约束、回滚与 Spring Boot HTTP 集成测试；
 - B4 支付成功时原子冻结手续费快照、日结候选投影、结算确认冻结、同步 Fake Transfer、回调裁决与未知结果复核；
+- B5 两份稳定 Integration Event contract、canonical HTTP receiver、入站 subscriber、JPA-backed reliable-event 记录、HTTP handoff，以及非 2xx/response-timeout 后的 durable retry/recovery；
 - ordinary plan/generation、Analyzer Flow/Drawing Board/Aggregate Structure 和 Agent Snapshot 证据。
 
-B5 可靠异步/Outbox/Integration Event transport/only-engine gate、B6 published-coordinate cold start、Jimmer projection、真实银行/清算网络与生产级资金划拨均未实现。B4 的普通 `@Scheduled` 与同步 Fake Provider 只证明 reference 闭环，不应推断为可靠调度、跨实例 exactly-once 或生产资金能力。
+B5 只验证两条最小 HTTP Integration Event 路径：入站账单可用信号仍通过 `PullChannelStatement` 获取权威正文，出站结算完成事实通过 cap4k reliable Event/JPA 与 HTTP transport 投递。可靠 Command、broker transport、generic Inbox、持久化业务 scheduler/lease、跨实例 exactly-once、only-engine、生产商户通知、B6 published-coordinate cold start、Jimmer projection、真实银行/清算网络与生产级资金划拨仍未实现。普通 `@Scheduled` 与同步 Fake Provider 只证明 reference 闭环，不应推断为生产资金或全局可靠调度能力。
 
 ## 业务真源
 
@@ -140,6 +142,26 @@ GET /api/merchant-settlements/{settlementId}
 
 B4 以 `Asia/Shanghai` 半开日结区间消费当前 effective reconciliation run 的已确认事实，并在交易粒度排除未决项。支付首次成功时原子冻结手续费规则与结果快照；reference 配置为 200 bps、固定费 0、`HALF_UP`，例如 127.00 的手续费为 2.54、净额为 124.46。确认后组成冻结；正净额才允许发起划拨，负净额进入人工处理；`ACCEPTED` 不等于成功，`RESULT_UNKNOWN` 禁止重付，重复通知只形成一次 settled fact，成功后的迟到失败只记冲突而不回退。
 
+### B5 最小可靠 HTTP Integration Event
+
+```text
+POST /cap4k/integration-events
+  -> ChannelStatementAvailableIntegrationEvent
+  -> thin @EventListener subscriber
+  -> ProcessAvailableChannelStatement Command
+  -> PullChannelStatement Capability（权威正文）
+  -> 同一 ReconciliationBatch / revision 幂等边界
+
+MerchantSettlement 首次 accepted terminal success
+  -> MerchantSettlementCompletedDomainEvent
+  -> application subscriber
+  -> Mediator.events.enqueue(MerchantSettlementCompletedIntegrationEvent)
+  -> __event durable record
+  -> HTTP handoff / non-2xx or response-timeout retry/recovery
+```
+
+入站 Push 与 Pull 不是二选一：Integration Event 只声明某个 statement identity/revision 已可用，`PullChannelStatement` 仍提供权威完整账单；日终 scheduler 和人工 rerun 继续存在，并与事件入口汇合到同一领域/数据库幂等模型。入站重复投递依赖 statement identity/revision 与唯一约束收敛，不声称 generic Inbox。出站只在结算首次成功事实形成时注册一次可靠事件；测试覆盖业务与事件记录共同回滚、HTTP 503 与真实 response timeout 两类首投失败、同一 event UUID/type/payload 的 durable retry，以及 receiver 恢复后的最终 2xx handoff。
+
 ## 技术基线
 
 - JDK 17
@@ -148,7 +170,7 @@ B4 以 `Asia/Shanghai` 半开日结区间消费当前 effective reconciliation r
 - 默认声明 cap4k 2.0.1
 - base package：`com.only4.cap4k.reference.payment`
 
-当前四个切片使用尚未随 2.0.1 发布的 mainline Pipeline DSL/Analyzer 合同，因此通过显式 Composite Build 对 cap4k mainline 提交 `dcafcc43928aa47a0613bb839ba5f6010efa3414` 验证。本地解析顺序为非空 Gradle property `cap4k.local.path`、非空环境变量 `CAP4K_LOCAL_PATH`、正式版 `2.0.1`；仓库不提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 Gradle 配置。published-coordinate cold start 属于 B6。
+当前五个切片使用尚未随 2.0.1 发布的 mainline Pipeline DSL/Analyzer 与 reliable Integration Event 合同，因此通过显式 Composite Build 对 cap4k mainline 提交 `6575866043ad34008843d7245c49563e15b38b54` 验证。本地解析顺序为非空 Gradle property `cap4k.local.path`、非空环境变量 `CAP4K_LOCAL_PATH`、正式版 `2.0.1`；仓库不提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 Gradle 配置。published-coordinate cold start 属于 B6。
 
 ## 本地运行
 
@@ -177,19 +199,19 @@ cap4k.local.path=C:/path/to/cap4k
 
 ## 当前证据
 
-- ordinary plan：`build/cap4k/plan.json`，170 items（116 checked-in `SKIP`、54 generated `OVERWRITE`）；
-- 生成确定性：连续 generation 后 checked-in manifest SHA-256 均为 `ca7fe3202aece6524f2472da44137ccaa7601dab25b0d4d677168ae22578b59f`，generated manifest SHA-256 均为 `aa1a35ed59d13ee4f57458d1313dec42203dd98095b9b8aa881dafd0ff6b7ebb`，Kotlin source differences 为 0；
-- clean build：77 tests / 21 suites / 0 failures；
-- B4 HTTP/H2/JPA：`start/src/test/kotlin/com/only4/cap4k/reference/payment/MerchantSettlementReferenceApplicationTests.kt`；
-- Analyzer plan：`build/cap4k/analysis-plan.json`，39 outputs/items；
-- Flow：16 条独立入口（12 个 Endpoint HTTP Actor roots、4 个 Time roots），B4 新增 5 个 HTTP Actor roots 与 2 个 Time roots；
-- Mermaid：16 份 `.mmd` 均使用 quoted label，并通过静态语法 smoke；
-- Drawing Board：`design/drawing_board_*.json`；
-- Agent Snapshot：`partial` 仅因为 live DB source freshness 为 `UNKNOWN`；ownership 保留 170 个 plan items，analysis 为 `ok`、39 个 available outputs，diagnostics 为 0 且无 INVALID/error/plan-evidence-invalid。
+- ordinary plan：`build/cap4k/plan.json`，176 items（122 checked-in `SKIP`、54 generated `OVERWRITE`）；
+- 生成确定性：连续执行 plan/generation/analysis 后 plan SHA-256 均为 `d3e291cdf71e3f95e96dd3ecd28a6e81a49020fab01b704801a5d17dc873cbc1`，analysis plan SHA-256 均为 `1676633d8a984ca9520c705ef09c9ba6474bc935a8ce5317c0e8402d0bc67387`，source differences 为 0；
+- clean build：84 tests / 22 suites / 0 failures / 0 skips；
+- B5 HTTP/H2/JPA：`ReconciliationReferenceApplicationTests.kt` 覆盖入站重投与 revision 收敛，`MerchantSettlementReferenceApplicationTests.kt` 通过测试期可控 JDK `HttpServer` fake receiver 分别覆盖 HTTP 503 与真实 response timeout 后的 durable retry/recovery，并证明 event UUID、event type 与 payload 保持稳定；该接收器只证明 transport 行为，不是生产商户通知服务；
+- Analyzer plan：`build/cap4k/analysis-plan.json`，42 outputs/items；
+- Flow：17 条独立入口（12 个 Endpoint HTTP Actor roots、4 个 Time roots、1 个 Integration Event root）；
+- Mermaid：17 份 `.mmd` 均使用 quoted label，并通过静态语法 smoke；
+- Drawing Board：`design/drawing_board_*.json`，包含 Integration Event partition；
+- Agent Snapshot：`partial` 仅因为 live DB source freshness 为 `UNKNOWN`；ownership 保留 176 个 plan items，analysis 为 `ok`、42 个 available outputs，diagnostics 为 0 且无 INVALID/error/plan-evidence-invalid。
 
 `flows/index.json` 当前仍包含本机 IR input locator，只作为本地可再生产物，不作为可移植提交证据；上游稳定 identity 修复由 `cap4k#215` 跟踪。默认 Flow 不把隐藏的 CommandHandler、聚合运行时状态推进和 Query 串成跨入口流程，项目不伪造这种证据。
 
 ## 后续切片
 
-1. B5：可靠异步、Outbox、消息 transport 与 only-engine addon gate；
+1. B5 后续扩展：reliable Command、broker transport、generic Inbox、持久化业务 scheduler/lease、跨实例 exactly-once、only-engine 与生产商户通知；
 2. B6：公开坐标 cold start、完整 consumer E2E 与发布/宣传证据。
