@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service
 object ConfirmMerchantSettlementResultCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** 先核验 callback，再把 notification/payload/attempt 交给聚合统一裁决；成功事件只能由聚合首次 settled fact 触发。 */
         override fun handle(command: Request): Response {
             val verification = Mediator.capabilities.call(
                 VerifySettlementResult.Request(

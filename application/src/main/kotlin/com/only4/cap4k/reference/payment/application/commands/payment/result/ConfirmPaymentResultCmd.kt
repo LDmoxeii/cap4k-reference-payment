@@ -43,6 +43,11 @@ object ConfirmPaymentResultCmd {
         private val clock: Clock,
     ) : CommandHandler<Request, Response> {
 
+        /**
+         * 先构造稳定核验 payload，再加载 Payment 并校验 attempt；可信成功必须串行化商户订单成功身份，
+         * 同时重新加载 attempt 当时的渠道配置以冻结手续费快照，最后才把结果交给聚合裁决。
+         * 配置归属、渠道、币种和支付方式任一不一致都拒绝，防止伪造可信成功进入聚合。
+         */
         override fun handle(command: Request): Response {
             val payload = listOf(
                 command.channelId,
@@ -95,19 +100,19 @@ object ConfirmPaymentResultCmd {
                         MerchantChannelConfigurationId.parse(attempt.channelConfigurationId)
                     )
                 ) ?: throw IllegalArgumentException(
-                    "Payment attempt ${attempt.id} references a missing merchant channel configuration"
+                    "支付尝试 ${attempt.id} 引用的商户渠道配置不存在"
                 )
                 require(configuration.merchantId == payment.merchantId) {
-                    "Payment attempt ${attempt.id} references a configuration owned by another merchant"
+                    "支付尝试 ${attempt.id} 引用了其他商户的渠道配置"
                 }
                 require(configuration.channelId == command.channelId && configuration.channelId == attempt.channelId) {
-                    "Payment attempt ${attempt.id} references a configuration for another channel"
+                    "支付尝试 ${attempt.id} 引用了其他渠道的配置"
                 }
                 require(configuration.currency == payment.currency && configuration.currency == command.currency.uppercase()) {
-                    "Payment attempt ${attempt.id} references a configuration for another currency"
+                    "支付尝试 ${attempt.id} 引用了其他币种的配置"
                 }
                 require(configuration.paymentMethod == payment.paymentMethod) {
-                    "Payment attempt ${attempt.id} references a configuration for another payment method"
+                    "支付尝试 ${attempt.id} 引用了其他支付方式的配置"
                 }
                 SettlementFeeRule(
                     configurationId = configuration.id.toString(),
@@ -117,7 +122,7 @@ object ConfirmPaymentResultCmd {
                         RoundingMode.valueOf(configuration.settlementFeeRoundingMode.trim().uppercase())
                     } catch (_: IllegalArgumentException) {
                         throw IllegalArgumentException(
-                            "Unsupported settlement fee rounding mode: ${configuration.settlementFeeRoundingMode}"
+                            "不支持的结算手续费舍入模式：${configuration.settlementFeeRoundingMode}"
                         )
                     },
                     currencyPrecision = Money.fractionDigits(payment.currency),

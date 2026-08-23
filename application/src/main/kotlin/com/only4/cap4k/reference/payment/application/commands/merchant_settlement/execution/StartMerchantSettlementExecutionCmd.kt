@@ -32,6 +32,10 @@ import org.springframework.stereotype.Service
 object StartMerchantSettlementExecutionCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * 只有确认后的正净额结算单可以提交资金划拨；PROCESSING 重放复用 attempt，明确失败后才允许新 attempt。
+         * RESULT_UNKNOWN 始终拒绝重付。provider 原始异常只写日志/内部诊断，对外保留稳定失败 code 与中文摘要。
+         */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
                 SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
@@ -43,7 +47,7 @@ object StartMerchantSettlementExecutionCmd {
             ) {
                 throw MerchantSettlementConflictException(
                     code = "MERCHANT_SETTLEMENT_RESULT_UNRESOLVED",
-                    message = "merchant settlement ${settlement.id} cannot create a new execution while its prior result is unresolved",
+                    message = "商户结算单 ${settlement.id} 的前次执行结果尚未解决，不能创建新的执行",
                 )
             }
             val configuration = Mediator.repositories.findOne(
@@ -53,7 +57,7 @@ object StartMerchantSettlementExecutionCmd {
                         (schema.currency eq settlement.currency) and
                         (schema.status eq MerchantChannelConfigurationStatus.ACTIVE)
                 }
-            ) ?: error("no active channel configuration for settlement ${settlement.id}")
+            ) ?: error("结算单 ${settlement.id} 没有可用渠道配置")
             val requestedAt = LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC)
             val groupIdentity = settlement.executionGroupIdentity ?: "SETTLEMENT:${settlement.id}"
             val requestIdentity = "$groupIdentity:${settlement.settlementExecutionAttempts.size + 1}"
@@ -73,7 +77,7 @@ object StartMerchantSettlementExecutionCmd {
                     requestIdentity = attempt.requestIdentity,
                     status = settlement.status.name,
                     providerAccepted = attempt.acceptedAt != null,
-                    diagnosticSummary = "reused an existing processing attempt",
+                    diagnosticSummary = "复用了当前正在处理的结算执行尝试",
                 )
             }
             val transfer = try {
@@ -90,7 +94,7 @@ object StartMerchantSettlementExecutionCmd {
                     )
                 )
             } catch (failure: RuntimeException) {
-                val diagnostic = "settlement transfer gateway failed: ${failure.message ?: failure::class.simpleName}"
+                val diagnostic = "结算资金划拨 provider 调用失败"
                 settlement.rejectExecutionStart(attempt.id, "SETTLEMENT_GATEWAY_ERROR", diagnostic)
                 return response(settlement, attempt.id.toString(), false, diagnostic)
             }

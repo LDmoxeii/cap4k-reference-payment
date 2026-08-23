@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 object ExpirePaymentsCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** ordinary scheduler 只扫描候选并逐笔重新装载聚合；最终裁决由 Payment.expire 保证幂等和 callback 竞争收敛。 */
         override fun handle(command: Request): Response {
             val now = LocalDateTime.ofInstant(command.now, ZoneOffset.UTC)
             val outcomes = Mediator.repositories.find(

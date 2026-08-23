@@ -35,6 +35,7 @@ object ConfirmRefundResultCmd {
 
     @Service
     class Handler(private val clock: Clock) : CommandHandler<Request, Response> {
+        /** 先调用退款结果核验 Capability，再由 Refund 聚合追加 receipt；结果返回后同步转换或释放 Payment 预算。 */
         override fun handle(command: Request): Response {
             val payload = listOf(
                 command.channelId,

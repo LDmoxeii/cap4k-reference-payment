@@ -23,7 +23,7 @@ class VerifySettlementResultHandler : CapabilityHandler<VerifySettlementResult.R
         return VerifySettlementResult.Response(
             verified = verified,
             normalizedResult = normalized,
-            verificationSummary = if (verified) "verified by reference settlement provider" else "untrusted or unsupported settlement result",
+            verificationSummary = if (verified) "reference 结算结果核验通过" else "结算结果不可信或不受支持",
         )
     }
 

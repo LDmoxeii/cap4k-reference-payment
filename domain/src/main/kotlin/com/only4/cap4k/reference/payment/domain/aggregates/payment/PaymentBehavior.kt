@@ -33,6 +33,34 @@ data class PaymentReviewAdjudicationOutcome(
     val notificationIntentState: PaymentNotificationIntentState?,
 )
 
+/** 支付复核的稳定机器错误码与中文展示消息，避免 application 再从 Throwable.message 反解析 code。 */
+class PaymentReviewException(
+    val code: String,
+    message: String,
+    val details: Map<String, String> = emptyMap(),
+) : RuntimeException(message)
+
+private fun reviewFailure(
+    code: String,
+    message: String,
+    details: Map<String, String> = emptyMap(),
+): Nothing = throw PaymentReviewException(code, message, details)
+
+private fun reviewCheck(
+    condition: Boolean,
+    code: String,
+    message: String,
+    details: Map<String, String> = emptyMap(),
+) {
+    if (!condition) reviewFailure(code, message, details)
+}
+
+/**
+ * 创建或复用当前正在处理的渠道尝试。
+ *
+ * 到期、存在阻断结算的复核、或已经形成终态时都不能继续主动发起渠道请求；
+ * 对已有 PROCESSING attempt 的复用是应用重试幂等边界，而不是创建新的支付机会。
+ */
 fun Payment.startAttempt(
     channelId: String,
     channelConfigurationId: String,
@@ -43,7 +71,7 @@ fun Payment.startAttempt(
     check(initiatedAt.isBefore(expiresAt)) { "PAYMENT_EXPIRED" }
     check(currentReviewEligibility().settlementEligible) { "PAYMENT_REVIEW_REQUIRED" }
     check(status == PaymentStatus.PENDING || status == PaymentStatus.PROCESSING) {
-        "payment $id cannot start an attempt while status is $status"
+        "支付 $id 当前状态为 $status，不能发起新的支付尝试"
     }
     attempts.firstOrNull { it.status == PaymentAttemptStatus.PROCESSING }?.let { return it }
     return PaymentAttempt(
@@ -62,7 +90,7 @@ fun Payment.startAttempt(
 
 fun Payment.rejectAttemptStart(paymentAttemptId: PaymentAttemptId, failureCode: String, diagnosticSummary: String?) {
     val attempt = attempts.firstOrNull { it.id == paymentAttemptId }
-        ?: error("payment attempt $paymentAttemptId does not belong to payment $id")
+        ?: error("支付尝试 $paymentAttemptId 不属于支付单 $id")
     attempt.status = PaymentAttemptStatus.FAILED
     attempt.finalResult = PaymentAttemptFinalResult.GATEWAY_REJECTED
     attempt.rejectionSummary = listOfNotNull(failureCode, diagnosticSummary).joinToString(": ")
@@ -71,6 +99,12 @@ fun Payment.rejectAttemptStart(paymentAttemptId: PaymentAttemptId, failureCode: 
     if (status != PaymentStatus.SUCCEEDED) status = PaymentStatus.FAILED
 }
 
+/**
+ * 根据业务到期时间收敛支付状态。
+ *
+ * 没有在途 attempt 时可以安全关闭；存在 PROCESSING/RESULT_UNKNOWN attempt 时必须进入
+ * RESULT_UNKNOWN 并形成稳定 review，避免把渠道可能已成功的交易误判为失败或再次付款。
+ */
 fun Payment.expire(now: LocalDateTime): PaymentExpiryOutcome {
     if (now.isBefore(expiresAt) || status in setOf(PaymentStatus.CLOSED, PaymentStatus.FAILED, PaymentStatus.SUCCEEDED)) {
         return PaymentExpiryOutcome(status, false, false, null)
@@ -96,12 +130,18 @@ fun Payment.expire(now: LocalDateTime): PaymentExpiryOutcome {
         now,
         ids,
         emptyList(),
-        "payment expired with pending attempts: ${ids.joinToString(",")}",
+        "支付已到期，但仍有待确认的渠道尝试：${ids.joinToString(",")}",
         "expiry:$expiresAt:${ids.joinToString(",")}",
     )
     return PaymentExpiryOutcome(status, false, opened, review.reviewIdentity)
 }
 
+/**
+ * 从全部 OPEN review 动态派生当前结算资格。
+ *
+ * settlementBlocked 只是便于查询的摘要，真正依据始终是 append-only review/decision evidence，
+ * 因此对账或结算不能通过修改一个布尔字段绕过未解决复核。
+ */
 fun Payment.currentReviewEligibility(): PaymentReviewEligibility {
     val blocking = reviewCases.filter {
         it.status == PaymentReviewStatus.OPEN && it.settlementImpact == PaymentReviewSettlementImpact.BLOCKS_SETTLEMENT
@@ -112,10 +152,17 @@ fun Payment.currentReviewEligibility(): PaymentReviewEligibility {
     return PaymentReviewEligibility(
         settlementEligible = blocking.isEmpty(),
         blockingReviewIdentities = blocking.map { it.reviewIdentity },
-        blockingReviewSummaries = blocking.map { "${it.type.name}: ${it.summary} (settlement-blocking)" },
+        blockingReviewSummaries = blocking.map { "${it.type.name}：${it.summary}（阻断结算）" },
     )
 }
 
+/**
+ * 记录并裁决一次渠道结果：先按 notification/payload 去重，再验证归属与金额币种，
+ * 最后根据 Payment 当前状态路由到首次结果、未知收敛、终态迟到或成功后冲突分支。
+ *
+ * 所有 receipt 都追加保留；重复、拒绝和冲突不会覆盖旧证据。可信成功也只能形成一次
+ * 收入事实、手续费快照和商户通知意图，其他成功证据必须进入 review。
+ */
 fun Payment.recordChannelResult(
     paymentAttemptId: PaymentAttemptId,
     channelId: String,
@@ -133,7 +180,7 @@ fun Payment.recordChannelResult(
 ): ChannelResultRecordingOutcome {
     val normalizedResult = result.trim().uppercase()
     require(normalizedResult in setOf("SUCCESS", "FAILED", "UNKNOWN", "RESULT_UNKNOWN")) {
-        "unsupported channel result: $result"
+        "不支持的渠道支付结果：$result"
     }
     val normalizedCurrency = currency.trim().uppercase()
     val payloadIdentity = channelPayloadIdentity(
@@ -145,7 +192,7 @@ fun Payment.recordChannelResult(
 
     val attempt = attempts.firstOrNull { it.id == paymentAttemptId }
     if (attempt == null) {
-        val summary = "payment attempt $paymentAttemptId does not belong to payment $id"
+        val summary = "支付尝试 $paymentAttemptId 不属于支付单 $id"
         rejectedNotificationCount += 1
         lastRejectionSummary = summary
         return ChannelResultRecordingOutcome(
@@ -196,7 +243,7 @@ fun Payment.recordChannelResult(
         it.notificationIdentity == notificationId && it.payloadIdentity != payloadIdentity
     }
     if (sameNotificationOtherPayload.isNotEmpty()) {
-        val summary = "notification $notificationId reused with conflicting payload"
+        val summary = "通知 $notificationId 被重复使用，但 payload 与首次接收内容冲突"
         receipt.decision = ChannelResultDisposition.CONFLICT
         receipt.conflictSummary = summary
         markConflict(attempt, summary)
@@ -212,10 +259,10 @@ fun Payment.recordChannelResult(
     }
 
     val rejection = when {
-        !verified -> verificationSummary ?: "channel verification failed"
-        attempt.channelId != channelId -> "channel $channelId does not match attempt channel ${attempt.channelId}"
-        this.amount.compareTo(amount) != 0 -> "notification amount $amount does not match payment amount ${this.amount}"
-        this.currency != normalizedCurrency -> "notification currency $normalizedCurrency does not match payment currency ${this.currency}"
+        !verified -> verificationSummary ?: "渠道结果核验失败"
+        attempt.channelId != channelId -> "渠道 $channelId 与支付尝试渠道 ${attempt.channelId} 不一致"
+        this.amount.compareTo(amount) != 0 -> "通知金额 $amount 与支付金额 ${this.amount} 不一致"
+        this.currency != normalizedCurrency -> "通知币种 $normalizedCurrency 与支付币种 ${this.currency} 不一致"
         else -> null
     }
     if (rejection != null) {
@@ -230,13 +277,13 @@ fun Payment.recordChannelResult(
     }
     attempt.notificationIdentity = notificationId
     attempt.verifiedNotificationCount += 1
-    attempt.verdictSummary = verificationSummary ?: "verified"
+    attempt.verdictSummary = verificationSummary ?: "渠道结果核验通过"
     receipt.verified = true
 
     if (normalizedResult == "SUCCESS" && !merchantOrderSuccessAvailable && !successFactFormed) {
         receipt.accepted = true
         receipt.decision = ChannelResultDisposition.CONFLICT
-        receipt.conflictSummary = "merchant order already has an accepted success claim"
+        receipt.conflictSummary = "该商户订单已经存在已接受的支付成功事实"
         attempt.channelTransactionId = channelTransactionId
         attempt.resultOccurredAt = occurredAt
         attempt.finalResult = PaymentAttemptFinalResult.SUCCESS
@@ -276,6 +323,7 @@ fun Payment.recordChannelResult(
     }
 }
 
+/** 首次可信结果可以形成成功或失败终态；UNKNOWN 只形成待复核证据，不能伪装成失败。 */
 private fun Payment.initialResult(
     attempt: PaymentAttempt,
     receipt: PaymentNotificationReceipt,
@@ -307,7 +355,7 @@ private fun Payment.initialResult(
         attempt.finalResult = PaymentAttemptFinalResult.RESULT_UNKNOWN
         attempt.status = PaymentAttemptStatus.RESULT_UNKNOWN
         status = PaymentStatus.RESULT_UNKNOWN
-        val summary = "channel result remains unknown for attempt ${attempt.id}"
+        val summary = "支付尝试 ${attempt.id} 的渠道结果仍未知"
         receipt.conflictSummary = summary
         markConflict(attempt, summary)
         val (review, _) = openReview(
@@ -322,6 +370,7 @@ private fun Payment.initialResult(
     }
 }
 
+/** RESULT_UNKNOWN 只接受可信最终结果收敛，并以 SYSTEM decision 关闭对应未知复核。 */
 private fun Payment.afterUnknown(
     attempt: PaymentAttempt,
     receipt: PaymentNotificationReceipt,
@@ -347,7 +396,7 @@ private fun Payment.afterUnknown(
         outcome(attempt, ChannelResultDisposition.FAILURE_ACCEPTED)
     }
     else -> {
-        val summary = "channel result remains unknown for attempt ${attempt.id}"
+        val summary = "支付尝试 ${attempt.id} 的渠道结果仍未知"
         receipt.accepted = true
         receipt.decision = ChannelResultDisposition.CONFLICT
         receipt.conflictSummary = summary
@@ -365,6 +414,10 @@ private fun Payment.afterUnknown(
     }
 }
 
+/**
+ * CLOSED/FAILED 后的结果只能追加为冲突证据；可信迟到成功必须等待授权裁决，
+ * 不能直接覆盖既有终态或绕过商户订单唯一成功约束。
+ */
 private fun Payment.afterTerminalWithoutSuccess(
     attempt: PaymentAttempt,
     receipt: PaymentNotificationReceipt,
@@ -374,7 +427,7 @@ private fun Payment.afterTerminalWithoutSuccess(
     receivedAt: LocalDateTime,
 ): ChannelResultRecordingOutcome {
     if (result != "SUCCESS") {
-        val summary = "${result.lowercase()} result arrived after terminal payment status $status"
+        val summary = "支付已处于终态 $status，之后又收到 ${result.lowercase()} 结果"
         receipt.decision = ChannelResultDisposition.CONFLICT
         receipt.conflictSummary = summary
         markConflict(attempt, summary)
@@ -383,7 +436,7 @@ private fun Payment.afterTerminalWithoutSuccess(
     val terminalStatus = status
     receipt.accepted = true
     receipt.decision = ChannelResultDisposition.CONFLICT
-    receipt.conflictSummary = "trusted success arrived after terminal payment status $terminalStatus"
+    receipt.conflictSummary = "支付已处于终态 $terminalStatus，之后收到可信成功结果"
     attempt.channelTransactionId = channelTransactionId
     attempt.resultOccurredAt = occurredAt
     attempt.finalResult = PaymentAttemptFinalResult.SUCCESS
@@ -411,6 +464,10 @@ private fun Payment.afterTerminalWithoutSuccess(
     )
 }
 
+/**
+ * Payment 已成功后不允许任何结果回退成功事实。
+ * 第二个成功 attempt 或后续失败/未知结果都保留真实 receipt，并打开阻断结算的冲突复核。
+ */
 private fun Payment.afterAcceptedSuccess(
     attempt: PaymentAttempt,
     receipt: PaymentNotificationReceipt,
@@ -432,9 +489,9 @@ private fun Payment.afterAcceptedSuccess(
         attempt.status = PaymentAttemptStatus.SUCCEEDED
         type = PaymentReviewType.MULTIPLE_ATTEMPT_SUCCESS
         summary = if (firstSuccess == null) {
-            "additional success evidence arrived after accepted success for attempt ${attempt.id}"
+            "支付已成功后，尝试 ${attempt.id} 又收到额外成功证据"
         } else {
-            "multiple payment attempts contain trustworthy success evidence: ${firstSuccess.id},${attempt.id}"
+            "多个支付尝试都包含可信成功证据：${firstSuccess.id},${attempt.id}"
         }
     } else {
         if (attempt.status != PaymentAttemptStatus.SUCCEEDED) {
@@ -452,7 +509,7 @@ private fun Payment.afterAcceptedSuccess(
             }
         }
         type = PaymentReviewType.FAILURE_OR_UNKNOWN_AFTER_SUCCESS
-        summary = "${result.lowercase()} evidence arrived after accepted payment success"
+        summary = "支付成功事实形成后又收到 ${result.lowercase()} 证据"
     }
     receipt.decision = ChannelResultDisposition.CONFLICT
     receipt.conflictSummary = summary
@@ -475,6 +532,7 @@ private fun Payment.afterAcceptedSuccess(
     return outcome(attempt, ChannelResultDisposition.CONFLICT, conflict = summary, reviewIdentity = review.reviewIdentity)
 }
 
+/** 首次接受成功时原子冻结成功身份、手续费快照和商户通知意图；此逻辑不得被其他路径复制。 */
 private fun Payment.acceptSuccess(
     attempt: PaymentAttempt,
     receipt: PaymentNotificationReceipt,
@@ -498,6 +556,12 @@ private fun Payment.acceptSuccess(
     ensureMerchantNotificationIntent(PaymentNotificationIntentState.READY)
 }
 
+/**
+ * 追加一次授权复核决定，而不是修改或删除既有 review evidence。
+ *
+ * 决策先验证 authorization 与 decision identity 幂等，再按 review type 限定允许的动作；
+ * 业务终态、结算资格和商户通知意图分别更新，避免把“接受证据”等同于“允许结算”。
+ */
 fun Payment.adjudicateReview(
     reviewIdentity: String,
     decisionIdentity: String,
@@ -512,16 +576,20 @@ fun Payment.adjudicateReview(
     remediationReference: String?,
     settlementFeeRule: SettlementFeeRule? = null,
 ): PaymentReviewAdjudicationOutcome {
-    require(operatorIdentity.isNotBlank())
-    require(operatorRole.isNotBlank())
-    require(reason.isNotBlank())
-    require(evidence.isNotBlank())
-    check(authorized) { "REVIEW_UNAUTHORIZED" }
+    require(operatorIdentity.isNotBlank()) { "操作员身份不能为空" }
+    require(operatorRole.isNotBlank()) { "操作员角色不能为空" }
+    require(reason.isNotBlank()) { "复核原因不能为空" }
+    require(evidence.isNotBlank()) { "复核证据不能为空" }
+    reviewCheck(authorized, "REVIEW_UNAUTHORIZED", "当前操作员无权裁决支付复核")
     val review = reviewCases.firstOrNull {
         it.reviewIdentity == reviewIdentity || runCatching { it.id.toString() }.getOrNull() == reviewIdentity
-    } ?: throw IllegalArgumentException("REVIEW_NOT_FOUND")
+    } ?: reviewFailure(
+        code = "REVIEW_NOT_FOUND",
+        message = "未找到支付复核 $reviewIdentity",
+        details = mapOf("reviewId" to reviewIdentity),
+    )
     review.paymentReviewDecisions.firstOrNull { it.decisionIdentity == decisionIdentity }?.let { existing ->
-        check(
+        reviewCheck(
             existing.decision == decision &&
                 existing.operatorIdentity == operatorIdentity &&
                 existing.operatorRole == operatorRole &&
@@ -530,32 +598,35 @@ fun Payment.adjudicateReview(
                 existing.evidence == evidence &&
                 existing.decidedAt == decidedAt &&
                 existing.eligibilityImpact == eligibilityImpact &&
-                existing.remediationReference == remediationReference
-        ) { "REVIEW_DECISION_IDEMPOTENCY_CONFLICT" }
+                existing.remediationReference == remediationReference,
+            code = "REVIEW_DECISION_IDEMPOTENCY_CONFLICT",
+            message = "复核决定幂等键已绑定到不同内容",
+            details = mapOf("decisionIdentity" to decisionIdentity),
+        )
         return adjudicationOutcome(review)
     }
-    check(review.status == PaymentReviewStatus.OPEN) { "REVIEW_DECISION_NOT_ALLOWED" }
+    reviewCheck(review.status == PaymentReviewStatus.OPEN, "REVIEW_DECISION_NOT_ALLOWED", "当前复核状态不允许追加决定")
 
     when (decision) {
         PaymentReviewDecisionType.ACCEPT_LATE_SUCCESS -> {
-            check(review.type in lateSuccessReviewTypes) { "REVIEW_DECISION_NOT_ALLOWED" }
-            check(!successFactFormed && status != PaymentStatus.SUCCEEDED) { "REVIEW_DECISION_NOT_ALLOWED" }
+            reviewCheck(review.type in lateSuccessReviewTypes, "REVIEW_DECISION_NOT_ALLOWED", "该复核类型不允许接受迟到成功")
+            reviewCheck(!successFactFormed && status != PaymentStatus.SUCCEEDED, "REVIEW_DECISION_NOT_ALLOWED", "支付已形成成功事实，不能再次接受成功")
             val evidencePair = attempts.asSequence()
                 .flatMap { attempt -> attempt.paymentNotificationReceipts.asSequence().map { attempt to it } }
                 .filter { (_, receipt) -> receipt.verified && receipt.accepted && receipt.result == "SUCCESS" }
                 .maxByOrNull { (_, receipt) -> receipt.occurredAt }
-                ?: error("REVIEW_DECISION_NOT_ALLOWED")
+                ?: reviewFailure("REVIEW_DECISION_NOT_ALLOWED", "复核中没有可接受的可信成功证据")
             acceptSuccess(
                 evidencePair.first,
                 evidencePair.second,
                 evidencePair.second.channelTransactionId,
                 evidencePair.second.occurredAt,
-                requireNotNull(settlementFeeRule) { "REVIEW_DECISION_NOT_ALLOWED" },
+                settlementFeeRule ?: reviewFailure("REVIEW_DECISION_NOT_ALLOWED", "接受迟到成功时缺少手续费规则快照"),
             )
         }
         PaymentReviewDecisionType.CONFIRM_FAILURE -> {
-            check(review.type == PaymentReviewType.EXPIRY_RESULT_UNKNOWN) { "REVIEW_DECISION_NOT_ALLOWED" }
-            check(!successFactFormed && status == PaymentStatus.RESULT_UNKNOWN) { "REVIEW_DECISION_NOT_ALLOWED" }
+            reviewCheck(review.type == PaymentReviewType.EXPIRY_RESULT_UNKNOWN, "REVIEW_DECISION_NOT_ALLOWED", "只有结果未知复核可以确认失败")
+            reviewCheck(!successFactFormed && status == PaymentStatus.RESULT_UNKNOWN, "REVIEW_DECISION_NOT_ALLOWED", "支付当前状态不允许确认失败")
             status = PaymentStatus.FAILED
             attempts.filter { it.status == PaymentAttemptStatus.RESULT_UNKNOWN }.forEach {
                 it.status = PaymentAttemptStatus.FAILED
@@ -564,18 +635,20 @@ fun Payment.adjudicateReview(
             }
         }
         PaymentReviewDecisionType.KEEP_CURRENT_TERMINAL -> {
-            check(review.type in terminalConflictReviewTypes) { "REVIEW_DECISION_NOT_ALLOWED" }
-            check(status == PaymentStatus.CLOSED || status == PaymentStatus.FAILED) { "REVIEW_DECISION_NOT_ALLOWED" }
+            reviewCheck(review.type in terminalConflictReviewTypes, "REVIEW_DECISION_NOT_ALLOWED", "该复核类型不允许保留当前终态")
+            reviewCheck(status == PaymentStatus.CLOSED || status == PaymentStatus.FAILED, "REVIEW_DECISION_NOT_ALLOWED", "支付当前状态不是可保留的关闭或失败终态")
         }
         PaymentReviewDecisionType.KEEP_ACCEPTED_SUCCESS_WITH_REMEDIATION -> {
-            check(review.type in acceptedSuccessConflictReviewTypes) { "REVIEW_DECISION_NOT_ALLOWED" }
-            check(status == PaymentStatus.SUCCEEDED && successFactFormed && !remediationReference.isNullOrBlank()) {
-                "REVIEW_DECISION_NOT_ALLOWED"
-            }
+            reviewCheck(review.type in acceptedSuccessConflictReviewTypes, "REVIEW_DECISION_NOT_ALLOWED", "该复核类型不允许保留已接受成功")
+            reviewCheck(
+                status == PaymentStatus.SUCCEEDED && successFactFormed && !remediationReference.isNullOrBlank(),
+                "REVIEW_DECISION_NOT_ALLOWED",
+                "保留已接受成功时必须存在成功事实和补救引用",
+            )
             requireSettlementFeeSnapshot()
         }
         PaymentReviewDecisionType.SYSTEM_ACCEPT_SUCCESS,
-        PaymentReviewDecisionType.SYSTEM_CONFIRM_FAILURE -> error("REVIEW_DECISION_NOT_ALLOWED")
+        PaymentReviewDecisionType.SYSTEM_CONFIRM_FAILURE -> reviewFailure("REVIEW_DECISION_NOT_ALLOWED", "系统裁决类型不能通过人工入口提交")
     }
 
     review.paymentReviewDecisions.add(
@@ -634,6 +707,10 @@ private fun Payment.adjudicationOutcome(review: PaymentReviewCase): PaymentRevie
     )
 }
 
+/**
+ * 可信渠道最终结果自动追加 SYSTEM decision 并关闭对应 RESULT_UNKNOWN review。
+ * identity 由 review 与 decision 稳定派生，重复 callback 不会产生第二条系统决定。
+ */
 private fun Payment.resolveUnknownReviews(
     attempt: PaymentAttempt,
     receipt: PaymentNotificationReceipt,
@@ -654,7 +731,7 @@ private fun Payment.resolveUnknownReviews(
                     operatorIdentity = "SYSTEM",
                     operatorRole = "PAYMENT_RESULT_ADJUDICATOR",
                     authorizationOutcome = true,
-                    reason = "trustworthy channel result resolved result-unknown review",
+                    reason = "可信渠道最终结果已解决结果未知复核",
                     evidence = "receipt:${receipt.payloadIdentity}",
                     decidedAt = decidedAt,
                     eligibilityImpact = PaymentReviewEligibilityImpact.ALLOW_SETTLEMENT,
@@ -667,6 +744,7 @@ private fun Payment.resolveUnknownReviews(
     currentReviewEligibility()
 }
 
+/** 使用稳定哈希 identity 打开 review；相同业务触发条件重复到达时复用既有 case。 */
 private fun Payment.openReview(
     type: PaymentReviewType,
     openedAt: LocalDateTime,
@@ -734,6 +812,7 @@ private fun Payment.ensureMerchantNotificationIntent(state: PaymentNotificationI
     merchantSuccessNotificationIntentState = state
 }
 
+/** 在首次支付成功时冻结手续费事实，后续配置变更不得重算既有交易或结算明细。 */
 private fun Payment.freezeSettlementFee(rule: SettlementFeeRule, formedAt: LocalDateTime) {
     check(settlementFeeFactIdentity == null)
     val fee = amount
@@ -815,22 +894,28 @@ fun Payment.onDeleted() = Unit
 val Payment.refundableAmount: BigDecimal
     get() = amount.subtract(reservedRefundAmount).subtract(successfulRefundAmount)
 
+/**
+ * 退款预算使用 reserved 与 successful 两个账户：创建退款先占用，失败释放，成功再转入已成功金额。
+ * 所有变更都发生在 Payment 聚合和同一 UoW 中，使并发退款无法静默超出支付金额。
+ */
 fun Payment.reserveRefund(amount: BigDecimal) {
-    require(status == PaymentStatus.SUCCEEDED) { "payment $id is not successful" }
-    require(currentReviewEligibility().settlementEligible) { "payment $id has unresolved payment review" }
+    require(status == PaymentStatus.SUCCEEDED) { "支付单 $id 尚未成功，不能申请退款" }
+    require(currentReviewEligibility().settlementEligible) { "支付单 $id 仍有未解决复核，暂不能退款" }
     require(amount > BigDecimal.ZERO)
     if (refundableAmount < amount) {
-        throw RefundBudgetConflictException("payment $id has only $refundableAmount refundable amount")
+        throw RefundBudgetConflictException("支付单 $id 当前仅剩 $refundableAmount 可退款金额")
     }
     reservedRefundAmount = reservedRefundAmount.add(amount)
 }
 
+/** 明确失败或渠道拒绝时释放退款占用；未知结果继续占用，避免重复退款。 */
 fun Payment.releaseRefundReservation(amount: BigDecimal) {
     require(amount > BigDecimal.ZERO)
     require(reservedRefundAmount >= amount)
     reservedRefundAmount = reservedRefundAmount.subtract(amount)
 }
 
+/** 退款成功时把已占用预算原子转换为 successful，成功事实形成后不可回退。 */
 fun Payment.convertRefundReservationToSuccess(amount: BigDecimal) {
     require(amount > BigDecimal.ZERO)
     require(reservedRefundAmount >= amount)

@@ -14,6 +14,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @DesignBlockMetadata(
@@ -28,8 +29,12 @@ object RerunReconciliationBatchCmd {
 
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * 显式重跑沿用既有 batch scope，并重新 Pull 权威账单与平台事实；相同 revision 由聚合幂等复用，
+         * 新 revision 追加历史。provider 原始失败仅写日志，查询侧只保存稳定中文阻断摘要。
+         */
         override fun handle(command: Request): Response {
-            require(command.requestedBy.isNotBlank()) { "requestedBy must not be blank" }
+            require(command.requestedBy.isNotBlank()) { "请求操作员不能为空" }
             val batch = Mediator.repositories.findOne(
                 SReconciliationBatch.predicateById(ReconciliationBatchId.parse(command.batchId))
             ) ?: throw ReconciliationBatchNotFoundException(command.batchId)
@@ -40,10 +45,11 @@ object RerunReconciliationBatchCmd {
                     )
                 ).statement
             } catch (failure: RuntimeException) {
-                val reason = failure.message?.takeIf { it.isNotBlank() }
-                    ?: failure::class.simpleName
-                    ?: "Statement provider failure"
-                batch.markStatementFetchFailed(LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC), reason)
+                log.warn("对账批次重跑失败：batchId={}", batch.id, failure)
+                batch.markStatementFetchFailed(
+                    LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC),
+                    "渠道账单或平台资金事实暂时不可用",
+                )
                 return failureResponse(batch.id.toString(), batch.status.name)
             }
             val facts = try {
@@ -53,10 +59,11 @@ object RerunReconciliationBatchCmd {
                     )
                 ).facts
             } catch (failure: RuntimeException) {
-                val reason = failure.message?.takeIf { it.isNotBlank() }
-                    ?: failure::class.simpleName
-                    ?: "Statement provider failure"
-                batch.markStatementFetchFailed(LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC), reason)
+                log.warn("对账批次重跑失败：batchId={}", batch.id, failure)
+                batch.markStatementFetchFailed(
+                    LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC),
+                    "渠道账单或平台资金事实暂时不可用",
+                )
                 return failureResponse(batch.id.toString(), batch.status.name)
             }
 
@@ -84,6 +91,8 @@ object RerunReconciliationBatchCmd {
             statementRevision = null,
         )
     }
+
+    private val log = LoggerFactory.getLogger(RerunReconciliationBatchCmd::class.java)
 
     data class Request(
         val batchId: String,

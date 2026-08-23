@@ -23,6 +23,7 @@ object ReviewPendingRefundsCmd {
 
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** 普通 scheduler 只把超过冻结阈值且仍无最终结果的退款送入 REVIEW_REQUIRED；预算继续占用，不自动重试退款。 */
         override fun handle(command: Request): Response {
             val now = LocalDateTime.ofInstant(command.now, ZoneOffset.UTC)
             val reviewedCount = Mediator.repositories.find(

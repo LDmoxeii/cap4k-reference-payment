@@ -112,7 +112,7 @@ class ReconciliationBatchBehaviorTest {
         )
         assertThat(incomplete.status).isEqualTo(ReconciliationBatchStatus.REVIEW_REQUIRED)
         assertThat(incomplete.settlementBlocked).isTrue()
-        assertThat(incomplete.blockingReason).isEqualTo("Statement is not complete")
+        assertThat(incomplete.blockingReason).isEqualTo("渠道账单不完整")
 
         val unresolved = batch()
         unresolved.appendTestRun(statement(records = emptyList()), listOf(fact("platform-only", "tx-only")), NOW)
@@ -194,7 +194,7 @@ class ReconciliationBatchBehaviorTest {
                 ).copy(conclusion = null),
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("declare a conclusion")
+            .hasMessageContaining("必须声明结论")
 
         org.assertj.core.api.Assertions.assertThatThrownBy {
             batch.appendDisposition(
@@ -207,7 +207,7 @@ class ReconciliationBatchBehaviorTest {
                 ),
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("requires a confirmation fact")
+            .hasMessageContaining("必须同时提供确认事实")
     }
 
     private fun ReconciliationBatch.appendTestRun(

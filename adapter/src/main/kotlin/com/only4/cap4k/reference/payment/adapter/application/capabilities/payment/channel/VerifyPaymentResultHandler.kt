@@ -27,7 +27,7 @@ class VerifyPaymentResultHandler(
             request.payload.isNotBlank()
         return VerifyPaymentResult.Response(
             verified = verified,
-            verificationSummary = if (verified) "sandbox signature verified" else "sandbox signature verification failed",
+            verificationSummary = if (verified) "沙箱签名核验通过" else "沙箱签名核验失败",
         )
     }
 }

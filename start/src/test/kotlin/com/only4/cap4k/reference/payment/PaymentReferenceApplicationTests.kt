@@ -117,7 +117,7 @@ class PaymentReferenceApplicationTests(
         assertThat(untrusted["rejected"].asBoolean()).isTrue()
         assertThat(untrusted.requiredText("disposition")).isEqualTo("REJECTED")
         assertThat(untrusted.requiredText("paymentStatus")).isEqualTo("PROCESSING")
-        assertThat(untrusted.requiredText("rejectionSummary")).contains("verification failed")
+        assertThat(untrusted.requiredText("rejectionSummary")).contains("核验失败")
 
         val amountMismatch = postJson(
             "/api/channel/payment-results",
@@ -129,7 +129,7 @@ class PaymentReferenceApplicationTests(
             expectedStatus = 200,
         )
         assertThat(amountMismatch["accepted"].asBoolean()).isFalse()
-        assertThat(amountMismatch.requiredText("rejectionSummary")).contains("does not match payment amount")
+        assertThat(amountMismatch.requiredText("rejectionSummary")).contains("与支付金额")
 
         val accepted = postJson(
             "/api/channel/payment-results",
@@ -177,7 +177,7 @@ class PaymentReferenceApplicationTests(
         assertThat(conflictingFailure["conflicting"].asBoolean()).isTrue()
         assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
         assertThat(conflictingFailure.requiredText("paymentStatus")).isEqualTo("SUCCEEDED")
-        assertThat(conflictingFailure.requiredText("conflictSummary")).contains("after accepted payment success")
+        assertThat(conflictingFailure.requiredText("conflictSummary")).contains("支付成功事实形成后")
 
         val forbiddenAttempt = postJson(
             "/api/payments/$paymentId/attempts",
@@ -878,20 +878,77 @@ class PaymentReferenceApplicationTests(
             expectedStatus = 200,
         )
         assertThat(currencyMismatch["accepted"].asBoolean()).isFalse()
-        assertThat(currencyMismatch.requiredText("rejectionSummary")).contains("does not match payment currency")
+        assertThat(currencyMismatch.requiredText("rejectionSummary")).contains("与支付币种")
 
         val payment = getJson("/api/payments/$paymentId")
         assertThat(payment.requiredText("status")).isEqualTo("PROCESSING")
         assertThat(payment["notificationReceiveCount"].asInt()).isEqualTo(2)
         assertThat(payment.requiredText("lastNotificationIdentity")).isEqualTo("N-CURRENCY")
-        assertThat(payment.requiredText("lastRejectionSummary")).contains("does not match payment currency")
+        assertThat(payment.requiredText("lastRejectionSummary")).contains("与支付币种")
         val receipts = payment["attempts"][0]["notificationReceipts"]
         assertThat(receipts).hasSize(1)
         assertThat(receipts[0].requiredText("notificationIdentity")).isEqualTo("N-CURRENCY")
         assertThat(receipts[0].requiredText("decision")).isEqualTo("REJECTED")
-        assertThat(receipts[0].requiredText("rejectionSummary")).contains("does not match payment currency")
+        assertThat(receipts[0].requiredText("rejectionSummary")).contains("与支付币种")
     }
 
+    @Test
+    fun `provider rejection diagnostics stay in logs while payment and refund expose controlled Chinese summaries`() {
+        val refundablePaymentId = createSucceededPayment("PROVIDER-REJECT-REFUND", "50.00")
+        jdbcTemplate.update(
+            "update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?",
+            "C-REJECT",
+            "M-001",
+            "C-001",
+        )
+        try {
+            val createdPayment = postJson(
+                "/api/payments",
+                paymentRequest("O-PROVIDER-REJECT", "K-PROVIDER-REJECT", "20.00"),
+                expectedStatus = 201,
+            )
+            val paymentId = createdPayment.requiredText("paymentId")
+            val rejectedAttempt = postJson(
+                "/api/payments/$paymentId/attempts",
+                emptyMap<String, Any>(),
+                expectedStatus = 200,
+            )
+            assertThat(rejectedAttempt.requiredText("paymentStatus")).isEqualTo("FAILED")
+            assertThat(rejectedAttempt.requiredText("attemptStatus")).isEqualTo("FAILED")
+            val rejectedPayment = getJson("/api/payments/$paymentId")
+            assertThat(rejectedPayment["attempts"][0].requiredText("rejectionSummary"))
+                .contains("UNSUPPORTED_CHANNEL")
+                .contains("支付渠道不支持当前请求")
+                .doesNotContain("deterministic fake gateway")
+
+            val rejectedRefund = postJson(
+                "/api/refunds",
+                refundRequest(
+                    refundablePaymentId,
+                    "R-PROVIDER-REJECT",
+                    "20.00",
+                    "2026-08-17T12:10:00Z",
+                ),
+                expectedStatus = 201,
+            )
+            assertThat(rejectedRefund.requiredText("diagnosticSummary"))
+                .isEqualTo("退款渠道不支持当前请求")
+                .doesNotContain("deterministic fake refund gateway")
+                .doesNotContain("only accepts")
+            val refund = getJson("/api/refunds/${rejectedRefund.requiredText("refundId")}")
+            assertThat(refund["attempts"][0].requiredText("rejectionSummary"))
+                .contains("UNSUPPORTED_CHANNEL")
+                .contains("退款渠道不支持当前请求")
+                .doesNotContain("deterministic fake refund gateway")
+        } finally {
+            jdbcTemplate.update(
+                "update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?",
+                "C-001",
+                "M-001",
+                "C-REJECT",
+            )
+        }
+    }
     @Test
     fun `gateway exceptions leave a failed attempt with durable diagnostics`() {
         jdbcTemplate.update(
@@ -921,7 +978,12 @@ class PaymentReferenceApplicationTests(
             assertThat(payment.requiredText("status")).isEqualTo("FAILED")
             assertThat(payment["attempts"]).hasSize(1)
             assertThat(payment["attempts"][0].requiredText("finalResult")).isEqualTo("GATEWAY_REJECTED")
-            assertThat(payment["attempts"][0].requiredText("rejectionSummary")).contains("CHANNEL_GATEWAY_ERROR")
+            val rejectionSummary = payment["attempts"][0].requiredText("rejectionSummary")
+            assertThat(rejectionSummary)
+                .contains("CHANNEL_GATEWAY_ERROR")
+                .contains("支付渠道调用失败，请稍后重试")
+                .doesNotContain("模拟的确定性渠道故障")
+                .doesNotContain("RuntimeException")
         } finally {
             jdbcTemplate.update(
                 "update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?",
@@ -1391,9 +1453,17 @@ class PaymentReferenceApplicationTests(
         try {
             val created = postJson("/api/refunds", mapOf("merchantId" to "M-001", "merchantRefundNumber" to "R-GATEWAY", "paymentId" to paymentId, "amount" to BigDecimal("20.00"), "currency" to "CNY", "requestedAt" to Instant.parse("2026-08-17T12:00:00Z")), 201)
             assertThat(created.requiredText("status")).isEqualTo("FAILED")
+            assertThat(created.requiredText("diagnosticSummary"))
+                .contains("退款渠道调用失败，请稍后重试")
+                .doesNotContain("模拟的确定性渠道故障")
+                .doesNotContain("RuntimeException")
             val refund = getJson("/api/refunds/${created.requiredText("refundId")}")
             assertThat(refund["reservationReleased"].asBoolean()).isTrue()
             assertThat(refund["attempts"][0].requiredText("finalResult")).isEqualTo("GATEWAY_REJECTED")
+            assertThat(refund["attempts"][0].requiredText("rejectionSummary"))
+                .contains("CHANNEL_GATEWAY_ERROR")
+                .contains("退款渠道调用失败，请稍后重试")
+                .doesNotContain("模拟的确定性渠道故障")
         } finally { jdbcTemplate.update("update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?", "C-001", "M-001", "C-THROW") }
     }
 

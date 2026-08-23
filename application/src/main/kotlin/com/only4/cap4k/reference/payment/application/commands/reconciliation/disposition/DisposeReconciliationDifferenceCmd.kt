@@ -38,16 +38,21 @@ object DisposeReconciliationDifferenceCmd {
 
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * 所有处置尝试都进入 append-only 审计：未授权请求写入 DENIED 记录，授权结论才可能解决差异。
+         * 需要形成 confirmation 时，先从 Payment/Refund 弱引用推导 merchant/channel；只有没有弱引用时才接受
+         * 显式归属，且任何冲突都拒绝，避免人工处置把资金事实归到错误商户或渠道。
+         */
         override fun handle(command: Request): Response {
-            require(command.operatorIdentity.isNotBlank()) { "operatorIdentity must not be blank" }
-            require(command.evidence.isNotBlank()) { "evidence must not be blank" }
+            require(command.operatorIdentity.isNotBlank()) { "操作员身份不能为空" }
+            require(command.evidence.isNotBlank()) { "证据不能为空" }
             val batch = Mediator.repositories.findOne(
                 SReconciliationBatch.predicateById(ReconciliationBatchId.parse(command.batchId))
             ) ?: throw ReconciliationBatchNotFoundException(command.batchId)
             val item = batch.reconciliationRuns.asSequence()
                 .flatMap { it.reconciliationItems.asSequence() }
                 .firstOrNull { it.id.toString() == command.itemId }
-                ?: throw IllegalArgumentException("Reconciliation item ${command.itemId} was not found in batch ${command.batchId}")
+                ?: throw IllegalArgumentException("对账批次 ${command.batchId} 中未找到差异项 ${command.itemId}")
             val disposedAt = LocalDateTime.ofInstant(command.disposedAt, ZoneOffset.UTC)
             val authorized = command.operatorRole.trim().uppercase() == AUTHORIZED_OPERATOR_ROLE
             val conclusion = if (authorized) enumValue<ReconciliationDispositionConclusion>(command.conclusion, "conclusion") else null
@@ -92,10 +97,10 @@ object DisposeReconciliationDifferenceCmd {
             command: Request,
             disposedAt: LocalDateTime,
         ): ReconciliationConfirmationFactCreation {
-            val amount = item.channelAmount ?: throw IllegalArgumentException("Confirmation requires channel amount evidence")
-            val currency = item.channelCurrency ?: throw IllegalArgumentException("Confirmation requires channel currency evidence")
+            val amount = item.channelAmount ?: throw IllegalArgumentException("确认事实缺少渠道金额证据")
+            val currency = item.channelCurrency ?: throw IllegalArgumentException("确认事实缺少渠道币种证据")
             val externalIdentity = item.channelTransactionIdentity
-                ?: throw IllegalArgumentException("Confirmation requires a channel transaction identity")
+                ?: throw IllegalArgumentException("确认事实缺少渠道交易身份")
             val attribution = resolveAttribution(batch, item, command)
             return ReconciliationConfirmationFactCreation(
                 sourceDifferenceIdentity = item.differenceIdentity,
@@ -103,7 +108,7 @@ object DisposeReconciliationDifferenceCmd {
                 channelId = attribution.channelId,
                 operatorIdentity = command.operatorIdentity.trim(),
                 confirmationReason = command.followUp?.trim()?.takeIf { it.isNotBlank() }
-                    ?: "Authorized reconciliation disposition",
+                    ?: "已授权的对账差异处置",
                 evidence = command.evidence.trim(),
                 transactionKind = item.transactionKind,
                 amount = amount,
@@ -126,12 +131,12 @@ object DisposeReconciliationDifferenceCmd {
             item.paymentId?.let { rawPaymentId ->
                 val payment = Mediator.repositories.findOne(
                     SPayment.predicateById(PaymentId.parse(rawPaymentId))
-                ) ?: throw IllegalArgumentException("Confirmation payment $rawPaymentId does not exist")
+                ) ?: throw IllegalArgumentException("确认事实引用的支付单 $rawPaymentId 不存在")
                 merchantId = payment.merchantId
                 item.paymentAttemptId?.let { rawAttemptId ->
                     val attempt = payment.attempts.firstOrNull { it.id.toString() == rawAttemptId }
                         ?: throw IllegalArgumentException(
-                            "Confirmation payment attempt $rawAttemptId does not belong to payment $rawPaymentId"
+                            "确认事实引用的支付尝试 $rawAttemptId 不属于支付单 $rawPaymentId"
                         )
                     channelId = attempt.channelId
                 }
@@ -140,19 +145,19 @@ object DisposeReconciliationDifferenceCmd {
             item.refundId?.let { rawRefundId ->
                 val refund = Mediator.repositories.findOne(
                     SRefund.predicateById(RefundId.parse(rawRefundId))
-                ) ?: throw IllegalArgumentException("Confirmation refund $rawRefundId does not exist")
+                ) ?: throw IllegalArgumentException("确认事实引用的退款单 $rawRefundId 不存在")
                 item.paymentId?.let { referencedPaymentId ->
                     require(refund.paymentId.toString() == referencedPaymentId) {
-                        "Confirmation refund $rawRefundId does not belong to payment $referencedPaymentId"
+                        "确认事实引用的退款单 $rawRefundId 不属于支付单 $referencedPaymentId"
                     }
                 }
                 item.refundAttemptId?.let { rawAttemptId ->
                     require(refund.attempts.any { it.id.toString() == rawAttemptId }) {
-                        "Confirmation refund attempt $rawAttemptId does not belong to refund $rawRefundId"
+                        "确认事实引用的退款尝试 $rawAttemptId 不属于退款单 $rawRefundId"
                     }
                 }
-                merchantId?.let { require(it == refund.merchantId) { "Confirmation weak references disagree on merchant" } }
-                channelId?.let { require(it == refund.channelId) { "Confirmation weak references disagree on channel" } }
+                merchantId?.let { require(it == refund.merchantId) { "确认事实的弱引用对商户归属存在冲突" } }
+                channelId?.let { require(it == refund.channelId) { "确认事实的弱引用对渠道归属存在冲突" } }
                 merchantId = refund.merchantId
                 channelId = refund.channelId
             }
@@ -161,22 +166,22 @@ object DisposeReconciliationDifferenceCmd {
             val explicitChannelId = command.channelId?.trim()?.takeIf { it.isNotBlank() }
             if (merchantId == null) {
                 merchantId = explicitMerchantId
-                    ?: throw IllegalArgumentException("Confirmation requires merchantId when weak references do not provide it")
+                    ?: throw IllegalArgumentException("弱引用无法确定商户时必须显式提供 merchantId")
             } else {
                 explicitMerchantId?.let {
-                    require(it == merchantId) { "Explicit confirmation merchant does not match weak references" }
+                    require(it == merchantId) { "显式商户与弱引用归属不一致" }
                 }
             }
             if (channelId == null) {
                 channelId = explicitChannelId
-                    ?: throw IllegalArgumentException("Confirmation requires channelId when weak references do not provide it")
+                    ?: throw IllegalArgumentException("弱引用无法确定渠道时必须显式提供 channelId")
             } else {
                 explicitChannelId?.let {
-                    require(it == channelId) { "Explicit confirmation channel does not match weak references" }
+                    require(it == channelId) { "显式渠道与弱引用归属不一致" }
                 }
             }
 
-            require(channelId == batch.channelId) { "Confirmation channel does not belong to reconciliation batch" }
+            require(channelId == batch.channelId) { "确认事实的渠道不属于当前对账批次" }
             return ConfirmationAttribution(
                 merchantId = requireNotNull(merchantId),
                 channelId = requireNotNull(channelId),
@@ -219,6 +224,6 @@ object DisposeReconciliationDifferenceCmd {
         try {
             enumValueOf<E>(value.trim().uppercase())
         } catch (_: IllegalArgumentException) {
-            throw IllegalArgumentException("Unsupported $field: $value")
+            throw IllegalArgumentException("不支持的 $field 参数值：$value")
         }
 }

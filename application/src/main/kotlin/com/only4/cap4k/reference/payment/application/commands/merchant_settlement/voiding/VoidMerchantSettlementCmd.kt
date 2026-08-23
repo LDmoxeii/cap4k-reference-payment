@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service
 object VoidMerchantSettlementCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** 仅作废未开始外部执行的结算单；replacement 通过 predecessor 链和延迟 ownership 激活保持历史与唯一消费。 */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
                 SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))

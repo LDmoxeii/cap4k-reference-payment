@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service
 object ReviewUnknownMerchantSettlementsCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** 普通 scheduler 仅把超过冻结阈值的 UNKNOWN attempt 标记为需人工复核，绝不创建新的资金划拨尝试。 */
         override fun handle(command: Request): Response {
             val reviewedAt = LocalDateTime.ofInstant(command.reviewedAt, ZoneOffset.UTC)
             val settlements = Mediator.repositories.find(

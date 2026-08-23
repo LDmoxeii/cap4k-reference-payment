@@ -3,25 +3,41 @@ package com.only4.cap4k.reference.payment.application.errors
 open class PaymentApplicationException(
     val code: String,
     message: String,
+    val details: Map<String, Any?> = emptyMap(),
 ) : RuntimeException(message)
 
 class PaymentNotFoundException(paymentId: String) : PaymentApplicationException(
     code = "PAYMENT_NOT_FOUND",
-    message = "payment $paymentId was not found",
+    message = "未找到支付单 $paymentId",
+    details = mapOf("paymentId" to paymentId),
 )
 
-class PaymentConflictException(code: String, message: String) : PaymentApplicationException(code, message)
+class PaymentConflictException(
+    code: String,
+    message: String,
+    details: Map<String, Any?> = emptyMap(),
+) : PaymentApplicationException(code, message, details)
 
 class NoEligibleChannelException(paymentIdentity: String) : PaymentApplicationException(
     code = "NO_ELIGIBLE_CHANNEL",
-    message = "no eligible merchant channel configuration for $paymentIdentity",
+    message = "支付 $paymentIdentity 没有符合条件的商户渠道配置",
+    details = mapOf("paymentIdentity" to paymentIdentity),
 )
 
 class RefundNotFoundException(refundId: String) : PaymentApplicationException(
     code = "REFUND_NOT_FOUND",
-    message = "refund $refundId was not found",
+    message = "未找到退款单 $refundId",
+    details = mapOf("refundId" to refundId),
 )
 
-class RefundConflictException(code: String, message: String) : PaymentApplicationException(code, message)
+class RefundConflictException(
+    code: String,
+    message: String,
+    details: Map<String, Any?> = emptyMap(),
+) : PaymentApplicationException(code, message, details)
 
-class RefundRejectedException(code: String, message: String) : PaymentApplicationException(code, message)
+class RefundRejectedException(
+    code: String,
+    message: String,
+    details: Map<String, Any?> = emptyMap(),
+) : PaymentApplicationException(code, message, details)

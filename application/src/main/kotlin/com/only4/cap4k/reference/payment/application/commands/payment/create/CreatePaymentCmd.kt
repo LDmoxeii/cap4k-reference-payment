@@ -35,19 +35,23 @@ object CreatePaymentCmd {
         private val clock: Clock,
     ) : CommandHandler<Request, Response> {
 
+        /**
+         * 先验证输入和渠道资格，再以 merchant+idempotencyKey 查找既有 Payment；相同意图复用，内容冲突拒绝。
+         * merchantOrder 成功唯一性与创建幂等是两个独立边界，不能用新幂等键绕过已付款订单。
+         */
         override fun handle(command: Request): Response {
             val merchantId = command.merchantId.trim()
             val merchantOrderNumber = command.merchantOrderNumber.trim()
             val idempotencyKey = command.idempotencyKey.trim()
             val paymentMethod = command.paymentMethod.trim().uppercase()
-            require(merchantId.isNotBlank()) { "merchantId must not be blank" }
-            require(merchantOrderNumber.isNotBlank()) { "merchantOrderNumber must not be blank" }
-            require(idempotencyKey.isNotBlank()) { "idempotencyKey must not be blank" }
-            require(paymentMethod.isNotBlank()) { "paymentMethod must not be blank" }
+            require(merchantId.isNotBlank()) { "商户身份不能为空" }
+            require(merchantOrderNumber.isNotBlank()) { "商户订单号不能为空" }
+            require(idempotencyKey.isNotBlank()) { "幂等键不能为空" }
+            require(paymentMethod.isNotBlank()) { "支付方式不能为空" }
 
             val money = Money.of(command.amount, command.currency)
             val now = Instant.now(clock)
-            require(command.expiresAt.isAfter(now)) { "payment expiresAt must be in the future" }
+            require(command.expiresAt.isAfter(now)) { "支付到期时间必须晚于当前时间" }
 
             Mediator.repositories.findOne(
                 SMerchantChannelConfiguration.predicate { schema ->
@@ -75,7 +79,7 @@ object CreatePaymentCmd {
                 if (!sameIntent) {
                     throw PaymentConflictException(
                         code = "IDEMPOTENCY_CONFLICT",
-                        message = "the idempotency key is already bound to a different payment intent",
+                        message = "幂等键已绑定到内容不同的支付意图",
                     )
                 }
                 return Response(
@@ -96,7 +100,7 @@ object CreatePaymentCmd {
             )?.let {
                 throw PaymentConflictException(
                     code = "ORDER_ALREADY_PAID",
-                    message = "merchant order $merchantOrderNumber already has a successful payment",
+                    message = "商户订单 $merchantOrderNumber 已经存在成功支付",
                 )
             }
 

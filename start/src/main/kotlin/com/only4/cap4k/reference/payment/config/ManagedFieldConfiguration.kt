@@ -42,7 +42,7 @@ class ManagedFieldConfiguration {
                             "audit created-by handle must only participate in CREATE"
                         }
                         "updated-by" -> Unit
-                        else -> error("unsupported audit-actor slot '${handle.handlerSlot}' for ${handle.policyKey}")
+                        else -> error("不支持的审计操作员 slot '${handle.handlerSlot}' for ${handle.policyKey}")
                     }
                     handle.assignSemantic(ACTOR)
                 }

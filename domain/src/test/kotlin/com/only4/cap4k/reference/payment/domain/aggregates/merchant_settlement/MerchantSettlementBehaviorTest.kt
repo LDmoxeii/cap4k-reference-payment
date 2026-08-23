@@ -47,14 +47,14 @@ class MerchantSettlementBehaviorTest {
         assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
         assertThatThrownBy { zero.startAttempt() }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("no positive amount")
+            .hasMessageContaining("没有可划拨的正净额")
 
         val negative = settlement("-30.00")
         assertThat(negative.confirmComposition(OPERATOR, ROLE, NOW)).isEqualTo(MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED)
         assertThat(negative.settlementLines).hasSize(1)
         assertThatThrownBy { negative.startAttempt() }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("no positive amount")
+            .hasMessageContaining("没有可划拨的正净额")
     }
 
     @Test
@@ -119,7 +119,7 @@ class MerchantSettlementBehaviorTest {
         assertThat(attempt.finalResult).isEqualTo(SettlementExecutionFinalResult.UNKNOWN)
         assertThatThrownBy { settlement.startAttempt(requestIdentity = "REQ-2") }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("result is unknown")
+            .hasMessageContaining("执行结果仍未知")
         assertThat(settlement.markUnknownReviewRequired(attempt.reviewAfterAt.minusSeconds(1))).isFalse()
         assertThat(settlement.markUnknownReviewRequired(attempt.reviewAfterAt)).isTrue()
         assertThat(attempt.status).isEqualTo(SettlementExecutionAttemptStatus.REVIEW_REQUIRED)
@@ -170,7 +170,7 @@ class MerchantSettlementBehaviorTest {
         assertThatThrownBy {
             confirmed.returnForAdjustment(OPERATOR, ROLE, "too late", NOW.plusMinutes(1))
         }.isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("cannot be returned")
+            .hasMessageContaining("不能退回调整")
     }
 
     @Test
@@ -194,7 +194,7 @@ class MerchantSettlementBehaviorTest {
         replacement.voidBeforeExecution(OPERATOR, ROLE, "replacement cancelled", NOW.plusMinutes(1))
         assertThatThrownBy { replacement.activateEffectiveOwnership() }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("cannot activate effective ownership")
+            .hasMessageContaining("不能激活有效所有权")
     }
 
     @Test
@@ -202,7 +202,7 @@ class MerchantSettlementBehaviorTest {
         val prepared = settlement("10.00")
         assertThatThrownBy { prepared.confirmComposition(OPERATOR, "VIEWER", NOW) }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("not authorized")
+            .hasMessageContaining("无权处理商户结算")
 
         prepared.voidBeforeExecution(OPERATOR, ROLE, "merchant correction", NOW)
         assertThat(prepared.status).isEqualTo(MerchantSettlementStatus.VOIDED)
@@ -215,7 +215,7 @@ class MerchantSettlementBehaviorTest {
         val confirmed = confirmedSettlement()
         assertThatThrownBy { confirmed.voidBeforeExecution(OPERATOR, ROLE, "too late", NOW.plusMinutes(1)) }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("cannot be voided")
+            .hasMessageContaining("不能作废")
     }
 
     private fun confirmedSettlement(): MerchantSettlement = settlement("127.00").also {

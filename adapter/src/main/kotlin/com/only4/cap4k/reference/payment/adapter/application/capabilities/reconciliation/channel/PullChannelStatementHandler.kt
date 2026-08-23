@@ -21,7 +21,7 @@ class PullChannelStatementHandler(
     override fun call(request: PullChannelStatement.Request): PullChannelStatement.Response {
         val statement = statements.latest(request.channelId, request.currency, request.reconciliationDate)
         require(statement.businessTimezone == request.businessTimezone) {
-            "statement timezone ${statement.businessTimezone} does not match ${request.businessTimezone}"
+            "账单时区 ${statement.businessTimezone} 与请求时区 ${request.businessTimezone} 不一致"
         }
         return PullChannelStatement.Response(statement)
     }

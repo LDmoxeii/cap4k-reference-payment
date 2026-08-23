@@ -18,21 +18,21 @@ class StartChannelPaymentHandler : CapabilityHandler<StartChannelPayment.Request
 
     override fun call(request: StartChannelPayment.Request): StartChannelPayment.Response {
         if (request.channelId == "C-THROW") {
-            error("simulated deterministic channel outage")
+            error("模拟的确定性渠道故障")
         }
         if (request.channelId != "C-001") {
             return StartChannelPayment.Response(
                 accepted = false,
                 channelReference = null,
                 failureCode = "UNSUPPORTED_CHANNEL",
-                diagnosticSummary = "the deterministic fake gateway only accepts C-001",
+                diagnosticSummary = "确定性 Fake 支付渠道仅接受 C-001",
             )
         }
         return StartChannelPayment.Response(
             accepted = true,
             channelReference = "fake-${request.requestIdentity}",
             failureCode = null,
-            diagnosticSummary = "accepted by the deterministic fake channel gateway",
+            diagnosticSummary = "确定性 Fake 支付渠道已受理请求",
         )
     }
 }

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service
 object ConfirmMerchantSettlementCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** 授权确认只调用聚合冻结既有 composition；确认后任何候选、手续费或对账变化都不能原位改写该结算单。 */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
                 SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
