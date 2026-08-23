@@ -1,9 +1,9 @@
 schema: comet.native.v4
 name: audit-payment-reference-composition
 language: zh-CN
-phase: build
+phase: archive
 status: active
-state_version: 2
+state_version: 21
 brief: brief.md
 spec_changes:
   - capability: payment-reference-build
@@ -13,26 +13,28 @@ workspace:
   isolation: worktree
   change_branch: comet/audit-payment-reference-composition
   target_branch: main
-  finish: null
+  finish: pull-request
 loop:
-  stage: building
+  stage: archive-ready
   goal_cycle: 1
-  iteration: 1
-  attempt: 0
-  retry_epoch: 0
-  failed_iteration_count: 0
+  iteration: 3
+  attempt: 1
+  retry_epoch: 1
+  failed_iteration_count: 1
   no_progress_count: 0
   execution_failure_count: 0
   previous_unresolved_ids: []
-  next_action: submit-builder-candidate
+  next_action: archive
 acceptance:
   - id: A1
     source: brief.md
     text: "**A1 Accepted lineage**：审计 checkout 的 `origin/main` 包含 B1 `6a40c5d…`、B2
       `43a5982…`、B3 `8750a4b…`、B4 `4e34765…`、B5 `3fd59cd…` 和 #4 `e702e72…`；每个
       commit、PR、Issue、archived change 映射可机械复核，且没有未接受旁支被当作 evidence。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted-lineage ancestry matrix passed.
+      truncated: false
   - id: A2
     source: brief.md
     text: "**A2 Clean-checkout reproducibility**：从无历史 build outputs 的隔离 candidate
@@ -41,107 +43,137 @@ acceptance:
       resolution、generation、compile、test、bootJar 与短生命周期 Spring Boot startup
       smoke；仓库不依赖 committed machine path、sibling path、`mavenLocal()`、Snapshot
       或私服。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Zero-build-dir clean-checkout build and Java 17 startup passed.
+      truncated: false
   - id: A3
     source: brief.md
     text: "**A3 Full regression**：完整 `clean build` 通过，原 accepted 100 tests / 23
       suites 全部保持通过；新增 composition test 后 test/suite 数量增加或保持可解释，0 failures、0
       errors、0 skips，不能用 focused tests 代替最终全量回归。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Clean build passed: 102 tests, 24 suites, zero failures/errors/skips."
+      truncated: false
   - id: A4
     source: brief.md
     text: "**A4 Plan/generation determinism**：连续两轮 ordinary
       plan/generate/generated-source generation 的 plan hash 与 build-owned
       generated contents 稳定；197-item accepted ownership（137 SKIP、60
       OVERWRITE）无无法解释漂移，tracked checked-in source 无 generation diff。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Two generation rounds were deterministic at 197 items: 137 SKIP and 60
+        OVERWRITE."
+      truncated: false
   - id: A5
     source: brief.md
     text: "**A5 Generation ownership safety**：删除 build-owned generated outputs 后可从
       canonical inputs 重建；checked-in Endpoint/event
       contracts、VO、Behavior、Handler/listener/subscriber 与 handwritten HTTP
       binding 不被覆盖，plan 能解释 generator/module/output/conflict policy。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Generated roots rebuilt cleanly without modifying checked-in sources.
+      truncated: false
   - id: A6
     source: brief.md
     text: "**A6 Analyzer observability**：连续两轮 analysis plan/generate 稳定并至少保持 46
       outputs、19 independent roots（13 HTTP、5 Time、1 Integration Event）；真实 HTTP
       Actor、Time 与 Integration Event roots/edges 与静态 reachability 一致，不伪造跨入口
       exactly-once stitching。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Two Analyzer rounds were deterministic at 46 outputs and 19 roots.
+      truncated: false
   - id: A7
     source: brief.md
     text: "**A7 Drawing Board separation**：Command、Query、Capability、Endpoint、Domain
       Event、Integration Event 与 Aggregate Structure partitions 均可解析且包含真实
       anchors；19 份 Mermaid quoted labels 通过 parser/render smoke，runtime
       状态机与可靠投递状态不伪装为默认 Flow。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Seven Drawing Boards and 19 Mermaid SVG renders passed.
+      truncated: false
   - id: A8
     source: brief.md
     text: "**A8 AgentFacts validity**：Agent Snapshot ownership 为 197 且与 plan
       对齐，analysis 为 `ok`、available outputs 至少 46，diagnostics 无 `error`、`INVALID`
       或 `plan-evidence-invalid`；overall `partial` 只允许由 live DB freshness
       `UNKNOWN` 导致。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Agent Snapshot was valid; partial was solely live-DB freshness UNKNOWN.
+      truncated: false
   - id: A9
     source: brief.md
     text: "**A9 Push/Pull authority**：`ChannelStatementAvailableIntegrationEvent`
       只表示账单可获取，薄 listener dispatch 到既有 application path，完整 statement 仍由
       `PullChannelStatement` 获取；event payload 不成为账单真源。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Focused reconciliation and complete regression evidence passed.
+      truncated: false
   - id: A10
     source: brief.md
     text: "**A10 Scheduler/rerun convergence**：相同 channel+currency+business-date 与
       statement identity+revision 经 Push、provider Pull、ordinary scheduler、manual
       rerun 的重复、乱序或并发入口最终只形成一个有效 run；higher revision 成为 effective run，late lower
       revision 不回退 current pointer。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Focused reconciliation convergence and complete regression evidence
+        passed.
+      truncated: false
   - id: A11
     source: brief.md
     text: "**A11 Provider recovery convergence**：event 先于 statement 可读取或 provider
       暂时失败时，失败/回滚可观察；provider 恢复后以相同业务/event identity 重试成功，不产生重复
       batch/run/effective fact。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Provider recovery and complete regression evidence passed.
+      truncated: false
   - id: A12
     source: brief.md
     text: "**A12 Settlement completion once**：只有 MerchantSettlement 首次形成 accepted
       `SUCCEEDED` fact 时形成一次 local completion fact 和稳定
       `MerchantSettlementCompletedIntegrationEvent`
       intent；FAILED、RESULT_UNKNOWN、review/conflict、void、重复或迟到 callback 不形成第二事件。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Settlement completion-once and complete regression evidence passed.
+      truncated: false
   - id: A13
     source: brief.md
     text: "**A13 Outbound transaction atomicity**：Settlement accepted success、稳定
       event identity 与 cap4k reliable Event/JPA record 在同一 UoW 原子提交；强制 rollback
       后两者都不存在，commit 后两者都存在。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Transactional reliable-event evidence and complete regression passed.
+      truncated: false
   - id: A14
     source: brief.md
     text: "**A14 HTTP retry/recovery**：fake receiver 首次非 2xx、连接失败或 response timeout
       时 reliable event 保持可观察失败/待重试；恢复后使用同一 event identity 与稳定 payload
       fingerprint 成功交付，不创建新业务事件逃避失败记录。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: HTTP retry/recovery evidence and complete regression passed.
+      truncated: false
   - id: A15
     source: brief.md
     text: "**A15 End-to-end idempotency boundary**：重复 inbound statement
       event、scheduler/rerun、settlement callback、publisher retry 与 HTTP replay
       不形成第二个有效 reconciliation run、Settlement completion fact 或 outbound business
       event；明确区分入站业务幂等与出站 at-least-once transport，测试 receiver 可收到重复 envelope。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Inbound/outbound idempotency evidence and complete regression passed.
+      truncated: false
   - id: A16
     source: brief.md
     text: "**A16 Composition trace and traceability closure**：新增一个 composition-only
@@ -150,8 +182,10 @@ acceptance:
       reliable outbound event，并验证 settlement lines 可回溯
       Payment/Refund/Reconciliation identities；`PAY-EV-027` 因该真实测试转为 verified，所有
       verified acceptance 引用的 evidence 均存在且 verified。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Composition test and PAY-EV-027 traceability evidence passed.
+      truncated: false
   - id: A17
     source: brief.md
     text: "**A17 Planned/deferred
@@ -159,8 +193,11 @@ acceptance:
       closure、production consumer、GitHub Actions 与 published-coordinate cold
       start 不被伪装为完成；截至 2026-08-22 latest release v2.0.1 不含当前 DSL 时，cold start
       记录为 release-gated deferred 而非本次失败或通过。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Deferred acceptance, evidence, capability, CI, and release boundaries
+        remain explicit.
+      truncated: false
   - id: A18
     source: brief.md
     text: "**A18 Governance closure**：Verify/Archive/PR merge 后，Issue #8、父 #2 与
@@ -168,8 +205,10 @@ acceptance:
       摘要；#2 仅在 #8 merge 和 composition evidence accepted 后完成 child/composition
       checklist，cap4k#27 继续保留其 Public Docs/Skill、only-engine gate 与 published
       cold-start 独立责任。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Post-merge governance contract and sequencing are explicitly preserved.
+      truncated: false
   - id: A19
     source: specs/payment-reference-build/spec.md
     text: "`cap4k-reference-payment` 提供一个基于当前 cap4k mainline
@@ -180,8 +219,10 @@ acceptance:
       Object、Command/Query/Capability/Endpoint、Domain Event、Integration Event、手写
       HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和
       AgentFacts 能在一条真实业务链中协同工作。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A20
     source: specs/payment-reference-build/spec.md
     text: "该状态包含完整支付引用项目的前五个已接受切片、GitHub #4 Payment timeout/conflict-review
@@ -190,116 +231,156 @@ acceptance:
       Integration Event transport 的最小可运行经验；#4 与 #8 的 ordinary scheduler/evidence
       也不声称 broker、reliable Command、通用 Outbox/Inbox、持久化 scheduler、lease、跨实例
       exactly-once、only-engine、生产银行/清算网络、生产商户通知、大额退款审批、超期人工例外、负净额追偿或周结已经可用。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A21
     source: specs/payment-reference-build/spec.md
     text: 项目必须包含：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A22
     source: specs/payment-reference-build/spec.md
     text: "`contract`：dependency-leaf 对外契约模块，拥有 Endpoint operation、Request/Response
       与稳定 Integration Event published language，只依赖轻量 `cap4k-contract-api` 及编译期分析
       metadata，不依赖任何项目内模块、Spring、JPA 或 transport 实现。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A23
     source: specs/payment-reference-build/spec.md
     text: "`domain`：Payment、Refund、Reconciliation 与 MerchantSettlement 领域模型、Value
       Object、生成 enum、领域事实与 Repository 契约。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A24
     source: specs/payment-reference-build/spec.md
     text: "`application`：支付、退款、日终对账与商户结算的创建、渠道请求、结果确认、账单拉取、匹配、人工处置、重跑、确认、执行和查询输入/处理\
       器；支付/退款 Gateway、结果验证、渠道账单、结算候选、资金划拨与划拨结果验证 Capability；入站 Integration Event
       listener 与 Domain Event 到 published Integration Event 的映射/发布编排。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A25
     source: specs/payment-reference-build/spec.md
     text: "`adapter`：Endpoint Handler、手写业务 HTTP binding、Fake Payment/Refund
       Gateway、Fake Channel Statement Provider、Fake Settlement Transfer
       Provider、渠道/划拨结果验证器、普通 scheduled reaction 和 JPA 适配；Integration Event HTTP
       wire protocol 由 cap4k starter 拥有，不在 adapter 手写第二套协议。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A26
     source: specs/payment-reference-build/spec.md
     text: "`start`：Spring Boot 组装、H2 配置、cap4k reliable Event/JPA owner 与 HTTP
       Integration Event starter、静态 event route、包含退款/对账/手续费/结算结果阈值的 fixture，以及动态
       fake HTTP receiver 和端到端测试。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A27
     source: specs/payment-reference-build/spec.md
     text: 项目内依赖方向必须为：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A28
     source: specs/payment-reference-build/spec.md
     text: "`application -> contract + domain`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A29
     source: specs/payment-reference-build/spec.md
     text: "`adapter -> contract + application + domain`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A30
     source: specs/payment-reference-build/spec.md
     text: "`start -> adapter`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A31
     source: specs/payment-reference-build/spec.md
     text: "`contract` 不依赖任何项目内模块；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A32
     source: specs/payment-reference-build/spec.md
     text: "`domain` 不依赖 contract/application/adapter/start；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A33
     source: specs/payment-reference-build/spec.md
     text: application/domain 不依赖 start 或具体 Web 配置。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A34
     source: specs/payment-reference-build/spec.md
     text: Pipeline 的 `contractModulePath` 必须解析到独立 `contract` project。所有 Endpoint
       contract 与 B5 Integration Event published language 必须物理位于该模块；既有
       payment/refund FQN 保持不变，B3 reconciliation、B4 merchant-settlement 与 B5
       event contract 使用同一 dependency-leaf 发布边界下的稳定 FQN。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A35
     source: specs/payment-reference-build/spec.md
     text: Java/Kotlin toolchain：17。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A36
     source: specs/payment-reference-build/spec.md
     text: Kotlin：2.2.20。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A37
     source: specs/payment-reference-build/spec.md
     text: Spring Boot：3.5.6。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A38
     source: specs/payment-reference-build/spec.md
     text: 默认声明的 cap4k/plugin/runtime 坐标：2.0.1。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A39
     source: specs/payment-reference-build/spec.md
     text: 默认仓库只允许 Gradle Plugin Portal 和 Maven Central。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A40
     source: specs/payment-reference-build/spec.md
     text: B1/B2/B3/B4/B5 必须通过用户显式提供的本机配置启用 Composite Build，对当前 cap4k mainline
@@ -309,943 +390,1289 @@ acceptance:
       `includeBuild`。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地
       `gradle.properties`。published-coordinate cold start 不属于 B1/B2/B3/B4/B5
       验收，保留给最终发布后验证。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A41
     source: specs/payment-reference-build/spec.md
     text: cap4k 生成器产生的 generated source 由构建拥有，不进入手工编辑区。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A42
     source: specs/payment-reference-build/spec.md
     text: Endpoint contracts、Domain Value Object 和需要持续演进的 behavior skeleton 采用
       checked-in ownership，首次生成后由业务代码维护，重复 generation 必须 SKIP 已演进文件。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A43
     source: specs/payment-reference-build/spec.md
     text: Endpoint Handler 与 HTTP binding 是 reference 手写 adapter 代码；不得伪造为本切片已有的
       Generator capability。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A44
     source: specs/payment-reference-build/spec.md
     text: "`cap4kPlan` 必须解释 generator、module role、output path、output kind、resolved
       root 和 conflict policy。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A45
     source: specs/payment-reference-build/spec.md
     text: 重复 plan/generation 在相同输入下保持确定性，不覆盖用户已修改的 checked-in source。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A46
     source: specs/payment-reference-build/spec.md
     text: "`design/enums.json` 是 B1/B2/B3/B4/B5 有限业务枚举的 authoring source，并通过
       `types.enumManifest` 注册。至少声明以下 aggregate-owned enum："
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A47
     source: specs/payment-reference-build/spec.md
     text: "`PaymentStatus`：`PENDING(0)`、`PROCESSING(1)`、`SUCCEEDED(2)`、`FAILED(3)`、\
       `CLOSED(4)`、`RESULT_UNKNOWN(5)`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A48
     source: specs/payment-reference-build/spec.md
     text: "`PaymentAttemptStatus`：`PROCESSING(0)`、`SUCCEEDED(1)`、`FAILED(2)`、`RESUL\
       T_UNKNOWN(3)`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A49
     source: specs/payment-reference-build/spec.md
     text: "`PaymentAttemptFinalResult`：`SUCCESS(0)`、`FAILED(1)`、`GATEWAY_REJECTED(2\
       )`、`RESULT_UNKNOWN(3)`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A50
     source: specs/payment-reference-build/spec.md
     text: "`MerchantChannelConfigurationStatus`：`ACTIVE(0)`、`RETIRED(1)`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A51
     source: specs/payment-reference-build/spec.md
     text: "`ChannelResultDisposition`：`RECEIVED(0)`、`REJECTED(1)`、`SUCCESS_ACCEPTED\
       (2)`、`FAILURE_ACCEPTED(3)`、`ACCEPTED_DUPLICATE(4)`、`REJECTED_DUPLICATE(5)\
       `、`CONFLICT(6)`、`ATTEMPT_NOT_FOUND(7)`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A52
     source: specs/payment-reference-build/spec.md
     text: 这些 numeric value 一经生成并进入持久化或可观察证据后保持稳定。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A53
     source: specs/payment-reference-build/spec.md
     text: 以下内部有界状态列必须使用整数存储，并通过完整 `@Type=<EnumName>;` metadata 绑定：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A54
     source: specs/payment-reference-build/spec.md
     text: "`payment.status -> PaymentStatus`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A55
     source: specs/payment-reference-build/spec.md
     text: "`payment_attempt.status -> PaymentAttemptStatus`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A56
     source: specs/payment-reference-build/spec.md
     text: "`payment_attempt.final_result -> PaymentAttemptFinalResult`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A57
     source: specs/payment-reference-build/spec.md
     text: "`payment_notification_receipt.decision -> ChannelResultDisposition`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A58
     source: specs/payment-reference-build/spec.md
     text: "`merchant_channel_configuration.status ->
       MerchantChannelConfigurationStatus`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A59
     source: specs/payment-reference-build/spec.md
     text: 领域代码直接读写生成 enum，不使用重复手写 enum，也不通过 `.name` 把 enum 写回实体状态列。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A60
     source: specs/payment-reference-build/spec.md
     text: 以下开放 vocabulary 或外部证据保持标量，不加入 enum manifest：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A61
     source: specs/payment-reference-build/spec.md
     text: inbound Endpoint/Command 的渠道 raw `result`；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A62
     source: specs/payment-reference-build/spec.md
     text: "`payment_notification_receipt.result` 原始/归一化渠道声明；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A63
     source: specs/payment-reference-build/spec.md
     text: currency 与 payment method；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A64
     source: specs/payment-reference-build/spec.md
     text: merchant、channel、request、notification、transaction、order、idempotency 等外部
       identity；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A65
     source: specs/payment-reference-build/spec.md
     text: verification material、snapshot 与诊断 summary。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A66
     source: specs/payment-reference-build/spec.md
     text: "`design/value-objects.json` 必须声明 Payment aggregate-owned 的
       `ChannelResultRecordingOutcome`，不包含 `persistence` 配置。生成结果是 checked-in
       Domain Value Object，不生成 JPA converter、不绑定 schema 列、不拥有独立实体身份。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A67
     source: specs/payment-reference-build/spec.md
     text: 该 VO 至少包含：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A68
     source: specs/payment-reference-build/spec.md
     text: "`paymentStatus: PaymentStatus`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A69
     source: specs/payment-reference-build/spec.md
     text: "`attemptStatus: PaymentAttemptStatus?`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A70
     source: specs/payment-reference-build/spec.md
     text: "`notificationReceiveCount: Int`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A71
     source: specs/payment-reference-build/spec.md
     text: "`disposition: ChannelResultDisposition`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A72
     source: specs/payment-reference-build/spec.md
     text: "`rejectionSummary: String?`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A73
     source: specs/payment-reference-build/spec.md
     text: "`conflictSummary: String?`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A74
     source: specs/payment-reference-build/spec.md
     text: "`successFactFormedNow: Boolean`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A75
     source: specs/payment-reference-build/spec.md
     text: 生成后的 checked-in VO 必须补充派生属性：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A76
     source: specs/payment-reference-build/spec.md
     text: "`duplicate` 由 `ACCEPTED_DUPLICATE` 或 `REJECTED_DUPLICATE` 推导；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A77
     source: specs/payment-reference-build/spec.md
     text: "`accepted` 由 `SUCCESS_ACCEPTED`、`FAILURE_ACCEPTED` 或 `ACCEPTED_DUPLICATE`
       推导；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A78
     source: specs/payment-reference-build/spec.md
     text: "`rejected` 由 `REJECTED`、`REJECTED_DUPLICATE` 或 `ATTEMPT_NOT_FOUND` 推导；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A79
     source: specs/payment-reference-build/spec.md
     text: "`conflicting` 由 `CONFLICT` 推导。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A80
     source: specs/payment-reference-build/spec.md
     text: VO 必须拒绝无效组合：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A81
     source: specs/payment-reference-build/spec.md
     text: "`notificationReceiveCount` 小于 1；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A82
     source: specs/payment-reference-build/spec.md
     text: 最终 Outcome 使用 `RECEIVED`；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A83
     source: specs/payment-reference-build/spec.md
     text: "`ATTEMPT_NOT_FOUND` 以外的 disposition 配置 null `attemptStatus`，或
       `ATTEMPT_NOT_FOUND` 配置非空 `attemptStatus`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A84
     source: specs/payment-reference-build/spec.md
     text: rejected disposition 没有 rejection summary，或非 rejected disposition 携带
       rejection summary；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A85
     source: specs/payment-reference-build/spec.md
     text: "`CONFLICT` 没有 conflict summary，或非 `CONFLICT` 携带 conflict summary；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A86
     source: specs/payment-reference-build/spec.md
     text: "`successFactFormedNow=true` 但 disposition 不是 `SUCCESS_ACCEPTED`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A87
     source: specs/payment-reference-build/spec.md
     text: duplicate outcome 再次形成成功事实；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A88
     source: specs/payment-reference-build/spec.md
     text: "`SUCCESS_ACCEPTED` 未对应 `PaymentStatus.SUCCEEDED` 和
       `PaymentAttemptStatus.SUCCEEDED`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A89
     source: specs/payment-reference-build/spec.md
     text: "`FAILURE_ACCEPTED` 未对应 `PaymentAttemptStatus.FAILED`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A90
     source: specs/payment-reference-build/spec.md
     text: Payment 是聚合根，至少包含：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A91
     source: specs/payment-reference-build/spec.md
     text: "`PaymentId`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A92
     source: specs/payment-reference-build/spec.md
     text: merchant identity；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A93
     source: specs/payment-reference-build/spec.md
     text: merchant order number；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A94
     source: specs/payment-reference-build/spec.md
     text: idempotency key；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A95
     source: specs/payment-reference-build/spec.md
     text: Money；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A96
     source: specs/payment-reference-build/spec.md
     text: payment method；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A97
     source: specs/payment-reference-build/spec.md
     text: typed `PaymentStatus`；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A98
     source: specs/payment-reference-build/spec.md
     text: createdAt、expiresAt；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A99
     source: specs/payment-reference-build/spec.md
     text: succeededAt、channelTransactionId（成功后）；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A100
     source: specs/payment-reference-build/spec.md
     text: PaymentAttempt 集合；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A101
     source: specs/payment-reference-build/spec.md
     text: 聚合版本和审计字段。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A102
     source: specs/payment-reference-build/spec.md
     text: B1 支付路径只主动推进 `PENDING -> PROCESSING -> SUCCEEDED`，但模型不得允许成功回退。B2 在成功
       Payment 上增加退款预算字段，不改变支付成功事实。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A103
     source: specs/payment-reference-build/spec.md
     text: PaymentAttempt 是 Payment 的强引用 owned child，至少包含：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A104
     source: specs/payment-reference-build/spec.md
     text: "`PaymentAttemptId`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A105
     source: specs/payment-reference-build/spec.md
     text: channel identity 与渠道配置快照；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A106
     source: specs/payment-reference-build/spec.md
     text: request identity；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A107
     source: specs/payment-reference-build/spec.md
     text: typed `PaymentAttemptStatus`；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A108
     source: specs/payment-reference-build/spec.md
     text: initiatedAt；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A109
     source: specs/payment-reference-build/spec.md
     text: channelTransactionId；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A110
     source: specs/payment-reference-build/spec.md
     text: typed `PaymentAttemptFinalResult` 与业务发生时间；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A111
     source: specs/payment-reference-build/spec.md
     text: 每个 notification identity 的接收计数、首次/最近接收时间、raw result、typed
       `ChannelResultDisposition` 和裁决摘要。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A112
     source: specs/payment-reference-build/spec.md
     text: 尝试之间不能覆盖。Payment 成功后不得创建新尝试。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A113
     source: specs/payment-reference-build/spec.md
     text: "`ChannelResultDisposition.RECEIVED` 只允许作为 receipt 保存后、裁决完成前的内部状态；最终
       receipt 必须进入 accepted、duplicate、rejected 或 conflict disposition。Attempt
       不属于当前 Payment 时，不伪造 `PaymentAttemptStatus.NOT_FOUND`，而由 Outcome 的 null
       `attemptStatus` 与 `ATTEMPT_NOT_FOUND` 表达。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A114
     source: specs/payment-reference-build/spec.md
     text: Money 使用精确十进制金额和 ISO 风格币种代码；拒绝非正数、超过币种精度或应用资格配置未支持的币种。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A115
     source: specs/payment-reference-build/spec.md
     text: PaymentId 和 PaymentAttemptId 使用 cap4k Strong ID，应用侧按当前 UUID7 合同分配。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A116
     source: specs/payment-reference-build/spec.md
     text: merchant identity、channel identity 和外部业务号保持稳定、可追踪，不把完整凭据放入聚合。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A117
     source: specs/payment-reference-build/spec.md
     text: B1/B2 提供最小持久化模型：merchant、channel、currency、payment method、amount
       range、typed active/retired
       status、refundWindowDays、refundResultReviewAfterMinutes 及必要审计信息。start 层建立一条
       M-001、CNY、测试支付方式可用、退款期限 180 天、退款结果核对阈值 30 分钟的配置。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A118
     source: specs/payment-reference-build/spec.md
     text: 配置只用于资格判断和渠道选择，不提供管理 API。PaymentAttempt 保存当时的渠道身份和规则摘要，因此以后配置退役不会改写交易历史。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A119
     source: specs/payment-reference-build/spec.md
     text: 输入至少包括 merchant、merchant order number、idempotency
       key、amount、currency、payment method 和 expiresAt。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A120
     source: specs/payment-reference-build/spec.md
     text: 处理顺序：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A121
     source: specs/payment-reference-build/spec.md
     text: 验证格式、金额、币种和到期时间；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A122
     source: specs/payment-reference-build/spec.md
     text: 验证 merchant 至少存在一条合格的 active channel configuration；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A123
     source: specs/payment-reference-build/spec.md
     text: 按 merchant + idempotency key 查询既有 Payment；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A124
     source: specs/payment-reference-build/spec.md
     text: 内容相同则返回既有结果；关键内容不同则返回明确幂等冲突；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A125
     source: specs/payment-reference-build/spec.md
     text: 不存在时创建 `PENDING` Payment 并持久化。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A126
     source: specs/payment-reference-build/spec.md
     text: 创建成功不自动形成 PaymentAttempt，也不表示支付成功。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A127
     source: specs/payment-reference-build/spec.md
     text: 输入 PaymentId。处理器装载 Payment，确认仍允许尝试，选择合格配置并在聚合内新增 PaymentAttempt，然后调用
       Channel Gateway。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A128
     source: specs/payment-reference-build/spec.md
     text: Fake Gateway 返回稳定 request identity 和 `ACCEPTED`。`ACCEPTED` 只让尝试/Payment
       进入处理中，不得形成成功事实。Gateway 调用失败的完整重试策略后置，但失败必须留下可诊断信息而不能伪造成功。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A129
     source: specs/payment-reference-build/spec.md
     text: 入站结果至少包含
       channel、notificationId、PaymentId/PaymentAttemptId、channelTransactionId、amount、currency、raw
       result、occurredAt 和验证材料。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A130
     source: specs/payment-reference-build/spec.md
     text: 适配层只把 HTTP 输入转换为稳定 Command；Command Handler 在 UoW 边界内调用结果验证
       Capability，再把验证结果交给聚合。聚合按以下顺序裁决：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A131
     source: specs/payment-reference-build/spec.md
     text: 记录接收时间和 notification identity；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A132
     source: specs/payment-reference-build/spec.md
     text: 识别重复通知并增加计数；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A133
     source: specs/payment-reference-build/spec.md
     text: 校验 attempt/channel/payment/amount/currency；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A134
     source: specs/payment-reference-build/spec.md
     text: 不可信或不匹配时保留拒绝原因，不推进 Payment 状态；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A135
     source: specs/payment-reference-build/spec.md
     text: 首次可信成功时把 attempt 和 Payment 确认为成功，记录渠道交易号和两个时间；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A136
     source: specs/payment-reference-build/spec.md
     text: 重复成功形成 accepted-duplicate disposition，不产生第二个成功事实；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A137
     source: specs/payment-reference-build/spec.md
     text: 重复未接受证据形成 rejected-duplicate disposition；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A138
     source: specs/payment-reference-build/spec.md
     text: 成功后的失败结果不回退状态，形成 conflict disposition 并留存；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A139
     source: specs/payment-reference-build/spec.md
     text: 返回 `ChannelResultRecordingOutcome`，其字段和派生属性来自最终持久化裁决，不建立第二套
       accepted/duplicate 真源。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A140
     source: specs/payment-reference-build/spec.md
     text: B1 记录“商户成功通知意图”领域事实，但不发送真实 Integration Event 或网络通知。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A141
     source: specs/payment-reference-build/spec.md
     text: "`Payment.recordChannelResult(...)` 返回 `ChannelResultRecordingOutcome`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A142
     source: specs/payment-reference-build/spec.md
     text: "`ConfirmPaymentResultCmd.Response` 直接持有该 Domain Value Object；application
       允许依赖 domain，因此不做无价值的逐字段复制。若 cap4k Request contract 固定要求 Response wrapper，则
       wrapper 只包含 `outcome` 字段。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A143
     source: specs/payment-reference-build/spec.md
     text: 独立 `contract` 模块不得依赖 domain。`ConfirmPaymentResultEndpoint.Response` 继续使用
       contract-owned scalar/DTO 字段；adapter Endpoint Handler 从 Command Response
       中取得 Outcome，并在该发布边界显式映射 enum name、计数、派生布尔值和摘要。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A144
     source: specs/payment-reference-build/spec.md
     text: 按 PaymentId 返回：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A145
     source: specs/payment-reference-build/spec.md
     text: Payment 身份、商户订单号、Money、状态和关键时间；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A146
     source: specs/payment-reference-build/spec.md
     text: 所有 PaymentAttempt 的身份、渠道、状态、请求/交易号；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A147
     source: specs/payment-reference-build/spec.md
     text: 渠道结果的接收计数、typed disposition、验证/拒绝/冲突摘要；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A148
     source: specs/payment-reference-build/spec.md
     text: 成功事实是否已经形成。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A149
     source: specs/payment-reference-build/spec.md
     text: 查询必须来自真实持久化数据，不返回 domain/JPA proxy 给 HTTP 层。Query/Endpoint 对外输出字符串状态时由
       adapter 显式使用 enum name 映射，不把 contract 反向绑定到 domain enum。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A150
     source: specs/payment-reference-build/spec.md
     text: B1 提供四个 transport-neutral Endpoint contract：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A151
     source: specs/payment-reference-build/spec.md
     text: "`CreatePaymentEndpoint`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A152
     source: specs/payment-reference-build/spec.md
     text: "`StartPaymentAttemptEndpoint`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A153
     source: specs/payment-reference-build/spec.md
     text: "`ConfirmPaymentResultEndpoint`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A154
     source: specs/payment-reference-build/spec.md
     text: "`GetPaymentEndpoint`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A155
     source: specs/payment-reference-build/spec.md
     text: 每个 Endpoint Handler 在 adapter 中独立成文件，并采用：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A156
     source: specs/payment-reference-build/spec.md
     text: 写操作：`Mediator.commands.send(...)`；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A157
     source: specs/payment-reference-build/spec.md
     text: 查询操作：`Mediator.queries.ask(...)`。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A158
     source: specs/payment-reference-build/spec.md
     text: 一类一文件和静态 `Mediator` 是本 reference 的默认 authoring preference，不是 cap4k
       对所有项目的强制规则。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A159
     source: specs/payment-reference-build/spec.md
     text: HTTP binding 保持手写，继续提供：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A160
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/payments`：创建 Payment；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A161
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/payments/{paymentId}/attempts`：发起一次 PaymentAttempt；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A162
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/channel/payment-results`：接收测试渠道最终结果；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A163
     source: specs/payment-reference-build/spec.md
     text: "`GET /api/payments/{paymentId}`：查询 Payment 和尝试摘要。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A164
     source: specs/payment-reference-build/spec.md
     text: HTTP method/path、request mapper、response policy、status code 和 error
       mapping 不因 Handler 拆分或 contract 搬迁而漂移。错误结果至少区分输入校验失败、幂等冲突、无合格渠道、Payment
       不存在、状态不允许、回调被拒绝和并发冲突。测试用验证器的可信凭据通过配置提供，任何凭据不得提交为生产秘密。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A165
     source: specs/payment-reference-build/spec.md
     text: 所有写操作通过 cap4k Command/UoW 边界运行。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A166
     source: specs/payment-reference-build/spec.md
     text: Command 聚合 Repository 使用同一 Hibernate/JPA 持久化上下文；已有聚合更新依赖 managed entity
       dirty checking，新聚合/删除遵循 cap4k persistence intents。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A167
     source: specs/payment-reference-build/spec.md
     text: PaymentAttempt 和 notification receipt 生命周期由 Payment 聚合维护，JPA
       cascade/orphan 语义与 owned graph 一致。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A168
     source: specs/payment-reference-build/spec.md
     text: enum converter 与整数 schema 列必须一致，H2/JPA round-trip 后仍得到相同 enum value。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A169
     source: specs/payment-reference-build/spec.md
     text: 使用乐观版本防止并发回调静默覆盖；典型并发由集成测试证明，极端 ORM/并发压力仍由 cap4k focused fixtures 负责。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A170
     source: specs/payment-reference-build/spec.md
     text: H2 用于 reference 的可重复执行，不宣称生产数据库兼容矩阵。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A171
     source: specs/payment-reference-build/spec.md
     text: DB/schema、Design JSON、enum manifest 和 value-object manifest 共同提供真实
       canonical input，不接受纯手写项目冒充 Generator 证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A172
     source: specs/payment-reference-build/spec.md
     text: plan 和输出必须展示 Aggregate、Strong ID、Repository、Behavior、Enum、Value
       Object、Command/Query/Endpoint 等本切片实际采用的能力；未采用能力不得仅为覆盖率制造空壳。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A173
     source: specs/payment-reference-build/spec.md
     text: contract module 必须启用 analysis compiler，并加入 root `irAnalysis.inputDirs`；移动
       Endpoint contract 后不得丢失 design metadata。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A174
     source: specs/payment-reference-build/spec.md
     text: B1/B2 必须通过显式 Composite Build 消费包含 Mermaid quoted-label 修复的 cap4k
       mainline，重新运行 `cap4kAnalysisPlan` 与 `cap4kAnalysisGenerate`。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A175
     source: specs/payment-reference-build/spec.md
     text: Analyzer 为创建支付、发起支付尝试和渠道回调的真实 Endpoint HTTP Actor 入口分别生成 entry-centered
       Flow，展示入口到对应 Command 的静态 causal reachability；Command 与 Query anchors 由
       Drawing Board Design Projection 提供，Payment/PaymentAttempt 的 Aggregate
       element 由独立 Aggregate Structure output 提供。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A176
     source: specs/payment-reference-build/spec.md
     text: 三份 Flow JSON 保持预期 entry、node 与 edge 语义；三份 Mermaid 节点 label 必须被安全引用，并通过
       Mermaid parser 或 renderer smoke，不再出现内部 `[...]` 触发的 parse error。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A177
     source: specs/payment-reference-build/spec.md
     text: Query、CommandHandler、Entity Method、聚合运行时状态推进和跨真实入口 process stitching 不属于默认
       Flow 验收；不把支付超时伪造成已实现 Time 根。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A178
     source: specs/payment-reference-build/spec.md
     text: Agent Snapshot 必须能读取项目有效状态、输入、生成器、任务、输出和 diagnostics；没有构建或运行证据的能力保持
       planned/not-built。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A179
     source: specs/payment-reference-build/spec.md
     text: 必须覆盖以下业务场景：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A180
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-001：首次创建支付；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A181
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-002：相同内容重复创建；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A182
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-003：幂等键冲突；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A183
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-004：可信成功通知；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A184
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-005：重复成功通知；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A185
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-006：未验证、attempt/channel/amount/currency 不匹配通知；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A186
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-012：无效金额/币种拒绝；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A187
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-013：已创建金额不可修改；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A188
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-016：渠道受理不等于成功；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A189
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-017：成功后不再发起尝试。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A190
     source: specs/payment-reference-build/spec.md
     text: 证据至少包括：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A191
     source: specs/payment-reference-build/spec.md
     text: contract leaf 的依赖与编译证据；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A192
     source: specs/payment-reference-build/spec.md
     text: domain enum generation、schema type binding、converter round-trip 与 Outcome
       invariant tests；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A193
     source: specs/payment-reference-build/spec.md
     text: H2/JPA Repository/UoW integration tests；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A194
     source: specs/payment-reference-build/spec.md
     text: Endpoint contract、每类一文件 Handler、静态 Mediator 和 handwritten HTTP binding
       tests；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A195
     source: specs/payment-reference-build/spec.md
     text: HTTP happy path 与错误/重复/冲突 integration tests；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A196
     source: specs/payment-reference-build/spec.md
     text: plan/generation deterministic evidence；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A197
     source: specs/payment-reference-build/spec.md
     text: Analyzer plan、三个 Endpoint HTTP Actor-to-Command Flow JSON/Mermaid、Mermaid
       parse/render smoke，以及独立 Command/Query Drawing Board 和 Aggregate Structure
       outputs；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A198
     source: specs/payment-reference-build/spec.md
     text: Agent manifest 与 diagnostics；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A199
     source: specs/payment-reference-build/spec.md
     text: actual evidence path/command/cap4k commit/status 写回 traceability，并包含
       tracked `settings.gradle.kts` 的 property > environment > released `2.0.1`
       解析合同及“仓库无默认机器路径”的 smoke 证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A200
     source: specs/payment-reference-build/spec.md
     text: "仓库业务 phase 保持 build 且 build_authorized: true。B1 已在 mainline 验收并保持回归基线。B2
       的新增聚合、配置、Endpoint、scheduled reaction、类型输入和验收必须使用本 change
       的新证据；只有新实现与新证据验证通过时，才把 PAY-AC-020..029 及对应 evidence 更新为 verified。B1
       的旧证据不能替代 B2 当前候选验证。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A201
     source: specs/payment-reference-build/spec.md
     text: Refund 是独立 Aggregate Root，以 Strong RefundId 标识，通过 Strong PaymentId 弱引用
       Payment；Refund 不持有 Payment 对象、ORM relation、lazy proxy 或可导航聚合图。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A202
     source: specs/payment-reference-build/spec.md
     text: Payment 继续是支付成功事实和退款预算的并发裁决权威。Payment 至少增加
       reservedRefundAmount、successfulRefundAmount，并派生 refundableAmount。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A203
     source: specs/payment-reference-build/spec.md
     text: 原子不变量为：reservedRefundAmount >= 0、successfulRefundAmount >= 0，且
       reservedRefundAmount + successfulRefundAmount <= paymentAmount。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A204
     source: specs/payment-reference-build/spec.md
     text: 只有 SUCCEEDED Payment 可以占用退款额度。创建 Refund 时先在 Payment 聚合内占用额度，再在同一 cap4k
       Command/UoW 与同一 Hibernate/JPA persistence context 中创建 Refund；任一步失败必须整体回滚。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A205
     source: specs/payment-reference-build/spec.md
     text: Refund 明确失败或拒绝时释放占用；结果未知或进入待核对时继续占用；成功时将对应占用原子转换为
       successfulRefundAmount。Refund 成功事实不可回退。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A206
     source: specs/payment-reference-build/spec.md
     text: Refund 至少保存 RefundId、PaymentId、merchant identity、merchant refund
       number、Money、原渠道/支付方式/配置快照、typed RefundStatus、请求/受理/最终/核对时间、渠道
       request/refund identity、额度裁决和成功事实。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A207
     source: specs/payment-reference-build/spec.md
     text: Refund 使用 RefundAttempt 与 RefundNotificationReceipt owned child
       保存渠道请求、notification identity、首次/最近接收时间、重复次数、raw result、typed
       disposition、验证/拒绝/冲突摘要。查询必须能够观察这些持久化事实，不能只返回最后一条瞬时摘要。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A208
     source: specs/payment-reference-build/spec.md
     text: MerchantChannelConfiguration 是规则配置真源：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A209
     source: specs/payment-reference-build/spec.md
     text: refundWindowDays：B2 seed/default fixture 固定为 180；申请最后期限从
       Payment.succeededAt 起算，而不是 Payment.createdAt 或渠道受理时间。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A210
     source: specs/payment-reference-build/spec.md
     text: refundResultReviewAfterMinutes：B2 seed/default fixture 固定为
       30；渠道已经受理但超过该阈值仍无最终结果时，Refund 转为 REVIEW_REQUIRED 并继续保留占用。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A211
     source: specs/payment-reference-build/spec.md
     text: B2 不实现大额退款人工审批，也不实现超期退款人工例外或 override；二者保留为后续独立 change。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A212
     source: specs/payment-reference-build/spec.md
     text: 设计输入必须新增并生成/类型绑定 Refund 有限业务枚举，至少包括
       RefundStatus、RefundAttemptStatus、RefundAttemptFinalResult 与
       RefundResultDisposition。内部有限状态使用整数列和完整 @Type 绑定；外部 raw
       code、message、identity 继续保持开放标量。numeric value 一经用于持久化或证据后保持稳定。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A213
     source: specs/payment-reference-build/spec.md
     text: value-objects.json 必须声明不配置 persistence 的
@@ -1253,53 +1680,71 @@ acceptance:
       Response 的字段；独立 contract leaf 不依赖 domain，因此 Endpoint Response 由 adapter
       在发布边界显式投影。Outcome 至少表达最终 Refund/attempt 状态、notification 接收计数、typed
       disposition、额度是否释放或转成功、是否进入待核对及拒绝/冲突摘要，并拒绝互相矛盾的组合。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A214
     source: specs/payment-reference-build/spec.md
     text: checked-in enum、VO、Endpoint contract、Behavior 和手写 adapter 重复 generation 必须
       SKIP；build-owned Entity、Schema、Repository 可重建。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A215
     source: specs/payment-reference-build/spec.md
     text: 创建退款输入至少包括 merchant、merchant refund number、PaymentId、退款金额、币种和请求时间：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A216
     source: specs/payment-reference-build/spec.md
     text: merchant + merchant refund number 相同内容重复提交返回同一 RefundId；关键内容冲突明确失败。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A217
     source: specs/payment-reference-build/spec.md
     text: 装载 Payment，确认 SUCCEEDED、merchant/币种匹配，且请求时间不晚于 succeededAt +
       refundWindowDays。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A218
     source: specs/payment-reference-build/spec.md
     text: 在 Payment 内原子占用退款额度；超出 refundableAmount 时不创建渠道请求。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A219
     source: specs/payment-reference-build/spec.md
     text: 在同一事务创建 Refund/RefundAttempt 并保存规则快照。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A220
     source: specs/payment-reference-build/spec.md
     text: Fake Refund Gateway 受理只进入处理中；明确拒绝或失败释放占用；未知结果继续占用并留痕。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A221
     source: specs/payment-reference-build/spec.md
     text: 退款结果 callback 至少携带
       channel、notificationId、RefundId/RefundAttemptId、channelRefundId、amount、currency、raw
       result、occurredAt 和验证材料。Handler 在 UoW 内调用验证
       Capability，并按首次成功、首次失败、可信未知、重复、冲突、不可信或不匹配进行幂等裁决。成功后的失败或未知不得回退成功事实。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A222
     source: specs/payment-reference-build/spec.md
     text: B2 提供普通 @Scheduled reaction。scheduled method 只通过
@@ -1307,81 +1752,107 @@ acceptance:
       refundResultReviewAfterMinutes 且仍无最终结果的 Refund 转为 REVIEW_REQUIRED，并保留
       Payment 占用。该入口证明 Analyzer Time root，不承诺 B5 的可靠 enqueue、持久化调度、lease/retry
       或跨实例 exactly-once。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A223
     source: specs/payment-reference-build/spec.md
     text: B2 至少增加 CreateRefundEndpoint、ConfirmRefundResultEndpoint 与
       GetRefundEndpoint，继续位于独立 contract module。对应 HTTP binding 保持手写：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A224
     source: specs/payment-reference-build/spec.md
     text: POST /api/refunds；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A225
     source: specs/payment-reference-build/spec.md
     text: POST /api/channel/refund-results；
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A226
     source: specs/payment-reference-build/spec.md
     text: GET /api/refunds/{refundId}。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A227
     source: specs/payment-reference-build/spec.md
     text: 每个 Endpoint Handler 一类一文件并使用静态 Mediator；这是 reference authoring
       preference，不是 cap4k 强制规则。scheduled scan 不是 HTTP Endpoint，不为覆盖率伪造 transport
       contract。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A228
     source: specs/payment-reference-build/spec.md
     text: Payment 查询增加 reservedRefundAmount、successfulRefundAmount 与
       refundableAmount。Refund 查询返回身份、PaymentId、merchant refund
       number、Money、状态、关键时间、渠道 identity、额度裁决、attempt 与 notification 摘要；不得把 JPA
       aggregate 或 proxy 暴露给 contract/HTTP。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A229
     source: specs/payment-reference-build/spec.md
     text: 两笔并发 Refund 对同一 Payment 的额度占用必须由真实双事务、H2/JPA、乐观锁测试证明不会超退。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A230
     source: specs/payment-reference-build/spec.md
     text: 典型乐观冲突映射为稳定 409 CONCURRENT_MODIFICATION，而不是静默覆盖或 500。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A231
     source: specs/payment-reference-build/spec.md
     text: Payment 与 Refund 的预算变更和状态推进必须共用 cap4k JPA UoW；不引入跨 ORM bridge、detached
       merge 或补偿事务来伪造原子性。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A232
     source: specs/payment-reference-build/spec.md
     text: B2 使用 Fake Gateway 与 HTTP callback，不引入真实渠道 SDK、Outbox、Integration Event
       transport、Saga 或 only-engine gate。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A233
     source: specs/payment-reference-build/spec.md
     text: Analyzer 必须生成退款申请与退款渠道结果的 Endpoint HTTP Actor-to-Command Flow，并为普通
       @Scheduled 到 Mediator.commands.send(...) 的超时核对入口生成独立 Time
       root。Command/Query anchors 与 Refund Aggregate Structure 分别由 Drawing Board
       和 Aggregate Structure output 证明；不把跨入口流程拼接或运行时状态变化伪造成默认 Flow 能力。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A234
     source: specs/payment-reference-build/spec.md
     text: Agent Snapshot 必须保留 B2 plan ownership、analysis 与 diagnostics。live DB
       freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或
       plan-evidence-invalid。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A235
     source: specs/payment-reference-build/spec.md
     text: B2 验收必须覆盖 PAY-AC-020..029：全额退款、多次部分退款、超额拒绝、并发防超退、失败释放、未知或 30
@@ -1390,368 +1861,490 @@ acceptance:
       跨聚合测试、双事务并发测试、HTTP 集成测试、scheduled review test、enum/converter/Outcome
       tests、plan/generation determinism、Analyzer Flow/Time root、AgentFacts 与
       traceability 实际路径。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A236
     source: specs/payment-reference-build/spec.md
     text: B1 的 PAY-AC-001..017 已验收行为是回归基线，B2 不得破坏既有支付创建、支付尝试、支付回调、查询、contract
       leaf、Mermaid flow 和 Composite Build 解析合同。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A237
     source: specs/payment-reference-build/spec.md
     text: ReconciliationBatch 是独立 Aggregate Root，以 Strong ReconciliationBatchId
       标识；同一 `channel + currency + reconciliationDate` 只能存在一个有效批次。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A238
     source: specs/payment-reference-build/spec.md
     text: Payment、Refund、PaymentAttempt、RefundAttempt 不进入 Reconciliation ORM
       graph。对账侧只保存 Strong ID、稳定外部 identity 和运行时复制的不可变事实快照。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A239
     source: specs/payment-reference-build/spec.md
     text: ReconciliationBatch 至少拥有
       ReconciliationRun、ReconciliationItem、ReconciliationDisposition 和
       ReconciliationConfirmationFact。Run/Item/Disposition/Confirmation 均属于批次强引用
       owned graph，并由同一 JPA UoW 原子保存。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A240
     source: specs/payment-reference-build/spec.md
     text: 每次执行形成独立 ReconciliationRun；批次记录当前有效 run，但历史 run 与 item
       永久保留。重跑不创建第二个有效批次，也不覆盖旧运行。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A241
     source: specs/payment-reference-build/spec.md
     text: B3 的主路径是普通 `@Scheduled` Time root 发送日终对账 Command；scheduled method 只调用静态
       Mediator，不直接操作 Repository。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A242
     source: specs/payment-reference-build/spec.md
     text: Command 通过 PullChannelStatement Capability 拉取渠道日账单。B3 不实现 bill-arrival
       Integration Event、Outbox、持久化调度、lease/retry 或跨实例 exactly-once。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A243
     source: specs/payment-reference-build/spec.md
     text: 账单必须携带 channel、currency、reconciliationDate、statement
       identity、revision、完整性状态，以及每条 record identity、交易类型、渠道交易/退款
       identity、金额、币种、状态、业务发生时间和平台接收时间。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A244
     source: specs/payment-reference-build/spec.md
     text: 业务时区固定为 `Asia/Shanghai`。reconciliationDate
       以该时区的自然日边界计算；原始业务发生时间、平台接收时间与业务时区均保留。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A245
     source: specs/payment-reference-build/spec.md
     text: 渠道账单最长等待期限为业务日结束后 24 小时。期限内允许同一批次重试拉取；超过后批次进入 FETCH_FAILED/REVIEW_REQUIRED
       且不得完成。迟到账单到达后在同一批次追加新 run 恢复处理。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A246
     source: specs/payment-reference-build/spec.md
     text: B3 从 Payment/Refund 持久化事实投影平台侧 reconciliation
       facts，至少覆盖支付成功与退款成功；平台查询可以使用专用 Query/Capability/JPA projection，但不得滥用聚合
       Repository 返回 detached 写模型或建立跨聚合关系图。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A247
     source: specs/payment-reference-build/spec.md
     text: 首选匹配键是稳定渠道交易号或渠道退款号。只有明确记录并经批准的组合条件可以作为辅助匹配；关联依据必须写入
       ReconciliationItem。禁止只因金额相同自动认定同一交易。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A248
     source: specs/payment-reference-build/spec.md
     text: 每次 run 必须分别持久化平台侧快照、渠道侧快照、关联依据和自动裁决结果。双方原始值不得被另一方覆盖。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A249
     source: specs/payment-reference-build/spec.md
     text: 自动分类至少包括：MATCHED、PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD、UNMATCHED。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A250
     source: specs/payment-reference-build/spec.md
     text: 支付和退款使用稳定的 transaction kind/type 区分；金额和币种保持精确语义，首期不支持换汇或跨币种抵扣。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A251
     source: specs/payment-reference-build/spec.md
     text: 同一 statement identity + revision 的重复处理幂等：不产生第二个有效 run、不重复形成有效差异、不重复追加自动结论。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A252
     source: specs/payment-reference-build/spec.md
     text: 渠道修订账单必须使用新 revision 或新 statement identity。修订触发同一批次的新 ReconciliationRun，旧
       run/items 保留并可查询。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A253
     source: specs/payment-reference-build/spec.md
     text: 批次明确记录 currentEffectiveRunId。旧 run 不再是当前结果，但仍是不可变历史证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A254
     source: specs/payment-reference-build/spec.md
     text: 新 run 不得静默删除既有人工 disposition 或 confirmation。应用层以稳定 difference identity
       关联历史处置，并明确显示其是否仍适用于当前 run。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A255
     source: specs/payment-reference-build/spec.md
     text: 批次状态至少表达
       PENDING、FETCHING、RECONCILING、AWAITING_DISPOSITION、COMPLETED、FETCH_FAILED/REVIEW_REQUIRED。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A256
     source: specs/payment-reference-build/spec.md
     text: 批次只有在 statement 完整、当前 run 完成、所有平台/渠道记录均已核对，且每个差异已匹配或存在明确处置结论时才能完成。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A257
     source: specs/payment-reference-build/spec.md
     text: PLATFORM_ONLY、CHANNEL_ONLY、AMOUNT_MISMATCH、CURRENCY_MISMATCH、STATUS_MISMATCH、DUPLICATE_CHANNEL_RECORD
       和 UNMATCHED 默认阻断自动结算，除非授权 disposition 明确说明不影响结算及依据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A258
     source: specs/payment-reference-build/spec.md
     text: 查询必须返回匹配/差异数量、未决数量、statement/run identity、当前有效 run、完成阻断原因和每项双方证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A259
     source: specs/payment-reference-build/spec.md
     text: ReconciliationDisposition 是追加式审计记录，至少包含 operator identity、authorization
       result/role、disposedAt、evidence、conclusion、follow-up、settlement impact
       和关联的 difference identity/item identity。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A260
     source: specs/payment-reference-build/spec.md
     text: 未授权动作必须拒绝并保存审计结果；B3 使用 reference 级 operator fixture 证明授权边界，不建设通用 RBAC
       或双人复核引擎。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A261
     source: specs/payment-reference-build/spec.md
     text: 处置不能删除或覆盖原始 Payment/Refund、渠道记录、run/item 或早期 disposition。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A262
     source: specs/payment-reference-build/spec.md
     text: 当平台结果待确认而渠道账单显示成功，或获授权人员确认 CHANNEL_ONLY 实际为平台漏记成功时，B3 追加
       ReconciliationConfirmationFact。该事实至少保存 source
       difference、确认原因、operator、confirmedAt、evidence、资金类型、金额、币种和稳定外部 identity。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A263
     source: specs/payment-reference-build/spec.md
     text: ReconciliationConfirmationFact 不反向改写 Payment/Refund 原始状态；后续 B4 读取“原始资金事实 +
       有效授权确认事实”形成结算候选视图。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A264
     source: specs/payment-reference-build/spec.md
     text: design/schema 必须生成 ReconciliationBatch aggregate graph、Strong
       IDs、Repository、Factory/Behavior、Command/Query/Capability/Endpoint 与有限业务
       enum。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A265
     source: specs/payment-reference-build/spec.md
     text: 业务 enum 至少覆盖 batch status、run status、transaction kind、difference
       type、disposition status/conclusion 和 statement completeness。内部有限状态使用整数列与完整
       `@Type` 绑定；渠道 raw status/code/identity 保持开放标量。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A266
     source: specs/payment-reference-build/spec.md
     text: 对账过程中需要跨层传递的 immutable structured values 可以由 value-object manifest 生成且不配置
       persistence；是否作为 Command/Endpoint 返回值不限制其 Domain Value Object 身份。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A267
     source: specs/payment-reference-build/spec.md
     text: B3 至少包含以下应用入口：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A268
     source: specs/payment-reference-build/spec.md
     text: "`RunDailyReconciliation`：按 channel/currency/date 幂等创建或装载批次、拉取账单、读取平台
       facts、创建 run/items 并推进批次。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A269
     source: specs/payment-reference-build/spec.md
     text: "`RerunReconciliationBatch`：对既有批次显式创建新 run；相同 revision 重放幂等，新 revision
       保留历史。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A270
     source: specs/payment-reference-build/spec.md
     text: "`DisposeReconciliationDifference`：验证 operator 授权并追加 disposition；必要时追加
       confirmation fact，然后重新评估批次完成条件。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A271
     source: specs/payment-reference-build/spec.md
     text: "`GetReconciliationBatch`：返回批次、全部 runs、当前有效结果、双方证据、差异、处置、确认事实和阻断原因。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A272
     source: specs/payment-reference-build/spec.md
     text: 独立 contract module 至少增加：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A273
     source: specs/payment-reference-build/spec.md
     text: "`GET /api/reconciliation-batches/{batchId}`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A274
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/reconciliation-batches/{batchId}/reruns`；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A275
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/reconciliation-items/{itemId}/dispositions`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A276
     source: specs/payment-reference-build/spec.md
     text: 每个 Endpoint Handler 一类一文件并使用静态 Mediator；HTTP binding 保持手写。scheduled Time
       root 不为覆盖率伪造 HTTP Endpoint。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A277
     source: specs/payment-reference-build/spec.md
     text: 同范围批次必须有数据库唯一约束与聚合幂等共同保护。并发 scheduler/HTTP rerun 不得形成两个有效批次或同 revision 双
       run。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A278
     source: specs/payment-reference-build/spec.md
     text: ReconciliationBatch 及完整 owned graph 的状态推进共用 cap4k JPA UoW 与同一 Hibernate
       persistence context；不引入跨 ORM bridge、detached merge 或分散 save。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A279
     source: specs/payment-reference-build/spec.md
     text: 典型乐观锁/唯一性并发冲突映射为稳定 409 CONCURRENT_MODIFICATION，而不是静默覆盖或 500。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A280
     source: specs/payment-reference-build/spec.md
     text: Provider 不可用、账单不完整和匹配失败必须形成可查询运行证据；不得把账单不可用伪装成“空账单并完成”。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A281
     source: specs/payment-reference-build/spec.md
     text: Analyzer 必须生成日终 scheduler 到 Command 的独立 Time root，以及人工处置和显式重跑的 Endpoint
       HTTP Actor-to-Command Flow。Command/Query/Capability anchors 与
       Reconciliation Aggregate Structure 分别由 Drawing Board/Aggregate Structure
       output 证明。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A282
     source: specs/payment-reference-build/spec.md
     text: Mermaid 必须可解析；不把 Query、隐藏 handler、运行时状态变化或跨入口业务链伪造成默认 Flow stitching。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A283
     source: specs/payment-reference-build/spec.md
     text: Agent Snapshot 必须保留 B3 plan ownership、analysis 与 diagnostics。live DB
       freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或
       plan-evidence-invalid。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A284
     source: specs/payment-reference-build/spec.md
     text: B3 验收必须覆盖 PAY-AC-040..047、PAY-AC-082 和 PAY-AC-085。PAY-AC-083 只写入 B3
       增量轨迹，不在 B4 结算完成前宣称全链路 verified。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A285
     source: specs/payment-reference-build/spec.md
     text: 证据至少包括 domain invariant tests、H2/JPA/UoW aggregate
       graph/rollback/concurrency tests、HTTP integration tests、scheduler/provider
       tests、enum/converter/VO tests、plan/generation determinism、Analyzer
       Flow/Time root、AgentFacts 和 traceability 实际路径。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A286
     source: specs/payment-reference-build/spec.md
     text: B1/B2 已验收行为是回归基线，B3 不得破坏支付、退款、contract leaf、Mermaid flow 或 Composite Build
       解析合同。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A287
     source: specs/payment-reference-build/spec.md
     text: "`MerchantSettlement` 是独立 Aggregate Root，以 Strong `MerchantSettlementId`
       标识。Payment、Refund、ReconciliationBatch 不进入 Settlement ORM graph；结算侧只保存
       Strong ID、稳定外部 identity、当前有效对账 identity 和形成结算时的不可变快照。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A288
     source: specs/payment-reference-build/spec.md
     text: B4 只实现日结。业务时区固定为 `Asia/Shanghai`，周期使用明确的 `[periodStart,
       periodEnd)`；周期模型可保存 type/start/end/timezone，但不提供周结 scheduler、周结 API 或周结验收。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A289
     source: specs/payment-reference-build/spec.md
     text: 同一 `merchantId + channelId + currency + periodStart + periodEnd`
       任一时刻最多存在一个有效 Settlement。数据库唯一约束、领域幂等和 optimistic version
       共同保护；scheduler、HTTP 和重试并发不得形成双有效单。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A290
     source: specs/payment-reference-build/spec.md
     text: MerchantSettlement 至少拥有 `SettlementLine`、`SettlementExecutionAttempt` 和
       `SettlementResultReceipt`。三类 child 均属于强引用 owned graph，并由同一 cap4k JPA UoW
       原子保存；历史 attempt/receipt 不得覆盖。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A291
     source: specs/payment-reference-build/spec.md
     text: Settlement 保存 predecessor/replacement identity、作废原因、operator
       和时间。作废重建只允许在尚未提交外部执行的 PREPARED/REVIEW_REQUIRED
       状态；PROCESSING、RESULT_UNKNOWN、SUCCEEDED 不得通过作废规避历史。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A292
     source: specs/payment-reference-build/spec.md
     text: "`MerchantChannelConfiguration` 增加 settlement fee basis points 与
       settlement result review threshold。reference seed 使用 `200` basis
       points、零固定费用、`HALF_UP` 到币种精度，result review threshold 为 30 分钟。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A293
     source: specs/payment-reference-build/spec.md
     text: Payment 首次形成成功事实时必须冻结 fee rule 与 fee result，至少保存 rate/basis
       points、固定费用、舍入模式、币种精度、计算金额和形成时间。配置以后修改或退役不得改变既有 Payment fee fact。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A294
     source: specs/payment-reference-build/spec.md
     text: 退款不返还已冻结的支付手续费。Settlement 不在日结时读取当前配置重新计算；每个 PAYMENT SettlementLine 复制
       Payment 成功时冻结的规则和结果，REFUND line 不产生负手续费返还。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A295
     source: specs/payment-reference-build/spec.md
     text: 正常示例必须得到：支付 100 + 支付 50 - 退款 20 - 手续费 2 - 手续费 1 = 净结算 127。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A296
     source: specs/payment-reference-build/spec.md
     text: B4 通过结算专用 Capability/JPA projection 读取 B3 当前有效 run，形成
@@ -1759,42 +2352,54 @@ acceptance:
       kind、source fact identity、Payment/Refund/Attempt/Confirmation
       弱引用、reconciliation batch/run/item identity、外部交易
       identity、金额、费用、业务发生时间、记录时间与 eligibility basis。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A297
     source: specs/payment-reference-build/spec.md
     text: 只消费 current effective run 中已核对且不再阻断结算的事实。Payment/Refund 的原始状态、current run
       item、authorized disposition 与 confirmation 是资格依据；不得扫描旧 run 作为当前结果，也不得让
       Payment/Refund 上的单一 `settlementBlocked` 字段成为完整资格真源。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A298
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-061 采用交易粒度排除：有未决差异的资金项不进入本次
       Settlement，其他已匹配或获授权明确放行的候选继续结算。Settlement 记录 eligible/excluded counts 和
       blocker summaries；不得因一个受影响交易阻断整个商户周期。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A299
     source: specs/payment-reference-build/spec.md
     text: "`ReconciliationConfirmationFact` 必须保存 merchantId 和 channelId。存在
       Payment/Refund 弱引用时，归属必须与原始聚合一致；CHANNEL_ONLY 且没有平台弱引用时，只允许已授权处置显式给出
       merchant/channel，并永久保存依据。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A300
     source: specs/payment-reference-build/spec.md
     text: confirmation 作为独立 source fact 进入 SettlementLine，不反向改写
       Payment/Refund。PAYMENT confirmation 为正向收入，REFUND confirmation 为负向扣减。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A301
     source: specs/payment-reference-build/spec.md
     text: 相同 source fact identity 不得重复进入一个 Settlement，也不得被两个有效 Settlement
       消费。SettlementLine 的稳定 identity 至少区分 PAYMENT、REFUND 与
       RECONCILIATION_CONFIRMATION。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A302
     source: specs/payment-reference-build/spec.md
     text: 每条 SettlementLine 至少保存：line/source identity、source/transaction
@@ -1802,159 +2407,209 @@ acceptance:
       batch/run/item/confirmation identity、external transaction identity、gross
       amount、fee amount、signed net amount、currency、occurredAt、recordedAt、fee
       rule snapshot、eligibility basis、confirmation reason/evidence。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A303
     source: specs/payment-reference-build/spec.md
     text: Payment line 的 signed net 为 `amount - frozen fee`；Refund line 为
       `-amount`；Payment confirmation 为 `amount - frozen fee`；Refund confirmation
       为 `-amount`。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A304
     source: specs/payment-reference-build/spec.md
     text: Root 的 payment gross、refund gross、fee total、adjustment total 与 net amount
       必须精确等于 lines 的对应汇总；所有 line 币种必须与 Settlement currency 一致，不支持换汇或跨币种抵扣。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A305
     source: specs/payment-reference-build/spec.md
     text: 净额小于零时完整保存组成并进入 `NEGATIVE_REVIEW_REQUIRED`；不得创建或提交资金划拨
       attempt。顺延抵扣、商户补款与追偿产品流程后置。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A306
     source: specs/payment-reference-build/spec.md
     text: 净额为零时允许完成准备和确认，但不得调用外部 Transfer；以零金额结算完成事实结束，并保留组成证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A307
     source: specs/payment-reference-build/spec.md
     text: 日结 scheduler 只发送 `RunDailyMerchantSettlement` Command；scheduled method
       不直接访问 Repository、Query 或 Capability。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A308
     source: specs/payment-reference-build/spec.md
     text: Prepare/Run Command 按 merchant/channel/currency/date 幂等装载或创建
       Settlement，读取候选，冻结 SettlementLine 和汇总。没有 eligible candidate 时返回明确
       no-op，不创建空 Settlement。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A309
     source: specs/payment-reference-build/spec.md
     text: 状态至少表达
       PREPARING、REVIEW_REQUIRED、PREPARED、CONFIRMED、PROCESSING、SUCCEEDED、FAILED、RESULT_UNKNOWN、NEGATIVE_REVIEW_REQUIRED、VOIDED
       与 CONFLICT_REVIEW_REQUIRED。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A310
     source: specs/payment-reference-build/spec.md
     text: 确认前允许授权人员退回并重新准备；确认后 merchant、channel、currency、period、line composition、fee
       facts 和 totals 冻结。后续退款、费用或对账变化不得原位修改已确认 Settlement，而应进入下一周期 adjustment 或受控
       replacement。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A311
     source: specs/payment-reference-build/spec.md
     text: reference 使用单一授权 operator fixture 证明确认、作废和结果核对边界；不实现通用
       RBAC、双人复核、审批工作流或人工任务中心。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A312
     source: specs/payment-reference-build/spec.md
     text: 确认后的正净额 Settlement 才能提交 `StartSettlementTransfer` Capability。每个 Settlement
       拥有稳定 `executionGroupIdentity`；每次请求新增独立 ExecutionAttempt 与 request
       identity，历史失败不覆盖。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A313
     source: specs/payment-reference-build/spec.md
     text: Gateway `ACCEPTED` 只表示请求已受理并进入 PROCESSING，不等于资金到账或结算成功。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A314
     source: specs/payment-reference-build/spec.md
     text: 外部明确失败后允许授权人员在同一个 Settlement/execution group 下人工重试。重试新增 attempt 与 request
       identity，保留旧 attempt 的失败 code、summary 和时间；不得创建新 Settlement 逃避原执行历史。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A315
     source: specs/payment-reference-build/spec.md
     text: RESULT_UNKNOWN 状态禁止自动或人工创建新 attempt、禁止更换 request/execution identity、禁止新
       Settlement 或等额重付，直至授权核对追加最终结论。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A316
     source: specs/payment-reference-build/spec.md
     text: B4 使用同步 Fake Transfer Capability 证明边界，不声称真实银行网络、可靠 enqueue、自动 retry 或
       transport delivery。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A317
     source: specs/payment-reference-build/spec.md
     text: callback 至少携带 channel、notification
       identity、SettlementId、ExecutionAttemptId、executionGroupIdentity、request
       identity、external settlement identity、amount、currency、raw
       result、occurredAt 和验证材料。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A318
     source: specs/payment-reference-build/spec.md
     text: Handler 在 UoW 内调用 `VerifySettlementResult` Capability，再由聚合追加
       SettlementResultReceipt 并裁决 attempt/root。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A319
     source: specs/payment-reference-build/spec.md
     text: 同 notification identity 同 payload 重放只增加 receive count，不产生第二次资金效果；同
       identity 不同 payload 形成 CONFLICT。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A320
     source: specs/payment-reference-build/spec.md
     text: 首次可信成功把 attempt 与 Settlement 确认为 SUCCEEDED，记录 external identity 和
       completedAt，并且只形成一次 settled fact。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A321
     source: specs/payment-reference-build/spec.md
     text: 明确失败把当前 attempt 置为 FAILED；是否重试只由显式人工 Command 触发，不自动创建 attempt。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A322
     source: specs/payment-reference-build/spec.md
     text: 可信未知把 attempt/root 置为 RESULT_UNKNOWN。MerchantChannelConfiguration 的
       `settlementResultReviewAfterMinutes` 为规则真源，reference seed 为 30；attempt
       冻结当次阈值。普通 scheduled scan 在超过阈值后进入
       `CONFLICT_REVIEW_REQUIRED/REVIEW_REQUIRED`，但仍不得重付。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A323
     source: specs/payment-reference-build/spec.md
     text: 成功后迟到失败或未知不得回退 SUCCEEDED；必须追加双方 raw result、接收/发生时间和 conflict
       disposition，冻结自动动作并进入人工核对视图。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A324
     source: specs/payment-reference-build/spec.md
     text: 授权核对可在同一 Settlement 上追加最终成功或失败结论，不删除原 receipt；最终事实与全部历史可查询。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A325
     source: specs/payment-reference-build/spec.md
     text: schema/design 必须生成 MerchantSettlement aggregate graph、Strong
       IDs、Repository、Factory/Behavior、Command/Query/Capability/Endpoint 与有限业务
       enum。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A326
     source: specs/payment-reference-build/spec.md
     text: B4 enum 至少覆盖 settlement status、line source kind、execution attempt
       status/final result 与 result disposition。内部有限状态使用整数列和完整 `@Type` 绑定；numeric
       value 进入持久化后保持稳定。外部 raw status/code/identity 保持开放标量。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A327
     source: specs/payment-reference-build/spec.md
     text: 跨层 immutable values 至少包括
@@ -1962,409 +2617,537 @@ acceptance:
       SettlementResultRecordingOutcome；value-object manifest 不配置
       persistence。Domain VO 可以直接成为 Command Response 字段，contract leaf 由 adapter
       显式投影。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A328
     source: specs/payment-reference-build/spec.md
     text: generated Entity/Schema/Repository 是 build-owned；enum、VO、Endpoint
       contract、Behavior、Factory/Creation、Command/Query/Capability skeleton 是
       checked-in/skip。Endpoint Handler、HTTP binding、Scheduler、Capability Handler
       与业务投影手写维护。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A329
     source: specs/payment-reference-build/spec.md
     text: B4 至少包含以下应用入口：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A330
     source: specs/payment-reference-build/spec.md
     text: "`RunDailyMerchantSettlement` / `PrepareMerchantSettlement`：按日结范围幂等形成
       eligible lines 与 totals。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A331
     source: specs/payment-reference-build/spec.md
     text: "`ConfirmMerchantSettlement`：授权确认并冻结组成。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A332
     source: specs/payment-reference-build/spec.md
     text: "`StartMerchantSettlementExecution`：提交或在明确失败后人工重试。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A333
     source: specs/payment-reference-build/spec.md
     text: "`ConfirmMerchantSettlementResult`：验证并裁决渠道 callback。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A334
     source: specs/payment-reference-build/spec.md
     text: "`ReviewUnknownMerchantSettlements`：普通 scheduled scan，把超过 30
       分钟阈值的未知结果送入人工核对状态，不重付。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A335
     source: specs/payment-reference-build/spec.md
     text: "`VoidMerchantSettlement`：仅在未提交外部执行的允许状态作废，并可形成 replacement chain。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A336
     source: specs/payment-reference-build/spec.md
     text: "`GetMerchantSettlement`：返回范围、状态、构成、lines、excluded/blockers、fee
       facts、attempts、receipts、冲突和 replacement 轨迹。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A337
     source: specs/payment-reference-build/spec.md
     text: 独立 contract module 至少提供：
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A338
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/merchant-settlements`：显式准备/运行日结；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A339
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/merchant-settlements/{settlementId}/confirmations`：确认冻结；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A340
     source: specs/payment-reference-build/spec.md
     text: "`POST
       /api/merchant-settlements/{settlementId}/executions`：首次提交或明确失败后的人工重试；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A341
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/channel/settlement-results`：接收 reference 渠道结果；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A342
     source: specs/payment-reference-build/spec.md
     text: "`POST /api/merchant-settlements/{settlementId}/voids`：受控作废；"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A343
     source: specs/payment-reference-build/spec.md
     text: "`GET /api/merchant-settlements/{settlementId}`：查询完整结算证据。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A344
     source: specs/payment-reference-build/spec.md
     text: 每个 Endpoint Handler 一类一文件并使用静态 Mediator；HTTP binding 保持手写。该风格是 reference
       authoring preference，不是 cap4k 对全部项目的强制规则。Query 不返回 domain/JPA aggregate 或
       proxy。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A345
     source: specs/payment-reference-build/spec.md
     text: MerchantSettlement root 与完整 owned graph 的创建、状态推进、attempt/receipt 追加共用
       cap4k JPA UoW 和同一 Hibernate persistence context；不使用 detached merge、跨 ORM
       bridge 或分散 save。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A346
     source: specs/payment-reference-build/spec.md
     text: root/lines 任一 invariant、费用计算、source identity 或唯一约束失败时整体回滚，不留下空 root、部分
       lines 或幽灵 PROCESSING。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A347
     source: specs/payment-reference-build/spec.md
     text: 同范围 prepare、相同 source fact consumption、execution start 与 callback
       由真实双事务/H2/JPA/MockMvc 测试证明不会双写。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A348
     source: specs/payment-reference-build/spec.md
     text: 典型 optimistic/unique conflict 映射为稳定 409 `CONCURRENT_MODIFICATION`，而不是静默覆盖或
       500。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A349
     source: specs/payment-reference-build/spec.md
     text: 候选不可用、B3 current run 不存在、merchant attribution 不完整、fee snapshot
       缺失或币种不一致时返回明确业务错误，不把异常数据当作零金额结算。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A350
     source: specs/payment-reference-build/spec.md
     text: Analyzer 必须生成日结 scheduler 到 Command 的独立 Time root，以及确认、提交、callback、作废等真实
       HTTP Command Actor-to-Command Flow。Query 只在 graph/design projection
       中出现，不要求默认 Flow。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A351
     source: specs/payment-reference-build/spec.md
     text: Command/Query/Capability/Endpoint anchors 与 MerchantSettlement Aggregate
       Structure 分别由 Drawing Board/Aggregate Structure output
       证明；不把运行时状态、可靠投递或跨入口过程伪造成默认 Flow stitching。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A352
     source: specs/payment-reference-build/spec.md
     text: Mermaid 必须可解析。B4 新 Flow 不能复用 B1-B3 输出冒充证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A353
     source: specs/payment-reference-build/spec.md
     text: Agent Snapshot 必须保留 B4 plan ownership、analysis 与 diagnostics。live DB
       freshness UNKNOWN 可以导致 PARTIAL，但 ownership 不得为空，且不得出现 INVALID、error 或
       plan-evidence-invalid。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A354
     source: specs/payment-reference-build/spec.md
     text: B4 验收覆盖 PAY-AC-060..068，并补齐 PAY-AC-014 的 fee snapshot、PAY-AC-083
       的支付→退款→对账→结算轨迹和 PAY-AC-085 的业务时区边界。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A355
     source: specs/payment-reference-build/spec.md
     text: 证据至少包括 enum/converter/VO tests、domain invariant tests、H2/JPA/UoW aggregate
       graph/rollback/concurrency tests、HTTP integration tests、scheduler/fake
       provider tests、plan/generation determinism、Analyzer Time/Actor
       Flow、AgentFacts 和 traceability 实际路径。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A356
     source: specs/payment-reference-build/spec.md
     text: B1/B2/B3 已验收行为是回归基线，B4 不得破坏支付、退款、对账、contract leaf、Composite
       Build、Mermaid、Analyzer 或 AgentFacts 合同。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A357
     source: specs/payment-reference-build/spec.md
     text: B5 只实现两个业务 Integration Event：入站
       `ChannelStatementAvailableIntegrationEvent` 与出站
       `MerchantSettlementCompletedIntegrationEvent`。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A358
     source: specs/payment-reference-build/spec.md
     text: 两者是 contract module 的 dependency-leaf published language，并使用显式稳定 v1 event
       name。payload 只包含标量、业务 Strong ID 的公开表示、金额/币种、statement
       identity/revision、event/correlation/causation identity 和 occurrence
       time；不得暴露 JPA Entity、聚合对象、Repository、Capability 实现或 transport 配置。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A359
     source: specs/payment-reference-build/spec.md
     text: "`ChannelStatementAvailableIntegrationEvent`
       表达“指定渠道账单版本已经可获取”，不是完整账单内容。`MerchantSettlementCompletedIntegrationEvent`
       表达“指定 Settlement 首次形成 accepted terminal success fact”，不是资金网络最终全局完成承诺。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A360
     source: specs/payment-reference-build/spec.md
     text: contract 不依赖 domain/application/adapter/start、Spring、JPA 或 HTTP
       starter。application 为发布和监听 event 可以依赖 `contract + domain`；domain 不依赖
       contract。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A361
     source: specs/payment-reference-build/spec.md
     text: cap4k HTTP Integration Event receiver 解码
       `ChannelStatementAvailableIntegrationEvent` 后交给 checked-in application
       listener。listener 必须保持薄壳，只做输入规范化、追踪信息传递和 Command/application operation
       dispatch，不直接访问 Repository、EntityManager 或 HTTP client。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A362
     source: specs/payment-reference-build/spec.md
     text: event 至少包含稳定 event
       identity、channelId、currency、reconciliationDate、statementIdentity、revision、publishedAt，以及可选
       correlation/causation identity；空 identity、非法 revision、未知 channel/currency
       组合必须被明确拒绝或进入可诊断失败，不得静默创建批次。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A363
     source: specs/payment-reference-build/spec.md
     text: listener 进入既有 Reconciliation 应用路径，完整 statement 仍通过 `PullChannelStatement`
       Capability 取得。event payload 不得成为账单真源，也不得绕过 statement
       completeness、identity/revision、match/disposition 和 current effective run
       规则。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A364
     source: specs/payment-reference-build/spec.md
     text: 同 event identity 重放、不同 event identity 指向同 statement/revision、scheduler
       同日触发、人工 rerun 和并发请求都必须汇合到同一 batch/run 幂等边界。同 identity/revision 只形成一次有效
       run；更高 revision 追加历史并成为 effective run；旧 revision 迟到不回退当前 effective run。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A365
     source: specs/payment-reference-build/spec.md
     text: event 先于 statement 可读取时，处理保持失败可诊断并允许相同 event identity 后续重试；恢复后不得创建重复有效批次。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A366
     source: specs/payment-reference-build/spec.md
     text: B5 不用 Integration Event 替换 provider Pull、日终 scheduler 或人工
       rerun。四个入口可以同时存在：Push 提高时效性，Pull 提供权威完整数据，scheduler
       提供漏通知/停机/不支持推送渠道的最终发现，manual rerun 提供运维恢复。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A367
     source: specs/payment-reference-build/spec.md
     text: 四个入口必须共享 channel + currency + business date 的 batch scope、statement
       identity + revision 的 run identity、数据库唯一约束与 optimistic-lock 语义；不得创建
       event-only 聚合、event-only effective pointer 或第二套对账状态机。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A368
     source: specs/payment-reference-build/spec.md
     text: Analyzer/Flow 可以分别展示真实 HTTP Integration Event listener root、Time scheduler
       root 与显式 HTTP rerun root，但不得把它们伪造成单一 exactly-once stitched flow。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A369
     source: specs/payment-reference-build/spec.md
     text: MerchantSettlement 首次形成 accepted `SUCCEEDED` settled fact 时，必须同时形成稳定
       completion event identity 与 completion occurrence time。推荐身份由 event type +
       settlementId 稳定派生或显式冻结；重放后保持不变。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A370
     source: specs/payment-reference-build/spec.md
     text: FAILED、RESULT_UNKNOWN、REVIEW_REQUIRED、CONFLICT_REVIEW_REQUIRED、NEGATIVE_REVIEW_REQUIRED、VOIDED、gateway
       rejection、未验证 callback、重复 callback 和成功后的迟到失败不得形成新的 completed event。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A371
     source: specs/payment-reference-build/spec.md
     text: 如果 Settlement 可以通过渠道 SUCCESS callback或受控 unknown adjudication首次形成 accepted
       success，两条路径必须调用同一领域事实形成逻辑，保证只产生一次 local completion fact/event intent。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A372
     source: specs/payment-reference-build/spec.md
     text: domain 可以形成本地 `MerchantSettlementCompletedDomainEvent`，application Domain
       Event subscriber 负责映射为 published
       `MerchantSettlementCompletedIntegrationEvent` 并调用 cap4k Integration Event
       supervisor；不得让 domain 依赖 contract。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A373
     source: specs/payment-reference-build/spec.md
     text: published outbound event 必须通过当前 cap4k
       `Mediator.events.enqueue/schedule/delay` 合同及其 reliable Event/JPA
       owner记录；不得退化成 Command Handler 中直接调用 `RestClient`、`WebClient` 或自定义线程发送。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A374
     source: specs/payment-reference-build/spec.md
     text: settlement success business transition、稳定 event identity 与 reliable
       outbound event record 必须在同一 UoW 中原子提交。强制业务事务回滚后，Settlement success 与可投递
       event record 都不存在；提交成功后两者都可从真实 H2/JPA 状态验证。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A375
     source: specs/payment-reference-build/spec.md
     text: cap4k HTTP publisher 缺少 `ReliableEventCoordinator`、`EventRecordRepository`
       或其他必需 provider 时必须 fail fast；项目不得注入内存/no-op fallback 冒充可靠投递。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A376
     source: specs/payment-reference-build/spec.md
     text: reliable provider 的 handoff 成功只表示 provider 接受/HTTP 2xx，不表示所有下游业务处理完成。B5
       只承诺 at-least-once transport handoff + stable identity + 业务幂等，不承诺端到端
       exactly-once。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A377
     source: specs/payment-reference-build/spec.md
     text: B5 只启用 cap4k 当前生产 HTTP Integration Event publisher/receiver；不启用
       RabbitMQ、RocketMQ 或多 publisher fallback。应用任一时刻只允许一个 active outbound
       Integration Event publisher。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A378
     source: specs/payment-reference-build/spec.md
     text: 入站使用 cap4k canonical fixed receive path `/cap4k/integration-events` 与
       canonical envelope。项目不得在业务 adapter 中定义第二套 `/api/...` event envelope、反序列化器或
       provider identity。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A379
     source: specs/payment-reference-build/spec.md
     text: 出站 route 以稳定 event name映射到 URI；仓库不提交机器绝对地址、端口或凭据。端到端测试通过动态配置指向可控 fake HTTP
       receiver；生产默认配置通过环境/部署注入目标 URI。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A380
     source: specs/payment-reference-build/spec.md
     text: fake receiver 必须能够按测试脚本返回 2xx、非 2xx、延迟/超时并记录 envelope
       identity。它是测试证据，不作为第二个生产 Spring Boot 应用或真实 merchant notification service。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A381
     source: specs/payment-reference-build/spec.md
     text: 首次非 2xx、连接失败或超时后，reliable event 保持可观察的待重试/失败状态；receiver 恢复后使用相同 event
       identity 重试并成功交付。不得通过创建新业务 event 绕过失败记录。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A382
     source: specs/payment-reference-build/spec.md
     text: outbound settlement event 的重复 callback、publisher retry 与 HTTP
       replay不得形成第二个业务 completion fact；测试 receiver 可以接收重复 envelope，但 identity 与
       payload fingerprint 必须稳定。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A383
     source: specs/payment-reference-build/spec.md
     text: inbound statement event 至少一次投递依赖 Reconciliation 业务唯一性实现幂等。B5 不新增通用
       Inbox，但必须验证重复 event envelope、scheduler 和 rerun不会重复 effective run。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A384
     source: specs/payment-reference-build/spec.md
     text: transport 不拥有商户授权、渠道签名、银行密钥或敏感凭据。生产级认证、签名和 secret rotation 后置；B5
       测试仅使用明确的本地 fixture，不把假 secret 写入 published contract。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A385
     source: specs/payment-reference-build/spec.md
     text: event payload 的原始外部状态保持开放标量；有限领域状态继续使用现有生成 enum。不得因 transport 需要创建重复业务
       enum 或把错误码全部封闭化。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A386
     source: specs/payment-reference-build/spec.md
     text: design 输入必须登记两个 Integration Event published contracts/anchors，并保持 event
       contract 为 checked-in authoring source；具体 runtime reliable-event record 和
       HTTP protocol 由 cap4k Runtime/starter 拥有，不由业务 schema 伪造第二套 Outbox。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A387
     source: specs/payment-reference-build/spec.md
     text: Endpoint Handler、Integration Event listener、Domain Event subscriber 和业务
       Command Handler 继续是一类一文件的 checked-in source；HTTP Integration Event wire
       handler 属于 starter，不在项目手写。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A388
     source: specs/payment-reference-build/spec.md
     text: Pipeline plan/generation 必须保持确定性；B1-B4 已演进的 checked-in 文件不得被覆盖。clean 后
       build-owned generated source 可重建。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A389
     source: specs/payment-reference-build/spec.md
     text: Analyzer 必须能观察真实 outbound Integration Event send 与 inbound
       listener/event-handler关系；如果当前 Analyzer合同不能完整表达某条 transport边，必须如实记录
       verified gap，不通过虚构 generic sender node或跨入口 stitching规避。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A390
     source: specs/payment-reference-build/spec.md
     text: Agent Snapshot 必须保留 plan ownership、analysis 和 diagnostics。live DB
       freshness UNKNOWN 可以导致 PARTIAL，但 ownership不得为空，analysis不得
       INVALID，diagnostics不得出现 error或 plan-evidence-invalid。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A391
     source: specs/payment-reference-build/spec.md
     text: B5 证据至少包括 contract leaf/serialization、入站
@@ -2372,411 +3155,536 @@ acceptance:
       event、UoW rollback、HTTP failure/retry/recovery、stable envelope
       identity、full B1-B4 regression、plan/generation
       determinism、Mermaid、Analyzer 和 AgentFacts。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A392
     source: specs/payment-reference-build/spec.md
     text: B5 不实现 reliable Command、通用 Outbox/Inbox 产品层、broker
       transport、广播、动态服务发现、全局顺序、框架级 DLQ UI、持久化 scheduler、lease 或跨实例
       scheduler/exactly-once。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A393
     source: specs/payment-reference-build/spec.md
     text: B5 不依赖 only-engine，也不执行 only-engine addon
       gate。only-engine、Jimmer/aggregateProjection、Endpoint Handler generator 与
       published-coordinate cold start 分别保留为独立后续验证。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A394
     source: specs/payment-reference-build/spec.md
     text: "accepted B5 baseline 本身不处理 Payment
       timeout/late-result/conflict-review；该缺口由本规格 10E 的 GitHub #4 change 闭合。最终
       composition audit（GitHub #8）、大额退款审批、超期人工例外、负净额追偿、周结、真实银行/清分清算网络和生产
       merchant notification service 仍不在当前 change。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A395
     source: specs/payment-reference-build/spec.md
     text: 当前实现必须保留稳定业务身份、event version 与可替换 transport边界，但不得预建无需求的通用分布式基础设施。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A396
     source: specs/payment-reference-build/spec.md
     text: 本节闭合 REFPAY-2 中仍未完成的 Payment timeout、result
       unknown、late、duplicate/conflicting-result 与 payment-specific review
       行为，并提供聚焦 REFPAY-6 证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Accepted e702 contract and clean 102/24 regression passed.
+      truncated: false
   - id: A397
     source: specs/payment-reference-build/spec.md
     text: Payment timeout 是 `expiresAt` 业务生命周期超时，不是 B5 HTTP publisher response
       timeout。B5 reliable Event/JPA 与 HTTP Integration Event transport 保持不变。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A398
     source: specs/payment-reference-build/spec.md
     text: "#4 完成后仍不执行 #8 的 cross-slice clean-checkout、accepted-lineage 与最终
       composition audit。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A399
     source: specs/payment-reference-build/spec.md
     text: "`PaymentStatus` 既有 numeric value
       保持稳定：PENDING、PROCESSING、SUCCEEDED、FAILED、CLOSED、RESULT_UNKNOWN。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A400
     source: specs/payment-reference-build/spec.md
     text: accepted success 必须同时形成 stable merchant-order success identity，推荐规范化为
       merchant + merchantOrderNumber 的不可变 identity，并由数据库唯一约束保护。相同 order 的不同
       idempotency key 不能绕过已成功约束。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A401
     source: specs/payment-reference-build/spec.md
     text: "`CreatePayment` 保留 merchant + idempotencyKey 幂等；在创建前拒绝已存在 accepted
       merchant-order success identity，返回稳定 `ORDER_ALREADY_PAID`。accepted success
       竞争失败映射为稳定业务/并发冲突并保留当前 callback/review evidence。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A402
     source: specs/payment-reference-build/spec.md
     text: 本 change 只冻结“已成功订单不得第二次成功收款”；失败或关闭后是否允许新支付的更宽 PAY-BR-003 产品策略不扩张。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A403
     source: specs/payment-reference-build/spec.md
     text: 新增 ordinary `PaymentExpiryScheduler`（具体命名可按现有风格调整），只向应用层发送扫描 Command，不直接操作
       Repository。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A404
     source: specs/payment-reference-build/spec.md
     text: Command 使用注入 Clock，按 UTC persisted `expiresAt` 选择候选，并在每次裁决前重新装载
       Payment。业务展示与对账/结算日期继续使用 `Asia/Shanghai`。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A405
     source: specs/payment-reference-build/spec.md
     text: 到期、仍为 PENDING、且没有 PROCESSING/RESULT_UNKNOWN attempt 时，Payment 原子进入
       CLOSED，保存 closedAt 与稳定 close reason。重复扫描幂等。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A406
     source: specs/payment-reference-build/spec.md
     text: 到期且存在 PROCESSING/RESULT_UNKNOWN attempt 时，不得 CLOSED/FAILED；Payment 进入
       RESULT_UNKNOWN，相关 attempt 进入 RESULT_UNKNOWN，并创建 stable expiry review case。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A407
     source: specs/payment-reference-build/spec.md
     text: expiry review identity 至少由 paymentId + expiresAt + triggering attempt
       identities 稳定确定。scheduler 重复、并发 callback 或补跑不得创建重复 case。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A408
     source: specs/payment-reference-build/spec.md
     text: "`StartPaymentAttempt` 在创建 attempt 前再次检查 expiresAt、Payment status 与
       blocking review。到期后不主动创建新 attempt。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A409
     source: specs/payment-reference-build/spec.md
     text: PaymentReviewCase 是 Payment-owned child，至少保存 review
       identity、type、status、openedAt、triggering Payment/attempt/receipt
       identities、Payment status snapshot、summary、settlement impact 与审计字段。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A410
     source: specs/payment-reference-build/spec.md
     text: review type 至少区分
       `EXPIRY_RESULT_UNKNOWN`、`LATE_SUCCESS_AFTER_TERMINAL`、`MULTIPLE_ATTEMPT_SUCCESS`、`SUCCESS_AFTER_FAILURE_CONFLICT`、`FAILURE_OR_UNKNOWN_AFTER_SUCCESS`、`NOTIFICATION_PAYLOAD_CONFLICT`、`MERCHANT_ORDER_SUCCESS_CONFLICT`。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A411
     source: specs/payment-reference-build/spec.md
     text: PaymentReviewDecision 是 case-owned append-only child，至少保存 decision
       identity、decision type、actor/operator、role、authorization
       outcome、reason、evidence、decidedAt 与 settlement eligibility impact。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A412
     source: specs/payment-reference-build/spec.md
     text: case、decision、attempt、receipt 不删除、不 soft-delete、不以“最新摘要”覆盖旧
       evidence。更正通过追加 decision 完成；查询显示完整历史与当前派生状态。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A413
     source: specs/payment-reference-build/spec.md
     text: open review 默认 settlement-blocking。当前 eligibility 从所有当前有效 review cases
       与最新授权 decisions 派生，不能以 Payment 单一布尔字段作为真源。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A414
     source: specs/payment-reference-build/spec.md
     text: 同 notification identity 同 payload 重放只增加 receive count；同 identity 不同
       payload 把 receipt 标为 CONFLICT，并创建/关联 `NOTIFICATION_PAYLOAD_CONFLICT`
       review。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A415
     source: specs/payment-reference-build/spec.md
     text: Payment 为 PENDING/PROCESSING 时的首次可信成功按既有路径形成 accepted success。Payment 为
       RESULT_UNKNOWN 时的可信最终结果追加系统 review decision并关闭 unknown review；成功只形成一次
       success fact，失败进入 FAILED。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A416
     source: specs/payment-reference-build/spec.md
     text: CLOSED/FAILED 后可信成功保存为 accepted external evidence，但不立即覆盖 Payment 终态；创建
       `LATE_SUCCESS_AFTER_TERMINAL`/`SUCCESS_AFTER_FAILURE_CONFLICT`
       review，notification intent 保持 HELD_FOR_REVIEW。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A417
     source: specs/payment-reference-build/spec.md
     text: SUCCEEDED 后可信失败或未知结果不回退 Payment、succeededAt、channelTransactionId、fee
       snapshot 或 success identity；保存 conflict receipt 并创建/关联
       `FAILURE_OR_UNKNOWN_AFTER_SUCCESS` review。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A418
     source: specs/payment-reference-build/spec.md
     text: 同一 Payment 的另一 attempt 返回可信成功时，第二 attempt/receipt 保存真实 success evidence并进入
       conflict-review 状态；Payment 的 accepted revenue、fee snapshot、merchant-order
       success identity 与 notification intent identity仍只有一份。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A419
     source: specs/payment-reference-build/spec.md
     text: 同 attempt 已 final 后的相同 payload新 notification identity可以保存为
       conflict/duplicate evidence，但不得再次形成 accepted success。具体 duplicate 分类必须保持现有
       notification identity 规则可解释且有测试锁定。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A420
     source: specs/payment-reference-build/spec.md
     text: Endpoint/Command 接受 paymentId、reviewId、decision、operator
       identity、role/authorization material、reason、evidence 与 decidedAt；adapter
       只映射 contract 并发送 Command。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A421
     source: specs/payment-reference-build/spec.md
     text: "`ACCEPT_LATE_SUCCESS` 只允许 late-success review 存在可信 success receipt 且
       Payment 尚未形成 success fact时执行；必须在同一 UoW 获取 merchant-order success
       identity、冻结 fee snapshot、形成 stable notification intent，并追加 decision。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A422
     source: specs/payment-reference-build/spec.md
     text: "`CONFIRM_FAILURE` 只允许尚未形成 success fact 的 RESULT_UNKNOWN review；Payment 进入
       FAILED，历史 attempt/receipt/review 不删除。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A423
     source: specs/payment-reference-build/spec.md
     text: "`KEEP_CURRENT_TERMINAL` 保持 CLOSED/FAILED，保留 late success
       evidence；`KEEP_ACCEPTED_SUCCESS_WITH_REMEDIATION` 保持首个
       SUCCEEDED，并记录第二成功/冲突的补救 reference。两者是否解除结算阻断由授权 decision 的 eligibility
       impact 与完整 evidence 决定。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A424
     source: specs/payment-reference-build/spec.md
     text: 未授权、缺少 evidence、decision 与 review type 不匹配、或 merchant-order success
       identity 被另一 Payment 占用时明确拒绝，不修改当前事实。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A425
     source: specs/payment-reference-build/spec.md
     text: Payment 保存 stable merchant-success notification intent identity，推荐由
       paymentId + versioned intent type 派生；重复 callback、review 重放或 transport
       retry 不创建新 identity。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A426
     source: specs/payment-reference-build/spec.md
     text: intent state 至少表达 `READY`、`HELD_FOR_REVIEW`、`CANCELLED`。普通首次 accepted
       success进入 READY；late/double/conflicting success 在 review 未决时为
       HELD_FOR_REVIEW；授权接受 success 后可 READY，授权保留非成功终态后可 CANCELLED。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A427
     source: specs/payment-reference-build/spec.md
     text: 状态变化由 review/callback evidence解释并可查询。本 change 不发送 Integration Event、不调用
       merchant endpoint、不实现 delivery attempt、retry、DLQ 或生产 notification service。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A428
     source: specs/payment-reference-build/spec.md
     text: LoadPlatformReconciliationFacts 对 Payment success fact 同时投影 unresolved
       review identities/type/reason 与 settlement eligibility。匹配算法不得因金额/渠道相符而丢弃
       review blocker。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A429
     source: specs/payment-reference-build/spec.md
     text: ReconciliationItem 保存本 run 的 Payment review evidence snapshot；blocking
       review 使 item `settlementBlocked=true` 且当前 run 不得被解释为自动可结算。review 解除后需要新
       run 或授权 disposition形成可观察闭环，旧 run 不改写。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A430
     source: specs/payment-reference-build/spec.md
     text: LoadMerchantSettlementCandidates 除 current effective run/item/disposition
       外，必须在候选时重新读取 Payment 当前 review eligibility。review 在 reconciliation
       后新建仍立即排除；当前仍 blocking 时不得通过 reconciliation confirmation 或旧 matched item
       绕过。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A431
     source: specs/payment-reference-build/spec.md
     text: Payment `settlementBlocked` 字段如果为兼容保留，只能由 review evidence 派生/展示。B3/B4
       tests 必须证明改变该单一字段不能在缺少 review eligibility evidence 时授权结算。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A432
     source: specs/payment-reference-build/spec.md
     text: sequential create：已成功 merchant order 使用新 idempotency key 返回
       `ORDER_ALREADY_PAID`，不创建第二个可执行 Payment。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A433
     source: specs/payment-reference-build/spec.md
     text: concurrent create/callback：merchant-order success identity
       的数据库唯一约束、Payment optimistic version 与同一 UoW 保证最多一个 Payment 可形成 accepted
       success。失败竞争保留各自 receipt/review，并返回稳定 conflict，而不是两个成功或 500。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A434
     source: specs/payment-reference-build/spec.md
     text: 同一 Payment 多 attempt success 由 10E.5 的 success-once 规则处理；跨 Payment 的同
       order success 由 merchant-order success identity 处理。两个不变量都必须有独立测试。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A435
     source: specs/payment-reference-build/spec.md
     text: GetPayment 返回 status/times、attempts、receipts、success/fee
       facts、merchant-order success identity、review cases/decisions、current
       settlement eligibility、merchant notification intent identity/state
       与派生摘要；不暴露 JPA aggregate/proxy。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A436
     source: specs/payment-reference-build/spec.md
     text: review adjudication 使用独立 contract Endpoint；每个 Handler 一类一文件并使用静态
       Mediator。expiry scheduler 不伪造 HTTP Endpoint。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A437
     source: specs/payment-reference-build/spec.md
     text: 稳定错误至少区分
       `ORDER_ALREADY_PAID`、`PAYMENT_EXPIRED`、`PAYMENT_REVIEW_REQUIRED`、`REVIEW_NOT_FOUND`、`REVIEW_DECISION_NOT_ALLOWED`、`REVIEW_DECISION_IDEMPOTENCY_CONFLICT`、`REVIEW_UNAUTHORIZED`、`CONCURRENT_MODIFICATION`
       与现有 validation/not-found/callback rejection。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A438
     source: specs/payment-reference-build/spec.md
     text: Payment root、attempts、receipts、review cases/decisions、success identity、fee
       snapshot 与 notification intent 状态推进共用 cap4k JPA UoW 和同一 Hibernate
       persistence context。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A439
     source: specs/payment-reference-build/spec.md
     text: 任一 invariant、unique constraint 或 authorization 失败整体回滚，不留下 partial review、无
       fee 的 success、READY intent 无 success fact或幽灵 order claim。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A440
     source: specs/payment-reference-build/spec.md
     text: focused H2/JPA tests 覆盖 scheduler/callback race、双 callback、两个 attempt
       success、跨 Payment 同 order success、review/callback race、重复 adjudication 和
       rollback。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A441
     source: specs/payment-reference-build/spec.md
     text: 典型 optimistic/unique conflict 映射为稳定 409；允许 application
       在明确幂等边界内重读/收敛，但不通过无限自动重试掩盖业务冲突。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A442
     source: specs/payment-reference-build/spec.md
     text: schema/design/enums/value-objects 登记 PaymentReviewCase/Decision、attempt
       新状态、merchant-order success identity 与 merchant notification intent
       state。existing numeric values不变，checked-in source重复 generation仍 SKIP。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A443
     source: specs/payment-reference-build/spec.md
     text: Analyzer 生成 Payment expiry scheduler Time root 和 review adjudication HTTP
       Actor-to-Command Flow，并保留 create/attempt/callback/query/B1-B5 现有输出。不得虚构
       durable scheduling、exactly-once或跨入口 stitching。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A444
     source: specs/payment-reference-build/spec.md
     text: Drawing Board/Aggregate Structure展示 Payment/Attempt/Receipt/Review 与真实
       Command/Endpoint anchors。Agent Snapshot ownership非空、analysis
       ok、diagnostics无 INVALID/error/plan-evidence-invalid；live DB freshness
       UNKNOWN可保持 PARTIAL。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A445
     source: specs/payment-reference-build/spec.md
     text: traceability 为 PAY-AC-007/008/009/010/011/015 记录实际测试、路径、命令与状态。PAY-AC-015
       使用既有 no-rollback evidence + 本 change review/eligibility evidence共同验收。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A446
     source: specs/payment-reference-build/spec.md
     text: accepted B1-B5 的 84 tests / 22 suites / 0 failures / 0 skips 是进入本 change
       的回归基线；新增测试后全量 clean build 必须全部通过，不得降低既有覆盖。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A447
     source: specs/payment-reference-build/spec.md
     text: README/current projection/traceability/canonical target Spec必须明确区分 Payment
       business timeout 与 B5 HTTP response timeout，并声明 ordinary scheduler边界。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A448
     source: specs/payment-reference-build/spec.md
     text: "#4 不新增 broker、generic Inbox/Outbox、reliable
       Command、only-engine、Jimmer、生产认证、生产 merchant
       notification、published-coordinate cold start或通用 workflow engine。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A449
     source: specs/payment-reference-build/spec.md
     text: "#4 完成、Verify、Archive、PR 与 merge 后，其实现证据作为 10F final composition audit 的
       accepted prerequisite；不得把 #4 候选分支或 pre-archive head 冒充 accepted mainline
       evidence。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Accepted #4 e702 contract and clean full/focused regression passed."
+      truncated: false
   - id: A450
     source: specs/payment-reference-build/spec.md
     text: "本节闭合父 Issue #2 的 REFPAY-6 capability evidence 与 REFPAY-7 composition：证明
       B1、B2、B3、B4、B5 与 Payment hardening #4 位于同一 accepted `origin/main`
       lineage，并在一个最终 candidate 上重新执行完整组合验收。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "B1-B5 and #4 share one accepted lineage and passed the final matrix."
+      truncated: false
   - id: A451
     source: specs/payment-reference-build/spec.md
     text: "#8 是 verification/evidence closure，不新增
       Payment、Refund、Reconciliation、MerchantSettlement、Integration Event 或
       transport 的业务能力。若组合审计暴露真实实现缺陷，必须回到 owning surface 修复并重新验证；不得用文档声明掩盖失败。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Candidate adds only composition tests and evidence; no production business
+        capability.
+      truncated: false
   - id: A452
     source: specs/payment-reference-build/spec.md
     text: 每个已完成 child 的 archived evidence 只作为输入与历史基线；最终通过必须来自当前 candidate 的
       clean-checkout evidence。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Evidence comes from the current candidate clean checkout.
+      truncated: false
   - id: A453
     source: specs/payment-reference-build/spec.md
     text: "lineage evidence 必须机械证明 B1 `6a40c5da2b2057e310c97989d3889d0ce125d06e`、B2
@@ -2785,172 +3693,239 @@ acceptance:
       `4e347650f8bb2cb9cf0e0adb1c0dc2db89774a15`、B5
       `3fd59cda87e3f2430fea88092a08e1b1939936bb` 与 #4 accepted squash commit
       `e702e725674c4ab1271441cf1ed011bad3b75021` 均被审计基线包含。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: All six exact accepted commits passed ancestry checks.
+      truncated: false
   - id: A454
     source: specs/payment-reference-build/spec.md
     text: "#4 的 pre-archive implementation/archive branch heads 不是 accepted mainline
       identity，不得替代 `e702e725...`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "#4 evidence is bound to accepted squash e702e725."
+      truncated: false
   - id: A455
     source: specs/payment-reference-build/spec.md
     text: Verify 必须在 candidate commit 的独立、无历史 build outputs 的 checkout/worktree
       中运行。candidate 必须直接后继最新 accepted `origin/main`；PR merge 后再以 accepted merge
       commit 完成 GitHub lineage 治理确认。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Candidate directly follows e702e725 and was verified in a clean detached
+        checkout.
+      truncated: false
   - id: A456
     source: specs/payment-reference-build/spec.md
     text: 当前 mainline 验收继续使用显式 local Composite 指向已记录的 cap4k commit。仓库不得提交 sibling
       path、绝对路径、`mavenLocal()`、Snapshot、私服或机器级配置。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Explicit cap4k 657586 Composite verification passed without committed
+        machine-path repositories.
+      truncated: false
   - id: A457
     source: specs/payment-reference-build/spec.md
     text: published-coordinate cold start 只有在正式发布坐标包含当前 mainline Pipeline/Runtime
       合同时才执行。正式版尚不具备该合同时，必须记录为 release-gated deferred，不能以 Composite Build
       或缓存冒充通过，也不阻塞本地 accepted-lineage composition。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Published-coordinate cold start remains correctly release-gated.
+      truncated: false
   - id: A458
     source: specs/payment-reference-build/spec.md
     text: 仓库没有 GitHub Actions 时，最终证据必须如实标记为本地 clean-checkout verification；#8 不以新增
       workflow 偷渡独立 CI 治理能力。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: No GitHub Actions exist; evidence is accurately local clean-checkout
+        evidence.
+      truncated: false
   - id: A459
     source: specs/payment-reference-build/spec.md
     text: 必须存在一个 composition-only Spring/H2/JPA 自动化测试，在同一数据库轨迹内串联既有应用路径：Payment 首次
       accepted success、partial Refund、authoritative statement Pull 与
       Reconciliation、Merchant Settlement 准备/确认/执行/accepted success，以及唯一 reliable
       outbound `MerchantSettlementCompletedIntegrationEvent` record。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Composition-only Spring/H2/JPA test passed across the complete business
+        trail.
+      truncated: false
   - id: A460
     source: specs/payment-reference-build/spec.md
     text: 测试必须验证 Settlement lines 或等价持久化证据能够回溯 Payment、Refund、Reconciliation
       run/item/confirmation identities 与金额构成，不以测试内自造摘要替代业务持久化事实。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Persisted settlement lines trace Payment, Refund, and Reconciliation
+        identities and amounts.
+      truncated: false
   - id: A461
     source: specs/payment-reference-build/spec.md
     text: 测试只能复用已接受的领域模型、Command、Capability、Endpoint/Integration Event
       入口与持久化模型；不得新增新业务状态、Command、Endpoint、事件类型、通用基础设施或生产 provider。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Composition test reuses accepted application and persistence paths without
+        new business capability.
+      truncated: false
   - id: A462
     source: specs/payment-reference-build/spec.md
     text: "`PAY-EV-027` 只有在该测试真实执行通过并记录路径/命令/结果后才能从 `not-built` 转为 `verified`。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: PAY-EV-027 is bound to the passing executable composition test.
+      truncated: false
   - id: A463
     source: specs/payment-reference-build/spec.md
     text: final audit 必须重跑并组合解释 B5 已接受证据：`ChannelStatementAvailableIntegrationEvent`
       只声明 statement available，薄 listener dispatch application Command，完整
       statement 仍由 `PullChannelStatement` 提供。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Statement-available event remains a thin signal to authoritative provider
+        Pull.
+      truncated: false
   - id: A464
     source: specs/payment-reference-build/spec.md
     text: Push、provider Pull、ordinary scheduler 与 manual rerun 对相同
       scope/statement/revision 的重复、乱序、并发与 provider recovery 必须汇合到同一
       batch/run/effective identity；higher revision 推进 effective pointer，late
       lower revision 不回退。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Push, Pull, scheduler, rerun, revision, and recovery convergence tests
+        passed.
+      truncated: false
   - id: A465
     source: specs/payment-reference-build/spec.md
     text: MerchantSettlement 只有首次 accepted success 形成一次 local completion fact、稳定
       event identity 与 reliable Event/JPA record。business transition 与 event
       record 同 UoW 原子提交，rollback 后两者都不存在。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Settlement completion identity and reliable-event transaction tests
+        passed.
+      truncated: false
   - id: A466
     source: specs/payment-reference-build/spec.md
     text: HTTP 非 2xx、连接失败或 response timeout 后使用同一 event identity 和稳定 payload
       fingerprint 重试恢复。fake receiver 可以收到重复 envelope；该证据证明 at-least-once
       transport handoff，不宣称生产 downstream business completion 或 generic
       Inbox/exactly-once。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Same-identity HTTP non-2xx/timeout retry and recovery tests passed.
+      truncated: false
   - id: A467
     source: specs/payment-reference-build/spec.md
     text: 从 clean checkout 连续执行普通 plan/generate/generated-source generation。ordinary
       plan 至少保持 accepted 197 items（137 checked-in `SKIP`、60 generated
       `OVERWRITE`），或对任何变化提供可接受的 owning change 解释。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Two generation rounds stayed at 197 items: 137 SKIP and 60 OVERWRITE."
+      truncated: false
   - id: A468
     source: specs/payment-reference-build/spec.md
     text: 两轮 plan hash 与 build-owned generated contents 必须稳定；删除 build-owned outputs
       后可由 canonical inputs 重建。checked-in Endpoint/event
       contracts、VO、Behavior、Handler/listener/subscriber 与 handwritten HTTP
       binding 不得被覆盖。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Plan and generated-tree hashes were stable; generated roots rebuilt
+        cleanly.
+      truncated: false
   - id: A469
     source: specs/payment-reference-build/spec.md
     text: plan 必须能解释 generator、module role、output path/kind、resolved root 与 conflict
       policy。没有真实业务使用的能力不得为 evidence coverage 创建空壳。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Plan ownership remained explainable and no evidence-only empty capability
+        was added.
+      truncated: false
   - id: A470
     source: specs/payment-reference-build/spec.md
     text: 连续两轮 `cap4kAnalysisPlan`/`cap4kAnalysisGenerate` 必须稳定，并至少保持 accepted 46
       outputs 与 19 independent roots（13 HTTP Actor、5 Time、1 Integration
       Event），除非 owning upstream accepted change 对数量漂移提供明确说明。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Two Analyzer rounds stayed at 46 outputs and 19 independent roots.
+      truncated: false
   - id: A471
     source: specs/payment-reference-build/spec.md
     text: 19 份 tracked Flow JSON/Mermaid 必须可解析且 label 安全引用；`flows/index.json` 的机器本地
       IR locator 只作为本地可再生产物，不作为 portable committed evidence。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Nineteen Flow/Mermaid artifacts parsed and rendered; machine locator
+        remained non-portable evidence only.
+      truncated: false
   - id: A472
     source: specs/payment-reference-build/spec.md
     text: Command、Query、Capability、Endpoint、Domain Event、Integration Event 与
       Aggregate Structure Drawing Board partitions 必须存在并包含真实 anchors；不得把隐藏
       handler、runtime state、delivery state machine 或跨入口 exactly-once stitching
       伪造成默认 Flow。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: All seven Drawing Board partitions contain real anchors without false
+        stitching.
+      truncated: false
   - id: A473
     source: specs/payment-reference-build/spec.md
     text: Agent Snapshot ownership 必须与 plan 对齐，analysis 为 `ok`，diagnostics 无
       `error`、`INVALID` 或 `plan-evidence-invalid`。live DB freshness `UNKNOWN`
       可以使 overall 为 `partial`，但必须是唯一 partial 原因。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Agent Snapshot had ownership 197, analysis ok, 46 available, zero
+        diagnostics; only DB freshness was UNKNOWN.
+      truncated: false
   - id: A474
     source: specs/payment-reference-build/spec.md
     text: 所有当前 in-scope 且标记 `verified` 的 `PAY-AC-*` 必须引用存在、状态为
       `verified`、路径可解析且命令/结果一致的 evidence；不得让 verified acceptance 继续依赖
       `not-built` evidence。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Traceability guard verified every verified acceptance references verified,
+        resolvable evidence.
+      truncated: false
   - id: A475
     source: specs/payment-reference-build/spec.md
     text: "`PAY-EV-027` 必须绑定 10F.3 的真实 composition test。新增 final
       clean-checkout/full-matrix、accepted-lineage 与 traceability consistency
       evidence，记录当前 cap4k commit、candidate/accepted commit、命令和摘要。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: PAY-EV-027 and final lineage/matrix/traceability evidence are recorded.
+      truncated: false
   - id: A476
     source: specs/payment-reference-build/spec.md
     text: PAY-AC-080、PAY-AC-081、PAY-AC-084、PAY-AC-086、PAY-EV-025、PAY-EV-026 与更宽
       PAY-CP capability closure 保持 planned/not-built，除非另有独立已授权实现与真实证据。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: PAY-AC-080/081/084/086, PAY-EV-025/026, and PAY-CP-012..016 remain
+        deferred.
+      truncated: false
   - id: A477
     source: specs/payment-reference-build/spec.md
     text: README 与 current projection 只陈述当前已验证事实，明确区分入站业务幂等与出站 at-least-once stable
       identity、Payment business timeout 与 HTTP response timeout、ordinary
       scheduler 与 durable scheduling、local Composite evidence 与
       published-coordinate cold start。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: README and projection accurately distinguish timeout, scheduling,
+        transport, Composite, and release boundaries.
+      truncated: false
   - id: A478
     source: specs/payment-reference-build/spec.md
     text: clean-checkout matrix 至少包含 lineage/status、`:contract:compileKotlin`、`clean
@@ -2958,54 +3933,76 @@ acceptance:
       Analyzer、Agent Snapshot、focused Reconciliation/Settlement/composition
       tests、Mermaid/Drawing Board/traceability parser smoke、`git diff --check` 与
       non-goal dependency/workflow scan。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: The sole Runtime check executed the complete required clean-checkout
+        matrix.
+      truncated: false
   - id: A479
     source: specs/payment-reference-build/spec.md
     text: "最终 `clean build` 必须保持进入 #8 前的 100 tests / 23 suites 全部通过，并包含新增
       composition test；结果为 0 failures、0 errors、0 skips。focused tests
       不能替代最终全量回归。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Full build passed with 102 tests, 24 suites, zero failures/errors/skips.
+      truncated: false
   - id: A480
     source: specs/payment-reference-build/spec.md
     text: required command 失败、生成非确定性、Analyzer/AgentFacts invalid/error、traceability
       虚假或 composition test 不通过时不得 Archive；必须返回 Build 或等待 owning upstream
       accepted fix 后重验。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Iteration-3 Runtime ledger has exactly one required check and it passed
+        exit 0.
+      truncated: false
   - id: A481
     source: specs/payment-reference-build/spec.md
     text: 发现 cap4k Runtime、Generator、Analyzer、Pipeline 或 AgentFacts 缺陷时必须链接 owning
       cap4k Issue/Change，reference 不新增永久 workaround。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: No unresolved cap4k defect or permanent reference workaround was found.
+      truncated: false
   - id: A482
     source: specs/payment-reference-build/spec.md
     text: "Comet Verify 通过后 Archive 必须保存完整 acceptance、实际检查摘要与 candidate commit；PR
       只包含 #8 composition test/evidence/spec/archive 所需变更。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Candidate is Archive-ready with all acceptances classified and the
+        complete matrix passed.
+      truncated: false
   - id: A483
     source: specs/payment-reference-build/spec.md
     text: "PR 合并后 Issue #8 与父 Issue #2 必须记录 accepted commit、archive
       path、test/plan/analyzer/agent/traceability 摘要。父 Issue 只有在 #8 accepted 且
       final composition checklist 完成后才可关闭。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: "Issue #8 and parent #2 post-merge governance conditions are explicitly
+        recorded."
+      truncated: false
   - id: A484
     source: specs/payment-reference-build/spec.md
     text: "payment evidence 只在 #8 accepted merge 后回写 cap4k#27；该更新不自动关闭 cap4k#27，也不声称
       Public Docs/Skill、only-engine integration gate、published-coordinate cold
       start 或其他跨仓责任已经完成。"
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: cap4k#27 post-merge update preserves its independent remaining
+        responsibilities.
+      truncated: false
   - id: A485
     source: specs/payment-reference-build/spec.md
     text: GitHub Actions 缺失与 release-gated published-coordinate cold start
       必须作为明确边界记录，不得被省略或写成已通过。
-    result: pending
-    reason: null
+    result: passed
+    reason:
+      text: Absent GitHub Actions and release-gated cold start remain explicitly
+        documented.
+      truncated: false
   - id: A486
     source: specs/payment-reference-build/spec.md
     text: Payment timeout/late-result/conflict-review 与最终 accepted-lineage
@@ -3015,12 +4012,233 @@ acceptance:
       transport/auth 仍保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP
       Integration Event 体验，#4 仅证明 Payment 业务生命周期 timeout/review closure，#8 仅证明
       accepted-lineage composition 与可复核 evidence。
-    result: pending
-    reason: null
-builder_handoff: null
+    result: passed
+    reason:
+      text: 10E/10F close only lifecycle and composition; all wider follow-ups remain
+        explicit.
+      truncated: false
+builder_handoff:
+  candidate_id: 601c6231-bdeb-49cc-9579-a8fee660845e
+  identity_provider: skill-coordinated
+  builder_execution_ref: skill-coordinated:builder:ced04c5f-930b-4068-8ddf-221d3c3f39e9
+  iteration: 3
+  summary:
+    text: Iteration 3 is a Runtime-ledger recovery only. The accepted code candidate
+      remains HEAD 6a838392b9e83f361a0d7919c1a4a0bbc8c457fd with no business,
+      specification, or requirement change. The user-authorized
+      revise-implementation transition rebuilt Native local execution at
+      stateVersion 16 with zero retained checks, removing the superseded
+      verification-script ledger entries without manual state editing. Verify
+      must now run exactly one corrected explicit-Java17 clean-checkout full
+      matrix and use a new independent read-only Verifier.
+    truncated: false
+  addressed_acceptance_ids:
+    - A478
+    - A480
+  checks:
+    - name:
+        text: git diff --check origin/main..HEAD
+        truncated: false
+      result: passed
+      note:
+        text: candidate 6a838392 has no whitespace errors
+        truncated: false
+    - name:
+        text: Runtime local execution reset
+        truncated: false
+      result: passed
+      note:
+        text: stateVersion 16, execution null, checks empty; reset performed only by
+          Runtime revise-implementation transition
+        truncated: false
+    - name:
+        text: node --check corrected explicit-Java17 matrix script
+        truncated: false
+      result: passed
+      note:
+        text: all four temporary script paths currently have identical corrected SHA256
+          5736C9CAF3C113A8A9F392B56D59868B514A29663245C0B892ED120E0FED1803;
+          Verify will register only the canonical java17 path
+        truncated: false
+  checks_truncated: false
+  known_limits:
+    - text: No code change was made in iteration 3; the prior corrected full matrix
+        passed, but Runtime Verify must execute it again under the fresh check
+        ledger.
+      truncated: false
+    - text: Published-coordinate cold start remains release-gated; GitHub Actions
+        remain absent; Agent Snapshot may be partial only for live DB freshness
+        UNKNOWN.
+      truncated: false
+  known_limits_truncated: false
+  submitted_at: 2026-08-23T04:43:44.180Z
 blockers: []
-verification: null
-history: []
+verification:
+  candidate_id: 601c6231-bdeb-49cc-9579-a8fee660845e
+  identity_provider: skill-coordinated
+  verifier_execution_ref: skill-coordinated:verifier:9716b0cb-fd24-4d4b-91ee-861bf1c83ed3
+  iteration: 3
+  attempt: 1
+  assurance: skill-coordinated
+  verdict: pass
+  checks:
+    - id: issue8-clean-matrix-v3-explicit-java17
+      name:
+        text: "Issue #8 iteration 3 clean-checkout full matrix with explicit Java 17"
+        truncated: false
+      argv_display:
+        - text: C:\Users\LD_MOX~1\AppData\Local\Temp\comet-issue8-verify-1787456312237-java17.cjs
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 268078
+  summary:
+    text: "Independent read-only verification passes candidate
+      6a838392b9e83f361a0d7919c1a4a0bbc8c457fd. A1-A486 are classified exactly
+      once as passed. Iteration 3 has exactly one Runtime-required check,
+      issue8-clean-matrix-v3-explicit-java17, and it passed exit 0 from a
+      zero-build-directory clean checkout: 102 tests/24 suites with zero
+      failures, errors, or skips; deterministic 197-item generation;
+      deterministic 46-output/19-root Analyzer; seven Drawing Boards; 19 Mermaid
+      SVG renders; valid Agent Snapshot; Java 17 startup; traceability and
+      deferred-boundary guards; and final no-diff cleanup. No candidate defect
+      or blocker remains."
+    truncated: false
+  risks:
+    - text: "Post-merge governance updates for Issue #8, parent #2, and cap4k#27 must
+        still be executed after Archive and accepted PR merge; this is required
+        sequencing, not a candidate defect."
+      truncated: false
+    - text: Published-coordinate cold start remains B6/release-gated because released
+        v2.0.1 lacks the current mainline Pipeline DSL; the repository has no
+        GitHub Actions.
+      truncated: false
+    - text: Agent Snapshot is partial only because live database freshness is UNKNOWN;
+        ownership, analysis, available outputs, and diagnostics are otherwise
+        valid.
+      truncated: false
+  risks_truncated: false
+  completed_at: 2026-08-23T04:58:32.694Z
+history:
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 1
+    outcome: fail
+    unresolved_ids:
+      - A2
+      - A3
+      - A4
+      - A5
+      - A6
+      - A7
+      - A8
+      - A19
+      - A20
+      - A450
+      - A452
+      - A455
+      - A467
+      - A468
+      - A469
+      - A470
+      - A471
+      - A472
+      - A473
+      - A475
+      - A478
+      - A479
+      - A486
+    summary:
+      text: Independent read-only verification failed the current candidate. Runtime
+        check issue8-clean-matrix stopped at git diff --check because
+        specs/payment-reference-build/spec.md has a new blank line at EOF. A478
+        failed; 22 current-candidate/full-matrix criteria are blocked; 463
+        unchanged lineage, owning-slice, traceability and governance-boundary
+        criteria passed. Return to Build, remove the EOF whitespace, submit a
+        new candidate, and rerun the full matrix with a new Verifier.
+      truncated: false
+    completed_at: 2026-08-23T03:46:29.061Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 1
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: "Native Verifier response was invalid: Native Verifier request-checks
+        exceeded 2 rounds for this attempt"
+      truncated: false
+    completed_at: 2026-08-23T04:01:36.149Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 2
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: "Native Verifier response was invalid: Native verification cannot pass
+        before every required check succeeds"
+      truncated: false
+    completed_at: 2026-08-23T04:19:24.233Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 3
+    outcome: blocked
+    unresolved_ids:
+      - A480
+    summary:
+      text: 候选 6a838392 的独立语义审阅与修正后的 explicit-Java17 clean-checkout
+        完整矩阵均通过；A1-A479、A481-A486 通过。仅 A480 blocked：Runtime required-check
+        ledger 仍把三条由旧 Windows 引号或 Java 11 环境导致的无效脚本结果列为 failed，同 ID
+        request-checks 又被去重，因此当前 attempt 无法满足 every required check succeeds 的
+        Archive 门槛。该 blocker 属于 Runtime 检查账本或去重 bookkeeping，不是候选实现缺陷。
+      truncated: false
+    completed_at: 2026-08-23T04:28:45.320Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 4
+    outcome: blocked
+    unresolved_ids:
+      - A480
+    summary:
+      text: Candidate 6a838392b9e83f361a0d7919c1a4a0bbc8c457fd semantically satisfies
+        A1-A486, and the corrected explicit-Java17 clean-checkout matrix passed
+        in full. A480 remains operationally blocked because Comet Runtime
+        retry_epoch=1 retained three obsolete failed checks and requires every
+        retained required check to succeed. Those failures are verifier-script
+        or Java-environment artifacts, not candidate defects. Return to Build or
+        otherwise begin a new verification iteration with a fresh clean check
+        plan; do not change business behavior or manually edit Runtime state.
+      truncated: false
+    completed_at: 2026-08-23T04:40:28.124Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 4
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: 用户确认按 Runtime 恢复路径返回 Build：不修改业务实现或需求；仅让 Runtime 重建空检查账本，以同一已通过候选重新提交并在新
+        iteration 中运行唯一正确的 explicit-Java17 完整矩阵。
+      truncated: false
+    completed_at: 2026-08-23T04:42:52.483Z
+  - goal_cycle: 1
+    iteration: 3
+    attempt: 1
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: "Independent read-only verification passes candidate
+        6a838392b9e83f361a0d7919c1a4a0bbc8c457fd. A1-A486 are classified exactly
+        once as passed. Iteration 3 has exactly one Runtime-required check,
+        issue8-clean-matrix-v3-explicit-java17, and it passed exit 0 from a
+        zero-build-directory clean checkout: 102 tests/24 suites with zero
+        failures, errors, or skips; deterministic 197-item generation;
+        deterministic 46-output/19-root Analyzer; seven Drawing Boards; 19
+        Mermaid SVG renders; valid Agent Snapshot; Java 17 startup; traceability
+        and deferred-boundary guards; and final no-diff cleanup. No candidate
+        defect or blocker remains."
+      truncated: false
+    completed_at: 2026-08-23T04:58:32.694Z
 history_overflow:
   dropped_entries: 0
   first_dropped_at: null
@@ -3031,7 +4249,7 @@ history_overflow:
     blocked: 0
     execution-error: 0
     recovery: 0
-verification_result: pending
-verification_report: null
+verification_result: pass
+verification_report: verification.md
 archived: false
 created_at: 2026-08-22T18:10:23.785Z
