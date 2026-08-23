@@ -1,13 +1,14 @@
 # cap4k-reference-payment
 
-`cap4k-reference-payment` 是一个 **requirements-first、reference-first** 的支付领域引用项目。长期业务范围覆盖支付、退款、日终对账、商户结算与最小 Integration Event 边界；当前已完成 B1-B5 五个可运行切片，并闭合 GitHub #4 的 Payment timeout/late-result/conflict-review lifecycle：
+`cap4k-reference-payment` 是一个 **requirements-first、reference-first** 的支付领域引用项目。长期业务范围覆盖支付、退款、日终对账、商户结算与最小 Integration Event 边界；当前已完成 B1-B5 五个可运行切片、GitHub #4 Payment timeout/late-result/conflict-review lifecycle，以及 GitHub #8 accepted-lineage final composition/evidence closure：
 
 - **B1**：创建支付 → 发起支付尝试 → 渠道结果回调 → 查询支付；
 - **B2**：全额/部分退款 → 渠道退款结果 → 超期复核 → 查询退款；
 - **B3**：日终账单拉取 → 支付/退款事实核对 → 差异处置/确认 → 查询与重跑；
 - **B4**：商户日结准备 → 确认冻结 → 同步 Fake 资金划拨 → 结果裁决/未知复核 → 查询与受控作废；
 - **B5**：渠道账单可用 Integration Event → 权威账单拉取/版本收敛；商户结算完成事实 → JPA reliable-event → HTTP 投递与失败重试；
-- **#4 lifecycle**：Payment 业务到期 → `CLOSED` 或 `RESULT_UNKNOWN` review；迟到/重复/冲突回执 append-preserving；授权 review；merchant-order success 唯一约束；review eligibility 传播到 B3/B4。
+- **#4 lifecycle**：Payment 业务到期 → `CLOSED` 或 `RESULT_UNKNOWN` review；迟到/重复/冲突回执 append-preserving；授权 review；merchant-order success 唯一约束；review eligibility 传播到 B3/B4；
+- **#8 composition**：在同一 accepted `origin/main` lineage 上，以一条真实 H2/JPA 业务轨迹贯通 Payment → partial Refund → authoritative Reconciliation → MerchantSettlement → 唯一 durable completion event，并用机器可读 guard 锁定 traceability 与 deferred boundaries。
 
 ## 当前状态
 
@@ -25,7 +26,8 @@
 - B3 保存 unresolved Payment review identity/type/reason snapshot，B4 在准备候选时重新读取当前 review eligibility；兼容 `settlementBlocked` 布尔摘要不是资格真源；
 - B4 支付成功时原子冻结手续费快照、日结候选投影、结算确认冻结、同步 Fake Transfer、回调裁决与未知结果复核；
 - B5 两份稳定 Integration Event contract、canonical HTTP receiver、入站 subscriber、JPA-backed reliable-event 记录、HTTP handoff，以及非 2xx/response-timeout 后的 durable retry/recovery；
-- ordinary plan/generation、Analyzer Flow/Drawing Board/Aggregate Structure 和 Agent Snapshot 证据。
+- ordinary plan/generation、Analyzer Flow/Drawing Board/Aggregate Structure 和 Agent Snapshot 证据；
+- accepted-lineage composition test 把 Payment/Refund 身份、Reconciliation batch/run/item、Settlement line、CNY 78.00 净额与唯一 `MerchantSettlementCompleted` durable record 串成同一数据库证据链；`TraceabilityContractTests` 同时拒绝重复 YAML key、悬空引用、伪 verified evidence、非便携路径和 deferred capability 的误晋级。
 
 B5 只验证两条最小 HTTP Integration Event 路径：入站账单可用信号仍通过 `PullChannelStatement` 获取权威正文，出站结算完成事实通过 cap4k reliable Event/JPA 与 HTTP transport 投递。#4 的 timeout 是 Payment `expiresAt` 业务生命周期超时，与 B5 HTTP publisher response timeout 不同；`PaymentExpiryScheduler` 只是向应用层发送 Command 的 ordinary scheduler。可靠 Command、broker transport、generic Inbox、持久化业务 scheduler/lease、跨实例 exactly-once、only-engine、生产商户通知、B6 published-coordinate cold start、Jimmer projection、真实银行/清算网络与生产级资金划拨仍未实现。普通 `@Scheduled` 与同步 Fake Provider 只证明 reference 闭环，不应推断为生产资金或全局可靠调度能力。
 
@@ -192,7 +194,7 @@ MerchantSettlement 首次 accepted terminal success
 - 默认声明 cap4k 2.0.1
 - base package：`com.only4.cap4k.reference.payment`
 
-当前 B1-B5 与 #4 使用尚未随 2.0.1 发布的 mainline Pipeline DSL/Analyzer 与 reliable Integration Event 合同，因此通过显式 Composite Build 对 cap4k mainline 提交 `6575866043ad34008843d7245c49563e15b38b54` 验证。本地解析顺序为非空 Gradle property `cap4k.local.path`、非空环境变量 `CAP4K_LOCAL_PATH`、正式版 `2.0.1`；仓库不提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 Gradle 配置。published-coordinate cold start 属于 B6。
+当前 B1-B5、#4 与 #8 composition verification 使用尚未随 2.0.1 发布的 mainline Pipeline DSL/Analyzer 与 reliable Integration Event 合同，因此通过显式 Composite Build 对 cap4k mainline 提交 `6575866043ad34008843d7245c49563e15b38b54` 验证。本地解析顺序为非空 Gradle property `cap4k.local.path`、非空环境变量 `CAP4K_LOCAL_PATH`、正式版 `2.0.1`；仓库不提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器本地 Gradle 配置。published-coordinate cold start 仍受 B6/release gate 约束，#8 不以本地 Composite 冒充公开坐标可用性。
 
 ## 本地运行
 
@@ -221,20 +223,20 @@ cap4k.local.path=C:/path/to/cap4k
 
 ## 当前证据
 
-- ordinary plan：`build/cap4k/plan.json`，197 items（137 checked-in `SKIP`、60 generated `OVERWRITE`）；
-- 生成确定性：连续执行 plan/generation/analysis 后 plan SHA-256 均为 `fab5609830ae59a64c995dd5922a33dd2ba0e5b51e289a5270ef5b0ad08c38e8`，analysis plan SHA-256 均为 `10d563059ab0c28866e554f7fcdc7aac008e6fa8abc2ab4272a3b8e25cfccc2e`，第二次运行没有新增 source difference；
-- clean build：100 tests / 23 suites / 0 failures / 0 errors / 0 skips（进入 #4 前基线为 84 tests / 22 suites）；
+- accepted lineage：`origin/main=e702e725674c4ab1271441cf1ed011bad3b75021` 同时包含 B1 `6a40c5da`、B2 `43a59828`、B3 `8750a4b7`、B4 `4e347650`、B5 `3fd59cda` 与 #4 `e702e725`；
+- clean candidate checkout：提交 `75006a9df642af696b2904a0fb5deb5e222fbbef` 在初始 0 个 build 目录的独立 worktree 中完成 `clean build bootJar`，102 tests / 24 suites / 0 failures / 0 errors / 0 skips（#4 accepted 基线为 100/23，进入 #4 前为 84/22）；
+- composition trace：新增 1 个 Spring/H2/JPA 端到端测试，把 100.00 Payment、20.00 partial Refund、同一 authoritative reconciliation run、两条 settlement line、2.00 fee、78.00 net amount 和恰好 1 条 durable `MerchantSettlementCompleted` record 关联起来；
+- ordinary plan：`build/cap4k/plan.json`，197 items（137 checked-in `SKIP`、60 generated `OVERWRITE`）；同一 clean checkout 两轮 plan SHA-256 均为 `8f8104352238e9759f64b0eeeab9a1693e9205ec706df7280a791c0e535b36c8`，60 个 generated files 的便携树 SHA-256 均为 `d7da82618706355eb89803f0cfa1a1f7cf7f529d8927f21c7a2829c30bb0b388`；plan 含 checkout locator，因此只用同一检出内的重复结果证明确定性；
 - B5 HTTP/H2/JPA：`ReconciliationReferenceApplicationTests.kt` 覆盖入站重投与 revision 收敛，`MerchantSettlementReferenceApplicationTests.kt` 通过测试期可控 JDK `HttpServer` fake receiver 分别覆盖 HTTP 503 与真实 response timeout 后的 durable retry/recovery，并证明 event UUID、event type 与 payload 保持稳定；该接收器只证明 transport 行为，不是生产商户通知服务；
-- Analyzer plan：`build/cap4k/analysis-plan.json`，46 outputs/items；
-- Flow：19 条独立入口（13 个 Endpoint HTTP Actor roots、5 个 Time roots、1 个 Integration Event root）；
-- Mermaid：19 份 `.mmd` 均使用 quoted label；新增 Payment expiry Time root 与 review adjudication HTTP Actor root，不伪造 durable scheduling 或跨入口 stitching；
-- Drawing Board：`design/drawing_board_*.json`，包含 Integration Event partition；
-- Agent Snapshot：`partial` 仅因为 live DB source freshness 为 `UNKNOWN`；ownership 保留 197 个 plan items，analysis 为 `ok`、46 个 available outputs，diagnostics 为 0 且无 INVALID/error/plan-evidence-invalid。
+- Analyzer：46 outputs/items、19 条独立入口（13 个 Endpoint HTTP Actor roots、5 个 Time roots、1 个 Integration Event root）；同一 clean checkout 两轮 analysis plan SHA-256 均为 `21a51e47471936d376a5c2aaa1f102b91fa2f419fe7a862294978dec6a6a530a`，排除 machine-local `flows/index.json` 后的 45 个 Flow/Mermaid/Drawing Board 文件树 SHA-256 均为 `4c701b84771e0d233941b334bf5dab5c8cde84acbc0a49974109361c83c9e2e9`；
+- Mermaid：19 份 `.mmd` 均使用 quoted label，并全部通过实际 SVG renderer smoke；新增 Payment expiry Time root 与 review adjudication HTTP Actor root，不伪造 durable scheduling 或跨入口 stitching；
+- Spring Boot：Java 17 `start.jar --server.port=0` 在独立 clean checkout 中成功启动后受控停止；仓库没有 `.github/workflows/**`，因此不虚构远端 CI 证据；
+- traceability guard：1 个 `TraceabilityContractTests` / 0 failures，锁定 ID/status/reference/source/evidence/build-slice closure 与明确 deferred boundaries；
+- Agent Snapshot：snapshot `fd1fb0cfd3b094c9ce0b15177ebb2c8de997e89e5769a58d23213a4052f5998c`；`partial` 仅因为 live DB source freshness 为 `UNKNOWN`，ownership 保留 197 个 plan items，analysis 为 `ok`、46 个 available outputs，diagnostics 为 0 且无 INVALID/error/plan-evidence-invalid。
 
 `flows/index.json` 当前仍包含本机 IR input locator，只作为本地可再生产物，不作为可移植提交证据；上游稳定 identity 修复由 `cap4k#215` 跟踪。默认 Flow 不把隐藏的 CommandHandler、聚合运行时状态推进和 Query 串成跨入口流程，项目不伪造这种证据。
 
 ## 后续切片
 
-1. GitHub #8：仅在 B1-B5 与 #4 的 required commits 均位于同一 accepted `origin/main` lineage 后执行最终 composition audit；
-2. B5 后续扩展：reliable Command、broker transport、generic Inbox、持久化业务 scheduler/lease、跨实例 exactly-once、only-engine 与生产商户通知；
-3. B6：公开坐标 cold start、完整 consumer E2E 与发布/宣传证据。
+1. B5 后续扩展：reliable Command、broker transport、generic Inbox、持久化业务 scheduler/lease、跨实例 exactly-once、only-engine 与生产商户通知；
+2. B6：公开坐标 cold start、完整 consumer E2E 与发布/宣传证据。

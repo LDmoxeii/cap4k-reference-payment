@@ -4,7 +4,7 @@
 
 本文是支付业务需求到 **当前 cap4k 能力面** 的 current-only 投影，不是业务真源，也不保存历史版本副本。
 
-当前状态：B1 支付、B2 退款、B3 日终对账、B4 商户日结结算、B5 最小 HTTP Integration Event 边界，以及 GitHub #4 Payment timeout/late-result/conflict-review lifecycle 均已有可运行实现与证据。精确状态以 `docs/requirements/traceability.yaml` 为准；宽于已实现切片的投影继续保持 `planned / not-built`，不因局部能力已验证而宣称完整 closure。
+当前状态：B1 支付、B2 退款、B3 日终对账、B4 商户日结结算、B5 最小 HTTP Integration Event 边界、GitHub #4 Payment timeout/late-result/conflict-review lifecycle，以及 GitHub #8 accepted-lineage final composition/evidence closure 均已有可运行实现与证据。#8 证明既有能力在同一接受谱系和真实业务轨迹中可组合，不新增 Runtime/Generator/Analyzer 能力。精确状态以 `docs/requirements/traceability.yaml` 为准；宽于已实现切片的投影继续保持 `planned / not-built`，不因局部能力已验证而宣称完整 closure。
 
 - `verified` 条目必须有实际代码、测试、Pipeline、Analyzer 或 AgentFacts 证据；
 - `planned / not-built` 条目不代表代码已经生成或 Runtime 已经运行；
@@ -21,7 +21,7 @@
 | `not-built` | 没有实现、运行结果或可引用证据 |
 | `verified` | 对应实现范围已有可复核证据 |
 
-B1-B5 与 #4 已验证具体 acceptance 和 evidence；broker/generic Inbox、生产网络、完整配置维护、持久化/分布式 scheduler 或全局可靠异步 closure 的更宽投影仍保持 `planned / not-built`。
+B1-B5、#4 与 #8 已验证具体 acceptance、composition 和 evidence；broker/generic Inbox、生产网络、完整配置维护、持久化/分布式 scheduler 或全局可靠异步 closure 的更宽投影仍保持 `planned / not-built`。
 
 ## 3. 领域模型投影
 
@@ -53,7 +53,7 @@ B1-B5 与 #4 已验证具体 acceptance 和 evidence；broker/generic Inbox、�
 ### PAY-CP-004 MerchantSettlement 与 SettlementLine
 
 - **当前实现**：MerchantSettlement 聚合根，包含 SettlementLine、SettlementExecutionAttempt、SettlementResultReceipt 的 owned graph；覆盖日结范围、有效单/有效消费约束、组成冻结、执行与结果裁决、作废/replacement 链。
-- **业务证据**：消费 current effective reconciliation run 的已确认事实；交易粒度排除未决项；支付手续费快照；127.00 示例净额 124.46；负净额禁止划拨；未知结果禁止重付；重复/迟到冲突不回退成功终态。
+- **业务证据**：消费 current effective reconciliation run 的已确认事实；交易粒度排除未决项；支付手续费快照；127.00 示例净额 124.46；负净额禁止划拨；未知结果禁止重付；重复/迟到冲突不回退成功终态。#8 进一步用同一 Spring/H2/JPA 数据库轨迹保留 100.00 Payment、20.00 partial Refund、authoritative reconciliation batch/run/item、两条 SettlementLine、2.00 fee、78.00 net 与唯一 durable completion event 的身份关联。
 - **B5 出站事实**：首个 accepted terminal success 形成一次 `MerchantSettlementCompleted`，业务变更与 JPA reliable-event 记录同事务；HTTP 503 或真实 response timeout 后均以同一 event UUID/type/payload durable retry/recovery。
 - **边界**：同步 Fake Transfer/Verifier 不是生产银行网络；当前也不提供 broker、generic Inbox、生产商户通知或 exactly-once。
 - **状态**：`verified`。
@@ -123,7 +123,7 @@ B5 已验证两个稳定 v1 published contract：入站 `payment.reconciliation.
 <a id="pay-cp-012"></a>
 ### PAY-CP-012 Runtime
 
-当前 B1-B5 与 #4 实际验证 Repository/UoW、Strong ID、乐观并发、本地 Domain Event、同步 Request/Capability、Endpoint HTTP、普通定时入口、Payment timeout/review lifecycle、append-preserving conflict evidence、merchant-order success serialization、B3/B4 eligibility 传播、JPA-backed reliable Integration Event enqueue/record、HTTP sender 对 non-2xx/response-timeout 的 retry/recovery、HTTP receiver dispatch、幂等与聚合内/跨聚合事务行为。
+当前 B1-B5 与 #4 实际验证 Repository/UoW、Strong ID、乐观并发、本地 Domain Event、同步 Request/Capability、Endpoint HTTP、普通定时入口、Payment timeout/review lifecycle、append-preserving conflict evidence、merchant-order success serialization、B3/B4 eligibility 传播、JPA-backed reliable Integration Event enqueue/record、HTTP sender 对 non-2xx/response-timeout 的 retry/recovery、HTTP receiver dispatch、幂等与聚合内/跨聚合事务行为。#8 只审计这些已接受 Runtime 行为能在同一 accepted lineage 和一条完整 Payment → Refund → Reconciliation → Settlement → durable event 轨迹中协同，不把 composition evidence 宣称为新的通用 Runtime capability。
 
 可靠 Command、broker transport、generic Inbox、持久化业务 scheduling、跨实例 lease/exactly-once、Endpoint RPC 与生产 provider 不在当前闭环。
 
@@ -132,32 +132,32 @@ B5 已验证两个稳定 v1 published contract：入站 `payment.reconciliation.
 <a id="pay-cp-013"></a>
 ### PAY-CP-013 Generator
 
-当前 DB schema、Design JSON、enum manifest 与 value-object manifest 生成/物化聚合、Owned Entity、Strong ID、Repository、Factory/Behavior、枚举、VO、Command、Query、Capability、Endpoint 与 Integration Event contract/subscriber scaffold。最终 ordinary plan 为 197 items：137 checked-in `SKIP`、60 generated `OVERWRITE`，连续 generation 无新增 source difference；HTTP transport runtime 仍由 starter 装配，不是 Generator 生成物。
+当前 DB schema、Design JSON、enum manifest 与 value-object manifest 生成/物化聚合、Owned Entity、Strong ID、Repository、Factory/Behavior、枚举、VO、Command、Query、Capability、Endpoint 与 Integration Event contract/subscriber scaffold。最终 ordinary plan 为 197 items：137 checked-in `SKIP`、60 generated `OVERWRITE`；#8 clean candidate checkout 的连续两轮 plan 与 60 个 generated files 便携树哈希分别保持一致，且没有 tracked source difference。plan 包含 checkout locator，因此哈希只用于同一检出内的确定性比较；HTTP transport runtime 仍由 starter 装配，不是 Generator 生成物。
 
 状态：当前项目生成面有证据；全局 Generator capability closure 仍为 `planned`。
 
 <a id="pay-cp-014"></a>
 ### PAY-CP-014 Analyzer
 
-当前 Analyzer 产生 46 个 outputs/items、19 条独立入口 Flow（13 个 Endpoint HTTP Actor roots、5 个 Time roots、1 个 Integration Event root）以及 Drawing Board/Aggregate Structure；新增 Payment expiry Time root 与 review adjudication HTTP Actor root。`drawing_board_integration_event.json` 单独投影 published event。Query/Capability/聚合结构保持独立 projection，不伪造跨入口 process stitching；Time/Integration Event Flow 只证明静态入口关系，不证明 durable scheduler、delivery 状态机或 exactly-once。
+当前 Analyzer 产生 46 个 outputs/items、19 条独立入口 Flow（13 个 Endpoint HTTP Actor roots、5 个 Time roots、1 个 Integration Event root）以及 Drawing Board/Aggregate Structure；新增 Payment expiry Time root 与 review adjudication HTTP Actor root。#8 clean candidate checkout 的两轮 analysis plan 与排除 machine-local `flows/index.json` 后的 45 文件便携树哈希分别保持一致，19 份 quoted-label Mermaid 均通过实际 SVG renderer smoke。`drawing_board_integration_event.json` 单独投影 published event。Query/Capability/聚合结构保持独立 projection，不伪造跨入口 process stitching；Time/Integration Event Flow 只证明静态入口关系，不证明 durable scheduler、delivery 状态机或 exactly-once。
 
 状态：当前项目 Analyzer 面有证据；包含所有计划事件/超时入口的完整 closure 仍为 `planned`。
 
 <a id="pay-cp-015"></a>
 ### PAY-CP-015 Pipeline
 
-当前项目使用固定阶段、repository-level source/generator 配置和 6 个公开 Pipeline tasks。显式 Composite Build 的解析顺序为 Gradle property、环境变量、正式版 2.0.1；仓库不提交机器路径、Snapshot、私服或 `mavenLocal()`。
+当前项目使用固定阶段、repository-level source/generator 配置和 6 个公开 Pipeline tasks。#8 从无历史 build outputs 的独立 candidate checkout 使用显式 local Composite 完成 dependency resolution、generation、compile、102-test suite、bootJar 和 Java 17 startup smoke；解析顺序仍为 Gradle property、环境变量、正式版 2.0.1，仓库不提交机器路径、Snapshot、私服或 `mavenLocal()`。该证据不替代尚未发布 mainline DSL 的 published-coordinate cold start。
 
 状态：当前 Pipeline 使用面有证据；published-coordinate cold start 仍后置到 B6，完整 closure 保持 `planned`。
 
 <a id="pay-cp-016"></a>
 ### PAY-CP-016 AgentFacts
 
-当前 Agent Snapshot ownership 保留 197 个 plan items，analysis 为 `ok` 且有 46 个 available outputs，diagnostics 为 0。Snapshot overall 为 `partial` 的唯一原因是 live DB source freshness 为 `UNKNOWN`，不是 INVALID、error 或 plan evidence 解析失败。
+当前 Agent Snapshot `fd1fb0cfd3b094c9ce0b15177ebb2c8de997e89e5769a58d23213a4052f5998c` 的 ownership 保留 197 个 plan items，analysis 为 `ok` 且有 46 个 available outputs，diagnostics 为 0。Snapshot overall 为 `partial` 的唯一原因是 live DB source freshness 为 `UNKNOWN`，不是 INVALID、error 或 plan evidence 解析失败。
 
 状态：当前 AgentFacts evidence 已验证；依赖 B6 与更宽 B5 后续能力的完整 capability closure 仍为 `planned`。
 
-## 6. 当前 B1-B5 与 #4 之外的能力
+## 6. 当前 B1-B5、#4 与 #8 composition 之外的能力
 
 - reliable Command；
 - RabbitMQ/RocketMQ/Kafka 等 broker transport、generic Inbox、broadcast/discovery 与完整事件组合；
@@ -178,9 +178,13 @@ B5 已验证两个稳定 v1 published contract：入站 `payment.reconciliation.
 
 当前可复核证据包括：
 
-- ordinary plan 197 items（137 checked-in `SKIP`、60 generated `OVERWRITE`）；
-- clean build 100 tests / 23 suites / 0 failures / 0 errors / 0 skips（进入 #4 前为 84 tests / 22 suites）；
-- Analyzer 46 outputs/items、19 independent flows（13 HTTP + 5 Time + 1 Integration Event）；
-- Agent ownership 197、analysis `ok`、diagnostics 0；overall `partial` 仅因 live DB freshness `UNKNOWN`。
+- accepted `origin/main=e702e725674c4ab1271441cf1ed011bad3b75021` 同时包含 B1-B5 与 #4 的 6 个 required commits；
+- 独立 candidate `75006a9df642af696b2904a0fb5deb5e222fbbef` 从 0 个历史 build 目录完成 clean build/bootJar，102 tests / 24 suites / 0 failures / 0 errors / 0 skips；
+- 1 条完整 Spring/H2/JPA composition trace 保存 Payment/partial Refund/Reconciliation/Settlement/durable completion event 身份链，净额为 CNY 78.00 且 completion event 恰好一次；
+- ordinary plan 197 items（137 checked-in `SKIP`、60 generated `OVERWRITE`），连续两轮 plan 与 generated tree 各自一致且 tracked source diff 为 0；
+- Analyzer 46 outputs/items、19 independent flows（13 HTTP + 5 Time + 1 Integration Event），连续两轮 analysis plan/portable tree 各自一致，19 份 Mermaid 通过实际 SVG renderer；
+- Java 17 `start.jar --server.port=0` startup smoke 通过；仓库无 `.github/workflows/**`，因此当前证据只声称本地 clean-checkout verification；
+- traceability machine guard 通过 1 个测试并保护 planned/not-built 边界；
+- Agent ownership 197、analysis `ok` 且有 46 available outputs、diagnostics 0；overall `partial` 仅因 live DB freshness `UNKNOWN`。
 
 只有在代码、自动化测试、生成计划、Analyzer 输出或 AgentFacts 中产生对应证据后，才可将 `PAY-EV-*` 标记为 `verified`。同步 Fake Provider、普通 scheduler 或本地 Domain Event 不能替代尚未实现的 B5 后续、生产级 scheduling 或 B6 能力。

@@ -142,10 +142,12 @@ class TraceabilityContractTests {
         assertThat(acceptance.getValue("PAY-AC-083").ids("evidence_ids")).contains("PAY-EV-027")
         assertThat(acceptance.getValue("PAY-AC-082").ids("evidence_ids")).doesNotContain("PAY-EV-027")
 
+        assertThat(buildSlices.getValue("PAYMENT_TIMEOUT_CONFLICT_REVIEW").requiredText("composition_audit"))
+            .isEqualTo("completed-by-final-composition-audit")
         val finalComposition = buildSlices.getValue("FINAL_COMPOSITION_AUDIT")
         assertThat(finalComposition.requiredText("issue"))
             .isEqualTo("https://github.com/LDmoxeii/cap4k-reference-payment/issues/8")
-        assertThat(finalComposition.requiredText("status")).isIn("planned", "verified")
+        assertThat(finalComposition.requiredText("status")).isEqualTo("verified")
         assertThat(finalComposition.ids("evidence_ids"))
             .containsExactly("PAY-EV-027", "PAY-EV-034", "PAY-EV-035", "PAY-EV-036")
         assertThat(finalComposition.requiredText("published_coordinate_cold_start"))
