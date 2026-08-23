@@ -1,10 +1,10 @@
-# Payment Reference B1+B2+B3+B4+B5 + Payment Timeout/Conflict Review 可运行实现规格
+# Payment Reference B1+B2+B3+B4+B5 + Payment Timeout/Conflict Review + Final Composition 可运行实现规格
 
 ## 1. 目标状态
 
-`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账、商户结算与最小可靠 HTTP Integration Event 系统。它在 B1 支付、B2 退款、B3 日终对账与差异处置、B4 单币种商户日结与资金划拨结果裁决、B5 最小可靠 HTTP Integration Event 之上，闭合 Payment 业务到期、未知结果、迟到/重复/冲突回执、人工 review、商户订单成功唯一性，以及 review 对 B3/B4 资格的传播，证明独立 contract leaf、多个 Aggregate Root、Strong ID、Value Object、Command/Query/Capability/Endpoint、Domain Event、Integration Event、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在一条真实业务链中协同工作。
+`cap4k-reference-payment` 提供一个基于当前 cap4k mainline 合同的可运行支付、退款、日终对账、商户结算与最小可靠 HTTP Integration Event 系统。它在 B1 支付、B2 退款、B3 日终对账与差异处置、B4 单币种商户日结与资金划拨结果裁决、B5 最小可靠 HTTP Integration Event 以及 Payment timeout/conflict-review hardening 之上，完成 accepted-lineage final composition 与 evidence closure，证明独立 contract leaf、多个 Aggregate Root、Strong ID、Value Object、Command/Query/Capability/Endpoint、Domain Event、Integration Event、手写 HTTP binding、普通 `@Scheduled` reaction、Pipeline generation、Analyzer 和 AgentFacts 能在一条真实业务链中协同工作。
 
-该状态包含完整支付引用项目的前五个已接受切片与 GitHub #4 Payment timeout/conflict-review lifecycle，不改变 `docs/requirements/**` 中的业务真源。B5 仍只声称 cap4k reliable Event/JPA 与 HTTP Integration Event transport 的最小可运行经验；#4 的 ordinary scheduler 也不声称 broker、reliable Command、通用 Outbox/Inbox、持久化 scheduler、lease、跨实例 exactly-once、only-engine、生产银行/清算网络、生产商户通知、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
+该状态包含完整支付引用项目的前五个已接受切片、GitHub #4 Payment timeout/conflict-review lifecycle 与 GitHub #8 final composition/evidence closure，不改变 `docs/requirements/**` 中的业务真源。B5 仍只声称 cap4k reliable Event/JPA 与 HTTP Integration Event transport 的最小可运行经验；#4 与 #8 的 ordinary scheduler/evidence 也不声称 broker、reliable Command、通用 Outbox/Inbox、持久化 scheduler、lease、跨实例 exactly-once、only-engine、生产银行/清算网络、生产商户通知、大额退款审批、超期人工例外、负净额追偿或周结已经可用。
 
 ## 2. 工程与依赖合同
 
@@ -729,8 +729,73 @@ B4 至少包含以下应用入口：
 - accepted B1-B5 的 84 tests / 22 suites / 0 failures / 0 skips 是进入本 change 的回归基线；新增测试后全量 clean build 必须全部通过，不得降低既有覆盖。
 - README/current projection/traceability/canonical target Spec必须明确区分 Payment business timeout 与 B5 HTTP response timeout，并声明 ordinary scheduler边界。
 - #4 不新增 broker、generic Inbox/Outbox、reliable Command、only-engine、Jimmer、生产认证、生产 merchant notification、published-coordinate cold start或通用 workflow engine。
-- #4 完成、Verify、Archive、PR、CI与 merge后，只更新 #4 与父 #2 的实现证据；#8 仍单独负责所有 required commits位于同一 accepted main lineage后的最终 composition audit。
+- #4 完成、Verify、Archive、PR 与 merge 后，其实现证据作为 10F final composition audit 的 accepted prerequisite；不得把 #4 候选分支或 pre-archive head 冒充 accepted mainline evidence。
+
+## 10F. GitHub #8 Final Composition 与 Evidence Closure
+
+### 10F.1 目标与责任边界
+
+- 本节闭合父 Issue #2 的 REFPAY-6 capability evidence 与 REFPAY-7 composition：证明 B1、B2、B3、B4、B5 与 Payment hardening #4 位于同一 accepted `origin/main` lineage，并在一个最终 candidate 上重新执行完整组合验收。
+- #8 是 verification/evidence closure，不新增 Payment、Refund、Reconciliation、MerchantSettlement、Integration Event 或 transport 的业务能力。若组合审计暴露真实实现缺陷，必须回到 owning surface 修复并重新验证；不得用文档声明掩盖失败。
+- 每个已完成 child 的 archived evidence 只作为输入与历史基线；最终通过必须来自当前 candidate 的 clean-checkout evidence。
+
+### 10F.2 Accepted lineage、clean checkout 与解析边界
+
+- lineage evidence 必须机械证明 B1 `6a40c5da2b2057e310c97989d3889d0ce125d06e`、B2 `43a598285713e1fdace4be2cc501f80d10e5cec0`、B3 `8750a4b75346eecc33bd1db444d3267455c96ad8`、B4 `4e347650f8bb2cb9cf0e0adb1c0dc2db89774a15`、B5 `3fd59cda87e3f2430fea88092a08e1b1939936bb` 与 #4 accepted squash commit `e702e725674c4ab1271441cf1ed011bad3b75021` 均被审计基线包含。
+- #4 的 pre-archive implementation/archive branch heads 不是 accepted mainline identity，不得替代 `e702e725...`。
+- Verify 必须在 candidate commit 的独立、无历史 build outputs 的 checkout/worktree 中运行。candidate 必须直接后继最新 accepted `origin/main`；PR merge 后再以 accepted merge commit 完成 GitHub lineage 治理确认。
+- 当前 mainline 验收继续使用显式 local Composite 指向已记录的 cap4k commit。仓库不得提交 sibling path、绝对路径、`mavenLocal()`、Snapshot、私服或机器级配置。
+- published-coordinate cold start 只有在正式发布坐标包含当前 mainline Pipeline/Runtime 合同时才执行。正式版尚不具备该合同时，必须记录为 release-gated deferred，不能以 Composite Build 或缓存冒充通过，也不阻塞本地 accepted-lineage composition。
+- 仓库没有 GitHub Actions 时，最终证据必须如实标记为本地 clean-checkout verification；#8 不以新增 workflow 偷渡独立 CI 治理能力。
+
+### 10F.3 最终 composition trace
+
+- 必须存在一个 composition-only Spring/H2/JPA 自动化测试，在同一数据库轨迹内串联既有应用路径：Payment 首次 accepted success、partial Refund、authoritative statement Pull 与 Reconciliation、Merchant Settlement 准备/确认/执行/accepted success，以及唯一 reliable outbound `MerchantSettlementCompletedIntegrationEvent` record。
+- 测试必须验证 Settlement lines 或等价持久化证据能够回溯 Payment、Refund、Reconciliation run/item/confirmation identities 与金额构成，不以测试内自造摘要替代业务持久化事实。
+- 测试只能复用已接受的领域模型、Command、Capability、Endpoint/Integration Event 入口与持久化模型；不得新增新业务状态、Command、Endpoint、事件类型、通用基础设施或生产 provider。
+- `PAY-EV-027` 只有在该测试真实执行通过并记录路径/命令/结果后才能从 `not-built` 转为 `verified`。
+
+### 10F.4 Push/Pull/scheduler/rerun 与 reliable HTTP 组合
+
+- final audit 必须重跑并组合解释 B5 已接受证据：`ChannelStatementAvailableIntegrationEvent` 只声明 statement available，薄 listener dispatch application Command，完整 statement 仍由 `PullChannelStatement` 提供。
+- Push、provider Pull、ordinary scheduler 与 manual rerun 对相同 scope/statement/revision 的重复、乱序、并发与 provider recovery 必须汇合到同一 batch/run/effective identity；higher revision 推进 effective pointer，late lower revision 不回退。
+- MerchantSettlement 只有首次 accepted success 形成一次 local completion fact、稳定 event identity 与 reliable Event/JPA record。business transition 与 event record 同 UoW 原子提交，rollback 后两者都不存在。
+- HTTP 非 2xx、连接失败或 response timeout 后使用同一 event identity 和稳定 payload fingerprint 重试恢复。fake receiver 可以收到重复 envelope；该证据证明 at-least-once transport handoff，不宣称生产 downstream business completion 或 generic Inbox/exactly-once。
+
+### 10F.5 Pipeline plan、generation 与 ownership
+
+- 从 clean checkout 连续执行普通 plan/generate/generated-source generation。ordinary plan 至少保持 accepted 197 items（137 checked-in `SKIP`、60 generated `OVERWRITE`），或对任何变化提供可接受的 owning change 解释。
+- 两轮 plan hash 与 build-owned generated contents 必须稳定；删除 build-owned outputs 后可由 canonical inputs 重建。checked-in Endpoint/event contracts、VO、Behavior、Handler/listener/subscriber 与 handwritten HTTP binding 不得被覆盖。
+- plan 必须能解释 generator、module role、output path/kind、resolved root 与 conflict policy。没有真实业务使用的能力不得为 evidence coverage 创建空壳。
+
+### 10F.6 Analyzer、Drawing Board 与 AgentFacts
+
+- 连续两轮 `cap4kAnalysisPlan`/`cap4kAnalysisGenerate` 必须稳定，并至少保持 accepted 46 outputs 与 19 independent roots（13 HTTP Actor、5 Time、1 Integration Event），除非 owning upstream accepted change 对数量漂移提供明确说明。
+- 19 份 tracked Flow JSON/Mermaid 必须可解析且 label 安全引用；`flows/index.json` 的机器本地 IR locator 只作为本地可再生产物，不作为 portable committed evidence。
+- Command、Query、Capability、Endpoint、Domain Event、Integration Event 与 Aggregate Structure Drawing Board partitions 必须存在并包含真实 anchors；不得把隐藏 handler、runtime state、delivery state machine 或跨入口 exactly-once stitching 伪造成默认 Flow。
+- Agent Snapshot ownership 必须与 plan 对齐，analysis 为 `ok`，diagnostics 无 `error`、`INVALID` 或 `plan-evidence-invalid`。live DB freshness `UNKNOWN` 可以使 overall 为 `partial`，但必须是唯一 partial 原因。
+
+### 10F.7 Requirements、projection 与 traceability consistency
+
+- 所有当前 in-scope 且标记 `verified` 的 `PAY-AC-*` 必须引用存在、状态为 `verified`、路径可解析且命令/结果一致的 evidence；不得让 verified acceptance 继续依赖 `not-built` evidence。
+- `PAY-EV-027` 必须绑定 10F.3 的真实 composition test。新增 final clean-checkout/full-matrix、accepted-lineage 与 traceability consistency evidence，记录当前 cap4k commit、candidate/accepted commit、命令和摘要。
+- PAY-AC-080、PAY-AC-081、PAY-AC-084、PAY-AC-086、PAY-EV-025、PAY-EV-026 与更宽 PAY-CP capability closure 保持 planned/not-built，除非另有独立已授权实现与真实证据。
+- README 与 current projection 只陈述当前已验证事实，明确区分入站业务幂等与出站 at-least-once stable identity、Payment business timeout 与 HTTP response timeout、ordinary scheduler 与 durable scheduling、local Composite evidence 与 published-coordinate cold start。
+
+### 10F.8 完整命令矩阵与通过门槛
+
+- clean-checkout matrix 至少包含 lineage/status、`:contract:compileKotlin`、`clean build`、`bootJar`、短生命周期 Spring Boot startup smoke、两轮 plan/generation、两轮 Analyzer、Agent Snapshot、focused Reconciliation/Settlement/composition tests、Mermaid/Drawing Board/traceability parser smoke、`git diff --check` 与 non-goal dependency/workflow scan。
+- 最终 `clean build` 必须保持进入 #8 前的 100 tests / 23 suites 全部通过，并包含新增 composition test；结果为 0 failures、0 errors、0 skips。focused tests 不能替代最终全量回归。
+- required command 失败、生成非确定性、Analyzer/AgentFacts invalid/error、traceability 虚假或 composition test 不通过时不得 Archive；必须返回 Build 或等待 owning upstream accepted fix 后重验。
+- 发现 cap4k Runtime、Generator、Analyzer、Pipeline 或 AgentFacts 缺陷时必须链接 owning cap4k Issue/Change，reference 不新增永久 workaround。
+
+### 10F.9 Archive、PR 与治理收尾
+
+- Comet Verify 通过后 Archive 必须保存完整 acceptance、实际检查摘要与 candidate commit；PR 只包含 #8 composition test/evidence/spec/archive 所需变更。
+- PR 合并后 Issue #8 与父 Issue #2 必须记录 accepted commit、archive path、test/plan/analyzer/agent/traceability 摘要。父 Issue 只有在 #8 accepted 且 final composition checklist 完成后才可关闭。
+- payment evidence 只在 #8 accepted merge 后回写 cap4k#27；该更新不自动关闭 cap4k#27，也不声称 Public Docs/Skill、only-engine integration gate、published-coordinate cold start 或其他跨仓责任已经完成。
+- GitHub Actions 缺失与 release-gated published-coordinate cold start 必须作为明确边界记录，不得被省略或写成已通过。
 
 ## 11. 后续边界
 
-Payment timeout/late-result/conflict-review 已由本 change 闭合；最终 accepted-lineage composition、published-coordinate cold start、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine addon verification、Jimmer/aggregateProjection、Endpoint Handler generator 和生产 transport/auth 仍保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP Integration Event 体验，#4 仅证明 Payment 业务生命周期 timeout/review closure。
+Payment timeout/late-result/conflict-review 与最终 accepted-lineage composition/evidence closure 已由 10E/10F 闭合。published-coordinate cold start、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine addon verification、Jimmer/aggregateProjection、Endpoint Handler generator 和生产 transport/auth 仍保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP Integration Event 体验，#4 仅证明 Payment 业务生命周期 timeout/review closure，#8 仅证明 accepted-lineage composition 与可复核 evidence。
