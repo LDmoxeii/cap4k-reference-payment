@@ -799,5 +799,3 @@ B4 至少包含以下应用入口：
 ## 11. 后续边界
 
 Payment timeout/late-result/conflict-review 与最终 accepted-lineage composition/evidence closure 已由 10E/10F 闭合。published-coordinate cold start、大额退款人工审批、超期退款人工例外、负净额追偿、周结、only-engine addon verification、Jimmer/aggregateProjection、Endpoint Handler generator 和生产 transport/auth 仍保留为后续可独立验收的 change。B5 仅证明最小 reliable Event/JPA + HTTP Integration Event 体验，#4 仅证明 Payment 业务生命周期 timeout/review closure，#8 仅证明 accepted-lineage composition 与可复核 evidence。
-
-
