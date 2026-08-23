@@ -1,0 +1,1221 @@
+schema: comet.native.v4
+name: improve-payment-acceptance-experience
+language: zh-CN
+phase: archive
+status: active
+state_version: 15
+brief: brief.md
+spec_changes:
+  - capability: payment-reference-acceptance-experience
+    operation: create
+    source: specs/payment-reference-acceptance-experience/spec.md
+workspace:
+  isolation: worktree
+  change_branch: comet/improve-payment-acceptance-experience
+  target_branch: main
+  finish: pull-request
+loop:
+  stage: archive-ready
+  goal_cycle: 1
+  iteration: 3
+  attempt: 1
+  retry_epoch: 0
+  failed_iteration_count: 2
+  no_progress_count: 0
+  execution_failure_count: 0
+  previous_unresolved_ids: []
+  next_action: archive
+acceptance:
+  - id: A1
+    source: brief.md
+    text: "**A1 验收入口可独立使用**：从 `docs/requirements/acceptance/payment-scenarios.md` 或
+      requirements/project README 一跳进入 `payment-acceptance-guide.md`；Guide 显示 53
+      个场景、状态图例、49 个 verified 与 4 个 planned，状态与 `traceability.yaml` 一致，且没有把
+      `PAY-AC-080/081/084/086` 写成已实现。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A2
+    source: brief.md
+    text: "**A2 支付场景导航完整**：`PAY-AC-001..017` 每个场景都能定位到对应规则/lifecycle、Payment owned
+      graph、关键 Behavior/Command/Capability、HTTP 或 Time 入口、相关
+      Flow、精确测试方法和可观察结果；AC-003/006/011/012/017 同时给出稳定 code 与中文 message 观察点。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A3
+    source: brief.md
+    text: "**A3 退款场景导航完整**：`PAY-AC-020..029` 每个场景都能定位到 Payment 退款预算权威、Refund owned
+      graph、Command/Capability/HTTP/Time 入口、精确测试方法和
+      reserved/successful/refundable、attempt/receipt、事务与并发观察点。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A4
+    source: brief.md
+    text: "**A4 对账场景导航完整**：`PAY-AC-040..047/082/085/087` 能定位到 statement/platform
+      facts、ReconciliationBatch owned
+      graph、revision/current-effective-run、append-only
+      disposition/confirmation、HTTP/Time/Integration Event 入口、Flow、精确测试方法和
+      completion blocker；Guide 明确 event 只是 availability signal、账单正文仍由 Pull 获取。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A5
+    source: brief.md
+    text: "**A5 结算场景导航完整**：`PAY-AC-060..068/014/083/085/088` 能定位到
+      candidate/line/fee/net、composition
+      freeze、execution/receipt/review、replacement ownership、Domain/Integration
+      Event、可靠记录、HTTP/Time 入口、Flow、精确测试方法和同 UoW/稳定 identity 观察点。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A6
+    source: brief.md
+    text: "**A6 横切与 planned 边界诚实**：Guide 为 `PAY-AC-080/081/084/086` 只展示
+      gap/not-built evidence 和“不应看到什么误宣称”；为 `082/083/085/087/088` 提供可执行证据；明确
+      Fake Provider、H2、测试 Receiver、普通 Scheduler、at-least-once 与 Analyzer 静态 Flow
+      边界。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A7
+    source: brief.md
+    text: "**A7 验收可执行与可复位**：Guide 提供 Java/Composite Build 前提、构建/测试/启动命令、H2 生命周期、固定
+      fixture、推荐冒烟顺序、无 reset API 时的重启/新 identity 策略，以及
+      focused/full/Analyzer/traceability 检查命令；所有仓库链接均为相对可移植路径，不提交本机绝对路径。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认验收 Guide、场景状态、链接、执行环境与 planned 边界符合规格。
+      truncated: false
+  - id: A8
+    source: brief.md
+    text: "**A8 复杂业务逻辑可理解**：Payment、Refund、ReconciliationBatch、MerchantSettlement 核心
+      Behavior 和列入范围的复杂
+      Command/事件编排具有中文解释性注释，覆盖业务目的、关键不变量、状态/版本收敛、幂等与并发、证据为何追加而不覆盖、结算资格和事件副作用；静态\
+      审查确认没有逐行复述式注释或能力夸大。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A9
+    source: brief.md
+    text: "**A9 稳定错误码与中文 HTTP 消息**：400/404/409 及
+      payment/refund/reconciliation/settlement/review 的现有稳定 `code` 和 HTTP status
+      不变；HTTP `message` 为中文；review code 不再从异常 message 推导；可选 `details`
+      只含安全白名单上下文。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A10
+    source: brief.md
+    text: "**A10 查询与审计文本中文化**：change 后新形成的 notification rejection/conflict、payment
+      review、reconciliation blocking/failure、settlement blocker/result/review
+      summary 经 GET/查询可见中文；enum/type/code/identity/matchingBasis/raw external
+      result 和用户输入 evidence 保持原值，历史数据无需迁移。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A11
+    source: brief.md
+    text: "**A11 内部异常不泄漏**：数据库、Hibernate、唯一约束、provider 或未知 runtime 异常的 HTTP 响应不包含
+      SQL、SQLState、异常类名、堆栈或原始英文 cause；日志仍保存可诊断信息，API 返回稳定 code 和中文安全说明。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A12
+    source: brief.md
+    text: "**A12 测试与静态守卫闭环**：更新所有绑定旧英文 summary 的测试；新增/扩展 HTTP error advice、review
+      code 解耦、安全异常映射、中文 query round-trip 和用户可见纯英文消息扫描测试；focused tests 与最终 `clean
+      build` 全通过，0 failure、0 skip，既有支付业务、生成、Analyzer、AgentFacts 与 traceability
+      合同不回退。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A13
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`cap4k-reference-payment`
+      必须为项目验收者提供一条从业务场景到可执行证据的直接路径，并让核心业务代码与用户可见错误在不改变既有支付业务合同的前提下可理解、可观察、可复核。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A14
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 本 capability 只改进现有已实现能力的验收导航、代码解释和错误展示。支付、退款、对账、商户结算、Integration
+      Event、Pipeline、Analyzer 与 AgentFacts 的业务和工程合同继续由 canonical
+      `payment-reference-build` 规格定义。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A15
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`docs/requirements/acceptance/payment-scenarios.md` 是业务断言真源，继续只描述可观察的
+      Given/When/Then。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A16
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`docs/requirements/traceability.yaml` 是场景状态、projection 与 evidence 的机器真源。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A17
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`docs/requirements/acceptance/payment-acceptance-guide.md` 是人工验收主入口，负责
+      How，不反向定义业务行为或实现状态。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A18
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 当前 53 个场景中，49 个 `verified`，`PAY-AC-080/081/084/086` 保持 `planned/not-built`。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A19
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 本 capability 不新增支付业务能力，不升级 planned 场景，不改变已有稳定错误码、HTTP status、enum numeric
+      value、event name、聚合边界或持久化语义。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 全量复核该验收项通过，未发现实现或规格偏差。
+      truncated: false
+  - id: A20
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`payment-scenarios.md` 顶部必须提供："
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A21
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 进入人工验收指南的链接；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A22
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`verified`、`planned/not-built` 的含义；"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A23
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`traceability.yaml` 为状态真源的说明；"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A24
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 业务断言、人工 Guide、机器 evidence 三者的职责分工。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A25
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: requirements README 与项目 README 必须能够一跳进入验收指南。所有文档链接必须是仓库相对路径，不提交本机绝对路径。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A26
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 首屏必须明确：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A27
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 总场景数 53；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A28
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: verified 49；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A29
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: planned 4；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A30
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`PAY-AC-080/081/084/086` 不进入已实现能力验收；"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A31
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: acceptance 状态与更宽 projection closure 状态不是同一层级；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A32
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Fake Provider、H2、普通 Scheduler、测试 Receiver、at-least-once transport 和
+      Analyzer 静态入口 Flow 的边界。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A33
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 必须覆盖 `PAY-AC-001..017`，并提供以下共享与逐场景导航：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A34
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: lifecycle 与对应 `PAY-BR-*`；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A35
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Design 输入：schema、enum、value object、Command、Endpoint、Capability、Aggregate
+      Structure；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A36
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Payment、PaymentAttempt、PaymentNotificationReceipt、PaymentReviewCase、PaymentReviewDecision
+      owned graph；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A37
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Payment Behavior 及 Create/Start/Confirm/Expire/Adjudicate 应用路径；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A38
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: HTTP callback、查询、PaymentExpiryScheduler 与 Analyzer Flow；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A39
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 精确到测试方法的 domain/application/HTTP/JPA/并发证据；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A40
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: HTTP status/code/message、Payment/Attempt 状态、receipt receive
+      count/disposition、review/decision、fee snapshot、merchant-order success
+      identity、notification intent 与结算资格观察点。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A41
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 对 `PAY-AC-003/006/011/012/017` 必须同时列出稳定错误码和中文 message 的验收方式。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A42
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 必须覆盖 `PAY-AC-020..029`，并提供：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A43
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Payment 作为退款预算权威以及 Refund 独立聚合边界；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A44
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Refund、RefundAttempt、RefundNotificationReceipt owned graph；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A45
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Create/Confirm/ReviewPending、HTTP/Time 入口和相关 Capability/Flow；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A46
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 精确测试方法；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A47
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: reservedRefundAmount、successfulRefundAmount、refundableAmount、attempt/receipt、退款期限、预算释放/转换、跨聚合
+      UoW 与真实并发观察点。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A48
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 必须覆盖 `PAY-AC-040..047/082/085/087`，并提供：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A49
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: ReconciliationBatch、Run、StatementRevision、Item、Disposition、ConfirmationFact
+      owned graph；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A50
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: statement/platform facts、匹配优先级、revision 幂等、currentEffectiveRun、append-only
+      disposition/confirmation 和 completion blocker；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A51
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Daily Scheduler、manual rerun、difference disposition、Integration Event
+      listener 与 Pull Capability；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A52
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Analyzer Time/HTTP/Integration Event Flow 和精确测试方法；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A53
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: batch/run/item、双方快照、difference kind、revision、blocking
+      reason、disposition、confirmation、Asia/Shanghai 业务日观察点。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A54
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 必须明确 `ChannelStatementAvailableIntegrationEvent` 只表达账单可获取，完整账单仍以
+      `PullChannelStatement` 为权威；Push、Pull、Scheduler 与 Rerun 共享同一收敛边界。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A55
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 必须覆盖 `PAY-AC-060..068/014/083/085/088`，并提供：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A56
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: MerchantSettlement、SettlementLine、SettlementExecutionAttempt、SettlementResultReceipt
+      owned graph；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A57
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: candidate eligibility、transaction-level exclusion、fee
+      snapshot、gross/fee/net 汇总、composition
+      freeze、execution/result/review、replacement/effective ownership；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A58
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: HTTP、Daily/UnknownReview Scheduler、Domain Event 与 outbound Integration
+      Event 路径；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A59
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Analyzer Flow 与精确测试方法；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A60
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: eligible/excluded counts、lines/source
+      identities、attempt/receipt、negative/zero、unknown 禁止重付、completion
+      fact、reliable event record、delivery attempt 和稳定 payload identity 观察点。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A61
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`PAY-AC-082/083/085/087/088` 必须链接到真实可执行证据。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A62
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`PAY-AC-080/081/084/086` 只能展示 planned/not-built
+      gap、当前已存在但不足以升级场景的局部机制，以及不得误宣称的能力。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A63
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 现有 Settlement Integration Event HTTP receiver 不得被描述为生产商户通知服务。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A64
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 领域 operator fixture 不得被描述为完整认证、授权或租户隔离。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A65
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 渠道配置聚合存在不得被描述为已完成退役渠道验收。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A66
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 必须提供：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A67
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Java 17、Composite Build、构建、测试、应用启动和 Analyzer/traceability 检查命令；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A68
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: H2 内存库、application lifecycle 与 fixture 边界；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A69
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 当前没有公共 reset API 的事实；重复人工验收使用重启应用或全新业务 identity；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A70
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 推荐主链冒烟顺序，再执行异常、并发、迟到、矛盾和审计场景；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A71
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不能通过公共 HTTP 准备的 statement/provider fixture，优先指向现有 Spring/H2/JPA 集成测试，不伪造手工
+      API；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A72
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: focused tests 只用于定位，最终验收必须包含完整回归。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认该 Guide 导航、架构路径、精确测试与观察点完整且可复核。
+      truncated: false
+  - id: A73
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 注释使用中文，代码符号、枚举、错误码、协议名和 identity 保持原文。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A74
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 注释解释业务目的、关键不变量、状态/版本收敛、幂等与并发、证据为何追加而不覆盖、结算资格和事件副作用。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A75
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不对 getter、简单赋值、显然的 `require`、数据搬运和每一行语句做翻译式注释。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A76
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 注释不得扩大能力边界：普通 Scheduler 不是持久化调度，at-least-once 不是 exactly-once，Analyzer
+      Flow 不是运行态端到端 stitching。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A77
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 至少覆盖：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A78
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Payment：start attempt、expiry、channel result 总入口及四类当前状态分流、review
+      adjudication、unknown 自动收敛、fee snapshot、refund reserve/release/convert；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A79
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Refund：创建、渠道请求、结果幂等/冲突、失败释放、成功预算转换、unknown/review 与成功不可回退；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A80
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: ReconciliationBatch：fetch failure、run/revision append、effective
+      run、difference classify、disposition/confirmation、completion/settlement
+      blocker 重算；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A81
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: MerchantSettlement：composition 确认、execution attempt、result
+      receipt/冲突、unknown adjudication、void/replacement、effective ownership 和
+      settled fact once。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A82
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 复杂 Handler 必须通过方法级 KDoc、阶段注释或不改变行为的私有函数提取，使以下路径可以按业务阶段阅读：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A83
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: payment create/start/result/expiry/review；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A84
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: refund create/result/review；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A85
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: reconciliation daily/rerun/available-event/disposition；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A86
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: merchant settlement prepare/confirm/start/result/review/void；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A87
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Domain Event 到 reliable Integration Event 发布和 inbound event 到权威 Pull 的收敛边界。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A88
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 所有既有稳定英文 `code` 和对应 HTTP status 保持不变。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A89
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 用户可见 HTTP `message` 必须是简洁中文，使用一致业务术语。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A90
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 错误传播必须显式携带 code；禁止从 `Throwable.message` 或字符串前缀解析 `REVIEW_*` 等 code。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A91
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`PaymentErrorResponse` 保留 `status/code/message`，允许增加可选 `details`。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A92
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`details` 只允许安全、结构化、白名单字段，例如业务 ID、字段名、期望/实际状态；不得自动包含
+      cause、rawMessage、SQL、SQLState、异常类名或堆栈。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A93
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 未知 runtime、数据库、Hibernate、唯一约束和 provider 异常返回稳定 code 与固定中文安全消息，原始 cause
+      只进入日志。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A94
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: change 后由本地代码新生成并经 Query/GET 暴露的以下文本必须中文化：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A95
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: payment/refund notification rejection/conflict summary；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A96
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: payment review summary、system decision reason、settlement eligibility
+      blocker；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A97
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: reconciliation fetch failure、statement incomplete、unresolved
+      difference/blocking reason；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A98
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: settlement candidate blocker、result conflict/review/failure summary。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A99
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 以下内容不得翻译或改写：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A100
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: stable code、enum/type/event name；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A101
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: identity discriminator、matching basis、failure code；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A102
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: channel/provider raw result/code；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A103
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 用户输入的 reason、evidence、follow-up；
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A104
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 历史数据库中已经存在的英文 summary。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A105
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 新的业务错误类型不得让 domain 依赖 adapter/HTTP。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A106
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: application/adapter 在发布边界将显式 code、中文 message 与 safe details 投影为 HTTP
+      response。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A107
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 同一错误在 domain/application/HTTP 测试中使用同一稳定 code，不通过 message 相等维持机器合同。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A108
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: provider 原始诊断如果需要保留，应进入日志或专门 raw diagnostic 字段；对外 message 使用受控中文摘要。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A109
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 必须验证：
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A110
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 53 个场景全部出现在 Guide 导航中，状态与 traceability 一致，四个 planned 场景未升级。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 53 场景、49 verified/4 planned、可移植链接和路径/方法定位守卫通过。
+      truncated: false
+  - id: A111
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: scenarios、requirements README、project README 到 Guide 的链接可解析，Guide 不含本机绝对路径。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 53 场景、49 verified/4 planned、可移植链接和路径/方法定位守卫通过。
+      truncated: false
+  - id: A112
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: Guide 的 Design、代码、Flow 和测试路径存在；精确测试方法引用可由静态检查定位。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 53 场景、49 verified/4 planned、可移植链接和路径/方法定位守卫通过。
+      truncated: false
+  - id: A113
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 现有 400/404/409 和业务错误 code/status 保持不变，message 为中文。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A114
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: "`REVIEW_UNAUTHORIZED`、`REVIEW_NOT_FOUND`、`REVIEW_DECISION_IDEMPOTENCY_CO\
+      NFLICT`、`REVIEW_DECISION_NOT_ALLOWED` 不再依赖 exception message 解析。"
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A115
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 模拟数据库/provider/未知英文异常时，HTTP response 不包含原始文本、SQL、类名或堆栈。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A116
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 新写入的 rejection/conflict/review/blocking/failure summary 通过 Query/GET
+      round-trip 后为中文，机器 token 和用户输入保持原值。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A117
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 用户可见主源码字符串静态扫描不新增纯英文自然语言；code、enum、identity、协议、raw diagnostic 使用显式白名单。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认稳定 code/status、中文安全 message/summary、provider raw
+        diagnostic 隔离及对应静态/round-trip 守卫通过。
+      truncated: false
+  - id: A118
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 复杂 Behavior/Command 注释覆盖本规格 4.2/4.3 的关键边界，不出现逐行复述或能力夸大。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认核心 Behavior、Command 与事件编排中文注释覆盖业务不变量且未夸大能力。
+      truncated: false
+  - id: A119
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: domain、application、adapter、start focused tests 通过；最终 `clean build` 全通过，0
+      failure、0 skip。
+    result: passed
+    reason:
+      text: Runtime full matrix 111 tests/28 suites 全通过，Analyzer 46 outputs/19
+        roots、Agent diagnostics 0、生成与 traceability 合同无回退。
+      truncated: false
+  - id: A120
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: traceability contract、Analyzer plan/generate 和既有 capability/evidence
+      guards 通过；Generator ownership 与 checked-in source 不漂移。
+    result: passed
+    reason:
+      text: Runtime full matrix 111 tests/28 suites 全通过，Analyzer 46 outputs/19
+        roots、Agent diagnostics 0、生成与 traceability 合同无回退。
+      truncated: false
+  - id: A121
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不实现 `PAY-AC-080/081/084/086`。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 planned 能力与其他非目标未被实现或误宣称，机器/raw 字段边界保持。
+      truncated: false
+  - id: A122
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不改变任何现有业务场景、状态机、金额公式、聚合边界、Integration Event 或 transport 语义。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 planned 能力与其他非目标未被实现或误宣称，机器/raw 字段边界保持。
+      truncated: false
+  - id: A123
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不新增生产通知、租户隔离、完整 RBAC、真实外部协议、broker、generic Inbox/Outbox、persistent
+      scheduler、跨实例 exactly-once、周结或负净额追偿。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 planned 能力与其他非目标未被实现或误宣称，机器/raw 字段边界保持。
+      truncated: false
+  - id: A124
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不新增 UI、reset/fixture HTTP API 或历史数据迁移。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 planned 能力与其他非目标未被实现或误宣称，机器/raw 字段边界保持。
+      truncated: false
+  - id: A125
+    source: specs/payment-reference-acceptance-experience/spec.md
+    text: 不把原始外部诊断强制翻译为中文，也不把机器字段改成展示文本。
+    result: passed
+    reason:
+      text: 独立只读 Verifier 确认 planned 能力与其他非目标未被实现或误宣称，机器/raw 字段边界保持。
+      truncated: false
+builder_handoff:
+  candidate_id: f1f5df18-8650-4843-86c0-d860fae557ce
+  identity_provider: skill-coordinated
+  builder_execution_ref: skill-coordinated:builder:039b2658-162e-4a49-8382-a227d56edafe
+  iteration: 3
+  summary:
+    text: Iteration 3 关闭非异常 provider response 透传：Payment/Refund application 依据
+      accepted/failureCode 生成固定中文 safeDiagnostic，gateway.diagnosticSummary
+      只进入日志；新增 C-REJECT HTTP/GET round-trip，同时验证 failureCode 保持且原始 Fake provider
+      文本不进入 response/rejectionSummary；增强 UserVisibleMessageContractTests，以用户可见
+      sink 为边界禁止 gateway.diagnosticSummary 变量透传并限定 raw diagnostic 仅一个日志隔离点。
+    truncated: false
+  addressed_acceptance_ids:
+    - A10
+    - A12
+    - A94
+    - A95
+    - A108
+    - A109
+    - A116
+    - A117
+  checks:
+    - name:
+        text: non-exception provider rejection tests
+        truncated: false
+      result: passed
+      note:
+        text: Payment/Refund C-REJECT response、持久化 rejectionSummary 与 GET round-trip
+          仅见受控中文，raw provider diagnostic 不泄漏
+        truncated: false
+    - name:
+        text: sink-source architecture guard
+        truncated: false
+      result: passed
+      note:
+        text: gateway.diagnosticSummary 仅允许单一日志隔离点，禁止直接赋给 diagnosticSummary 或
+          rejectAttemptStart
+        truncated: false
+    - name:
+        text: final clean build iteration 3
+        truncated: false
+      result: passed
+      note:
+        text: 111 tests / 28 suites / 0 failures / 0 errors / 0 skips
+        truncated: false
+    - name:
+        text: Analyzer iteration 3
+        truncated: false
+      result: passed
+      note:
+        text: 46 outputs / 19 roots，plan/generate 通过
+        truncated: false
+    - name:
+        text: Agent Snapshot iteration 3
+        truncated: false
+      result: passed
+      note:
+        text: diagnostics 0、analysis ok；overall partial 仅因 live external freshness
+        truncated: false
+    - name:
+        text: git diff --check
+        truncated: false
+      result: passed
+      note:
+        text: 无 whitespace error，仅 Windows line-ending 提示
+        truncated: false
+  checks_truncated: false
+  known_limits:
+    - text: PAY-AC-080/081/084/086 继续保持 planned/not-built。
+      truncated: false
+    - text: 历史英文 summary 不迁移；只保证新写入本地摘要。
+      truncated: false
+    - text: Agent Snapshot partial 仅因 live external source freshness，diagnostics 和
+        analysis 均正常。
+      truncated: false
+  known_limits_truncated: false
+  submitted_at: 2026-08-23T11:45:32.866Z
+blockers: []
+verification:
+  candidate_id: f1f5df18-8650-4843-86c0-d860fae557ce
+  identity_provider: skill-coordinated
+  verifier_execution_ref: skill-coordinated:verifier:bca8640b-95d6-4f1f-bdb3-2fb8f7b5e0af
+  iteration: 3
+  attempt: 1
+  assurance: skill-coordinated
+  verdict: pass
+  checks:
+    - id: acceptance-experience-full-matrix-iteration3
+      name:
+        text: Iteration 3 clean build, provider sink isolation, Analyzer, Agent
+          Snapshot, and diff safety
+        truncated: false
+      argv_display:
+        - text: -NoProfile
+          truncated: false
+        - text: -Command
+          truncated: false
+        - text: |-
+            $ErrorActionPreference='Stop'
+            $env:CAP4K_LOCAL_PATH='C:\Users\LD_moxeii\Documents\code\only-workspace\cap4k'
+            .\gradlew.bat clean build --no-daemon --console=plain
+            if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+            .\gradlew.bat cap4kAnalysisPlan cap4kAnalysisGenerate --no-daemon --console=plain
+            if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+            .\gradlew.bat cap4kAgentSnapshot --no-daemon --console=plain
+            if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+            git diff --check
+            if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+            $diagnostics=Get-Content 'build/cap4k/agent/diagnostics.json' -Raw | ConvertFrom-Json
+            if($diagnostics.status -ne 'ok' -or @($diagnostics.diagnostics).Count -ne 0){throw 'Agent diagnostics are not clean'}
+            $analysis=Get-Content 'build/cap4k/agent/analysis.json' -Raw | ConvertFrom-Json
+            if($analysis.status -ne 'ok'){throw 'Analyzer evidence is not ok'}
+            $payment=Get-Content 'application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/attempt/StartPaymentAttemptCmd.kt' -Raw
+            $refund=Get-Content 'application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/refund/create/CreateRefundCmd.kt' -Raw
+            foreach($source in @($payment,$refund)){
+             if($source -match 'diagnosticSummary\s*=\s*gateway\.diagnosticSummary'){throw 'Provider diagnostic reaches response sink'}
+             if($source -match 'rejectAttemptStart[\s\S]{0,220}gateway\.diagnosticSummary'){throw 'Provider diagnostic reaches persistence sink'}
+             if(([regex]::Matches($source,'gateway\.diagnosticSummary')).Count -ne 1 -or $source -notmatch '原始诊断仅记录日志'){throw 'Raw provider diagnostic is not isolated to one log point'}
+            }
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 103331
+  summary:
+    text: Iteration 3 独立只读 Verifier 全量重审 A1-A125 后全部通过。Payment/Refund 异常与非异常
+      provider diagnostic 均已隔离到日志，HTTP/持久化使用受控中文 safeDiagnostic 并保留机器
+      failureCode；C-REJECT round-trip 和 sink/source 静态守卫通过。文档导航、planned 边界、稳定
+      code/status、中文审计摘要、review code 解耦、核心中文注释和非目标保持。Runtime full matrix 为 111
+      tests/28 suites/0 failures/0 errors/0 skips，Analyzer 46 outputs/19
+      roots，Agent diagnostics 0，git diff check 通过。
+    truncated: false
+  risks:
+    - text: UserVisibleMessageContractTests 针对当前两个 gateway command 建立 sink/source
+        结构守卫；未来新增 gateway command 时需同步扩展文件列表。
+      truncated: false
+    - text: Provider accepted=true 但 channelRefundId
+        为空的畸形组合仍会拒绝退款尝试，安全与中文合同成立，但文案可在后续独立协议一致性增强中进一步细化。
+      truncated: false
+  risks_truncated: false
+  completed_at: 2026-08-23T11:51:44.931Z
+history:
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 1
+    outcome: fail
+    unresolved_ids:
+      - A10
+      - A11
+      - A12
+      - A93
+      - A94
+      - A108
+      - A109
+      - A115
+      - A116
+      - A117
+    summary:
+      text: 独立只读 Verifier 判定失败：文档导航、中文注释、显式 review code、HTTP advice 与 Runtime
+        全矩阵总体通过，但 Payment/Refund gateway 异常仍把 Throwable.message/类名拼入 HTTP 可达
+        diagnosticSummary，且缺少用户可见英文主源码扫描守卫。
+      truncated: false
+    completed_at: 2026-08-23T10:38:34.041Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 1
+    outcome: fail
+    unresolved_ids:
+      - A10
+      - A12
+      - A94
+      - A95
+      - A108
+      - A109
+      - A116
+      - A117
+    summary:
+      text: Iteration 2 独立只读 Verifier 判定失败：异常抛出路径已安全，但 Payment/Refund provider 正常返回
+        accepted=false 或成功时仍透传 gateway.diagnosticSummary；静态守卫也无法检测该变量传播。需以
+        failureCode 映射受控中文摘要、raw diagnostic 仅日志，并新增非异常拒绝 HTTP/GET 测试和
+        sink/source 架构守卫。
+      truncated: false
+    completed_at: 2026-08-23T10:49:51.078Z
+  - goal_cycle: 1
+    iteration: 3
+    attempt: 1
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: Iteration 3 独立只读 Verifier 全量重审 A1-A125 后全部通过。Payment/Refund 异常与非异常
+        provider diagnostic 均已隔离到日志，HTTP/持久化使用受控中文 safeDiagnostic 并保留机器
+        failureCode；C-REJECT round-trip 和 sink/source 静态守卫通过。文档导航、planned 边界、稳定
+        code/status、中文审计摘要、review code 解耦、核心中文注释和非目标保持。Runtime full matrix 为 111
+        tests/28 suites/0 failures/0 errors/0 skips，Analyzer 46 outputs/19
+        roots，Agent diagnostics 0，git diff check 通过。
+      truncated: false
+    completed_at: 2026-08-23T11:51:44.931Z
+history_overflow:
+  dropped_entries: 0
+  first_dropped_at: null
+  last_dropped_at: null
+  outcome_counts:
+    pass: 0
+    fail: 0
+    blocked: 0
+    execution-error: 0
+    recovery: 0
+verification_result: pass
+verification_report: verification.md
+archived: false
+created_at: 2026-08-23T09:20:45.039Z

@@ -13,7 +13,10 @@ fun ReconciliationBatch.onDeleted() {}
 
 data class ReconciliationRunResult(val run: ReconciliationRun, val idempotentReplay: Boolean)
 
-/** Records that the statement provider did not produce a usable statement for this scope. */
+/**
+ * 记录账单 provider 未能提供可用账单的事实。失败原因只保存受控中文摘要；
+ * 原始异常留在应用日志，不能把“不可用”伪装成空账单并完成对账。
+ */
 fun ReconciliationBatch.markStatementFetchFailed(at: LocalDateTime, reason: String) {
     status = if (at.isAfter(statementWaitDeadlineAt)) {
         ReconciliationBatchStatus.REVIEW_REQUIRED
@@ -21,11 +24,14 @@ fun ReconciliationBatch.markStatementFetchFailed(at: LocalDateTime, reason: Stri
         ReconciliationBatchStatus.FETCH_FAILED
     }
     settlementBlocked = true
-    blockingReason = reason.takeIf { it.isNotBlank() } ?: "Channel statement provider failed"
+    blockingReason = reason.takeIf { it.isNotBlank() } ?: "渠道账单暂时不可用"
     completedAt = null
 }
 
-/** Reconciles one immutable statement revision and retains all earlier revisions as history. */
+/**
+ * 追加一个不可变账单 revision。相同 identity+revision 重放直接复用；更高 revision 成为 effective run，
+ * 迟到的更低 revision 只保留历史且不能回退 currentEffectiveRunId。旧 run/items 永不覆盖。
+ */
 fun ReconciliationBatch.appendReconciliationRun(
     statement: ChannelStatement,
     platformFacts: List<PlatformReconciliationFact>,
@@ -43,9 +49,9 @@ internal fun ReconciliationBatch.appendReconciliationRun(
     startedAt: LocalDateTime,
     runId: ReconciliationRunId,
 ): ReconciliationRunResult {
-    require(statement.channelId == channelId) { "Statement channel does not belong to this batch" }
-    require(statement.currency == currency) { "Statement currency does not belong to this batch" }
-    require(statement.reconciliationDate == reconciliationDate) { "Statement date does not belong to this batch" }
+    require(statement.channelId == channelId) { "账单渠道不属于当前对账批次" }
+    require(statement.currency == currency) { "账单币种不属于当前对账批次" }
+    require(statement.reconciliationDate == reconciliationDate) { "账单业务日不属于当前对账批次" }
 
     reconciliationRuns.firstOrNull {
         it.statementIdentity == statement.statementIdentity && it.statementRevision == statement.statementRevision
@@ -92,7 +98,10 @@ internal fun ReconciliationBatch.appendReconciliationRun(
     return ReconciliationRunResult(run, false)
 }
 
-/** Appends every authorization attempt. Denied attempts remain audit evidence and never resolve an item. */
+/**
+ * 追加每一次差异处置尝试。未授权动作也要保留 REJECTED 审计记录，但不能解决差异；
+ * 只有授权结论才能改变 resolved/settlementBlocked，且仅 CONFIRM_PLATFORM_FACT 可以形成确认事实。
+ */
 fun ReconciliationBatch.appendDisposition(
     differenceIdentity: String,
     creation: ReconciliationDispositionCreation,
@@ -100,34 +109,34 @@ fun ReconciliationBatch.appendDisposition(
 ): ReconciliationDisposition {
     val run = effectiveRun()
     val item = run.reconciliationItems.firstOrNull { it.differenceIdentity == differenceIdentity }
-        ?: throw IllegalArgumentException("Unknown reconciliation difference: $differenceIdentity")
+        ?: throw IllegalArgumentException("未找到对账差异：$differenceIdentity")
     val authorized = creation.authorizationResult == DispositionAuthorization.AUTHORIZED
     val conclusion = if (authorized) {
         require(creation.status == ReconciliationDispositionStatus.APPLIED) {
-            "Authorized disposition must be APPLIED"
+            "已授权的差异处置必须使用 APPLIED 状态"
         }
         requireNotNull(creation.conclusion) {
-            "Authorized disposition must declare a conclusion"
+            "已授权的差异处置必须声明结论"
         }.also { authorizedConclusion ->
             if (authorizedConclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT) {
                 require(creation.settlementImpact == SettlementImpact.CONFIRMS_SETTLEMENT_FACT) {
-                    "Platform confirmation must declare CONFIRMS_SETTLEMENT_FACT"
+                    "确认平台事实时必须声明 CONFIRMS_SETTLEMENT_FACT 结算影响"
                 }
                 val requiredConfirmation = requireNotNull(confirmation) {
-                    "Platform confirmation conclusion requires a confirmation fact"
+                    "确认平台事实的结论必须同时提供确认事实"
                 }
                 item.requireConfirmationEligibility(requiredConfirmation, channelId)
             } else {
                 require(confirmation == null) {
-                    "A confirmation fact is only valid for CONFIRM_PLATFORM_FACT"
+                    "只有 CONFIRM_PLATFORM_FACT 结论可以携带确认事实"
                 }
             }
         }
     } else {
         require(creation.status == ReconciliationDispositionStatus.REJECTED) {
-            "Denied disposition must be REJECTED"
+            "未授权的差异处置必须使用 REJECTED 状态"
         }
-        require(confirmation == null) { "Denied disposition cannot create a confirmation fact" }
+        require(confirmation == null) { "未授权的差异处置不能创建确认事实" }
         null
     }
 
@@ -152,28 +161,28 @@ private fun ReconciliationItem.requireConfirmationEligibility(
     creation: ReconciliationConfirmationFactCreation,
     expectedChannelId: String,
 ) {
-    require(creation.merchantId.isNotBlank()) { "Confirmation merchant identity must not be blank" }
-    require(creation.channelId == expectedChannelId) { "Confirmation channel does not belong to this batch" }
+    require(creation.merchantId.isNotBlank()) { "确认事实的商户身份不能为空" }
+    require(creation.channelId == expectedChannelId) { "确认事实的渠道不属于当前对账批次" }
     require(
         differenceType == ReconciliationDifferenceType.CHANNEL_ONLY ||
             differenceType == ReconciliationDifferenceType.STATUS_MISMATCH
-    ) { "Only CHANNEL_ONLY or STATUS_MISMATCH can form a platform confirmation fact" }
+    ) { "只有 CHANNEL_ONLY 或 STATUS_MISMATCH 差异可以形成平台确认事实" }
     require(channelRawStatus?.uppercase() in setOf("SUCCESS", "SUCCEEDED")) {
-        "Confirmation requires channel success evidence"
+        "确认事实必须基于渠道成功证据"
     }
-    val evidenceAmount = requireNotNull(channelAmount) { "Confirmation requires channel amount evidence" }
+    val evidenceAmount = requireNotNull(channelAmount) { "确认事实缺少渠道金额证据" }
     require(evidenceAmount.compareTo(creation.amount) == 0) {
-        "Confirmation amount does not match channel evidence"
+        "确认金额与渠道证据不一致"
     }
-    require(channelCurrency == creation.currency) { "Confirmation currency does not match channel evidence" }
+    require(channelCurrency == creation.currency) { "确认币种与渠道证据不一致" }
     require(channelTransactionIdentity == creation.externalTransactionIdentity) {
-        "Confirmation transaction identity does not match channel evidence"
+        "确认交易身份与渠道证据不一致"
     }
-    require(transactionKind == creation.transactionKind) { "Confirmation transaction kind does not match item" }
+    require(transactionKind == creation.transactionKind) { "确认交易类型与差异项不一致" }
 }
 
 fun ReconciliationItem.appendConfirmation(creation: ReconciliationConfirmationFactCreation): ReconciliationConfirmationFact {
-    require(creation.sourceDifferenceIdentity == differenceIdentity) { "Confirmation source does not match item" }
+    require(creation.sourceDifferenceIdentity == differenceIdentity) { "确认事实来源与差异项不一致" }
     val fact = ReconciliationConfirmationFact(
         sourceDifferenceIdentity = creation.sourceDifferenceIdentity,
         merchantId = creation.merchantId,
@@ -197,7 +206,7 @@ fun ReconciliationBatch.recalculateCompletion(at: LocalDateTime = LocalDateTime.
 
 private fun ReconciliationBatch.effectiveRun(): ReconciliationRun =
     reconciliationRuns.lastOrNull { it.status != ReconciliationRunStatus.SUPERSEDED }
-        ?: throw IllegalStateException("Batch has no effective reconciliation run")
+        ?: throw IllegalStateException("对账批次没有当前有效运行")
 
 private fun compareStatementRevision(left: String, right: String): Int {
     val leftNumeric = left.toBigIntegerOrNull()
@@ -214,6 +223,10 @@ private fun ReconciliationBatch.recalculate(run: ReconciliationRun, at: LocalDat
     applyEffectiveRun(run, at)
 }
 
+/**
+ * 仅把 current effective run 投影到批次摘要。账单完整性和每个 item 的 settlementBlocked 共同决定完成状态；
+ * 旧 run 保持不可变，人工处置后只重算当前 run 的派生计数和阻断原因。
+ */
 private fun ReconciliationBatch.applyEffectiveRun(run: ReconciliationRun, at: LocalDateTime) {
     matchedCount = run.matchedCount
     differenceCount = run.differenceCount
@@ -223,12 +236,12 @@ private fun ReconciliationBatch.applyEffectiveRun(run: ReconciliationRun, at: Lo
     when {
         !complete -> {
             status = ReconciliationBatchStatus.REVIEW_REQUIRED
-            blockingReason = "Statement is not complete"
+            blockingReason = "渠道账单不完整"
             completedAt = null
         }
         unresolvedDifferenceCount > 0 || settlementBlocked -> {
             status = ReconciliationBatchStatus.AWAITING_DISPOSITION
-            blockingReason = "Unresolved or settlement-blocking reconciliation differences"
+            blockingReason = "仍有未解决或阻断结算的对账差异"
             completedAt = null
         }
         else -> {
@@ -239,6 +252,10 @@ private fun ReconciliationBatch.applyEffectiveRun(run: ReconciliationRun, at: Lo
     }
 }
 
+/**
+ * 逐笔匹配优先使用稳定渠道交易身份，再依次比较交易类型、币种、金额和状态。
+ * 相同渠道身份的第二条及后续记录标记为 DUPLICATE；金额相同本身绝不能成为自动关联依据。
+ */
 private fun classify(
     records: List<ChannelStatementRecord>, facts: List<PlatformReconciliationFact>
 ): List<ReconciliationItem> {

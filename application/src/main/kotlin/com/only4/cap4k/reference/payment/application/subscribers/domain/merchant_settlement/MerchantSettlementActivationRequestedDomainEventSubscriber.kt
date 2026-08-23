@@ -8,7 +8,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 
 /**
- * Activate replacement settlement ownership after the predecessor release has been persisted
+ * 在前置结算单释放所有权后激活替代结算单的有效所有权
  */
 @Service
 @DesignBlockMetadata(
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service
 class MerchantSettlementActivationRequestedDomainEventSubscriber {
 
     @EventListener(MerchantSettlementActivationRequestedDomainEvent::class)
+    /** 通过独立 Command 在同一事务边界激活 replacement；失败时由 UoW 回滚 predecessor 与 replacement 组合。 */
     fun on(event: MerchantSettlementActivationRequestedDomainEvent) {
         Mediator.commands.send(ActivateMerchantSettlementCmd.Request(event.settlementId))
     }

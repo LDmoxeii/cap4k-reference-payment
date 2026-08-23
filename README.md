@@ -34,7 +34,8 @@ B5 只验证两条最小 HTTP Integration Event 路径：入站账单可用信�
 ## 业务真源
 
 - `docs/requirements/business/`：框架无关业务规则；
-- `docs/requirements/acceptance/`：可复用业务验收场景；
+- `docs/requirements/acceptance/payment-scenarios.md`：稳定的业务验收断言；
+- `docs/requirements/acceptance/payment-acceptance-guide.md`：面向人工验收的执行顺序、架构导航、精确测试方法与观察点；
 - `docs/requirements/projection/cap4k-current.md`：业务需求到当前 cap4k 能力的 current-only 投影；
 - `docs/requirements/traceability.yaml`：需求、投影、实现切片与证据的机器可读追踪关系。
 
@@ -224,7 +225,7 @@ cap4k.local.path=C:/path/to/cap4k
 ## 当前证据
 
 - accepted lineage：`origin/main=e702e725674c4ab1271441cf1ed011bad3b75021` 同时包含 B1 `6a40c5da`、B2 `43a59828`、B3 `8750a4b7`、B4 `4e347650`、B5 `3fd59cda` 与 #4 `e702e725`；
-- clean candidate checkout：提交 `75006a9df642af696b2904a0fb5deb5e222fbbef` 在初始 0 个 build 目录的独立 worktree 中完成 `clean build bootJar`，102 tests / 24 suites / 0 failures / 0 errors / 0 skips（#4 accepted 基线为 100/23，进入 #4 前为 84/22）；
+- clean candidate checkout：提交 `75006a9df642af696b2904a0fb5deb5e222fbbef` 在初始 0 个 build 目录的独立 worktree 中完成 `clean build bootJar`，111 tests / 28 suites / 0 failures / 0 errors / 0 skips（#8 composition 基线为 102/24，#4 accepted 基线为 100/23，进入 #4 前为 84/22）；
 - composition trace：新增 1 个 Spring/H2/JPA 端到端测试，把 100.00 Payment、20.00 partial Refund、同一 authoritative reconciliation run、两条 settlement line、2.00 fee、78.00 net amount 和恰好 1 条 durable `MerchantSettlementCompleted` record 关联起来；
 - ordinary plan：`build/cap4k/plan.json`，197 items（137 checked-in `SKIP`、60 generated `OVERWRITE`）；同一 clean checkout 两轮 plan SHA-256 均为 `8f8104352238e9759f64b0eeeab9a1693e9205ec706df7280a791c0e535b36c8`，60 个 generated files 的便携树 SHA-256 均为 `d7da82618706355eb89803f0cfa1a1f7cf7f529d8927f21c7a2829c30bb0b388`；plan 含 checkout locator，因此只用同一检出内的重复结果证明确定性；
 - B5 HTTP/H2/JPA：`ReconciliationReferenceApplicationTests.kt` 覆盖入站重投与 revision 收敛，`MerchantSettlementReferenceApplicationTests.kt` 通过测试期可控 JDK `HttpServer` fake receiver 分别覆盖 HTTP 503 与真实 response timeout 后的 durable retry/recovery，并证明 event UUID、event type 与 payload 保持稳定；该接收器只证明 transport 行为，不是生产商户通知服务；

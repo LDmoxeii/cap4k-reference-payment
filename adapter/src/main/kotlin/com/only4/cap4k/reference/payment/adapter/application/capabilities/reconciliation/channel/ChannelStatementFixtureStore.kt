@@ -40,7 +40,7 @@ class ChannelStatementFixtureStore {
     fun clear() = statements.clear()
 
     private fun revisionOrder(revision: String) = revision.toBigIntegerOrNull()
-        ?: throw IllegalArgumentException("statement revision must be a positive integer: $revision")
+        ?: throw IllegalArgumentException("账单 revision 必须为正整数: $revision")
 
     private data class Scope(
         val channelId: String,

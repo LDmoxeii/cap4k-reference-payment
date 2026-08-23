@@ -19,6 +19,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.payment.rejectAttempt
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.startAttempt
 import java.time.Clock
 import java.time.LocalDateTime
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @DesignBlockMetadata(
@@ -36,6 +37,10 @@ object StartPaymentAttemptCmd {
         private val clock: Clock,
     ) : CommandHandler<Request, Response> {
 
+        /**
+         * 每次发起前重新检查 expiresAt、Payment 状态和 review eligibility，再选择当前合格配置并创建 attempt。
+         * Gateway ACCEPTED 只表示渠道受理；异常或拒绝必须留下可查询 attempt 诊断，不能伪造支付成功。
+         */
         override fun handle(command: Request): Response {
             val payment = Mediator.repositories.findOne(
                 SPayment.predicateById(PaymentId.parse(command.paymentId))
@@ -43,10 +48,10 @@ object StartPaymentAttemptCmd {
 
             val now = LocalDateTime.now(clock)
             if (!now.isBefore(payment.expiresAt)) {
-                throw PaymentConflictException("PAYMENT_EXPIRED", "payment ${payment.id} has expired")
+                throw PaymentConflictException("PAYMENT_EXPIRED", "支付单 ${payment.id} 已过期")
             }
             if (!payment.currentReviewEligibility().settlementEligible) {
-                throw PaymentConflictException("PAYMENT_REVIEW_REQUIRED", "payment ${payment.id} has an unresolved blocking review")
+                throw PaymentConflictException("PAYMENT_REVIEW_REQUIRED", "支付单 ${payment.id} 仍有未解决的阻断复核")
             }
             payment.attempts.firstOrNull { it.status == PaymentAttemptStatus.PROCESSING }?.let { current ->
                 return Response(
@@ -55,7 +60,7 @@ object StartPaymentAttemptCmd {
                     requestIdentity = current.requestIdentity,
                     paymentStatus = payment.status.name,
                     attemptStatus = current.status.name,
-                    diagnosticSummary = "reused the active payment attempt",
+                    diagnosticSummary = "复用了当前正在处理的支付尝试",
                 )
             }
 
@@ -97,7 +102,8 @@ object StartPaymentAttemptCmd {
                     )
                 )
             } catch (error: RuntimeException) {
-                val diagnostic = "channel gateway failed: ${error.message ?: error::class.simpleName}"
+                log.warn("支付渠道调用失败：paymentId={}, attemptId={}", payment.id, attempt.id, error)
+                val diagnostic = "支付渠道调用失败，请稍后重试"
                 payment.rejectAttemptStart(
                     paymentAttemptId = attempt.id,
                     failureCode = "CHANNEL_GATEWAY_ERROR",
@@ -112,11 +118,15 @@ object StartPaymentAttemptCmd {
                     diagnosticSummary = diagnostic,
                 )
             }
+            val safeDiagnostic = paymentGatewaySummary(gateway.accepted, gateway.failureCode)
             if (!gateway.accepted) {
+                gateway.diagnosticSummary?.takeIf { it.isNotBlank() }?.let {
+                    log.warn("支付渠道拒绝原始诊断仅记录日志：paymentId={}, attemptId={}, diagnostic={}", payment.id, attempt.id, it)
+                }
                 payment.rejectAttemptStart(
                     paymentAttemptId = attempt.id,
                     failureCode = gateway.failureCode ?: "CHANNEL_REJECTED",
-                    diagnosticSummary = gateway.diagnosticSummary,
+                    diagnosticSummary = safeDiagnostic,
                 )
             }
             return Response(
@@ -125,10 +135,18 @@ object StartPaymentAttemptCmd {
                 requestIdentity = attempt.requestIdentity,
                 paymentStatus = payment.status.name,
                 attemptStatus = attempt.status.name,
-                diagnosticSummary = gateway.diagnosticSummary,
+                diagnosticSummary = safeDiagnostic,
             )
         }
     }
+
+    private fun paymentGatewaySummary(accepted: Boolean, failureCode: String?): String = when {
+        accepted -> "支付渠道已受理请求"
+        failureCode?.trim()?.uppercase() == "UNSUPPORTED_CHANNEL" -> "支付渠道不支持当前请求"
+        else -> "支付渠道拒绝了请求"
+    }
+
+    private val log = LoggerFactory.getLogger(StartPaymentAttemptCmd::class.java)
 
     data class Request(
         val paymentId: String

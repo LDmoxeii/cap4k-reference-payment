@@ -25,9 +25,9 @@ data class RefundResultRecordingOutcome(
     val conflictSummary: String?
 ) {
     init {
-        require(notificationReceiveCount > 0) { "notificationReceiveCount must be positive" }
+        require(notificationReceiveCount > 0) { "通知接收次数必须大于零" }
         require(!(reservationReleasedNow && reservationConvertedToSuccessNow)) {
-            "a refund result cannot release and convert the same reservation"
+            "同一退款结果不能同时释放并转成功同一笔预留预算"
         }
         require((attemptStatus == null) == (disposition == RefundResultDisposition.ATTEMPT_NOT_FOUND)) {
             "only ATTEMPT_NOT_FOUND may omit the attempt status"
@@ -36,27 +36,27 @@ data class RefundResultRecordingOutcome(
             "reviewRequiredNow requires REVIEW_REQUIRED refund status"
         }
         require(!reservationReleasedNow || disposition == RefundResultDisposition.FAILURE_ACCEPTED) {
-            "only an accepted failure may release a reservation"
+            "只有已接受失败结果才能释放退款预留预算"
         }
         require(!reservationConvertedToSuccessNow || disposition == RefundResultDisposition.SUCCESS_ACCEPTED) {
-            "only an accepted success may convert a reservation"
+            "只有已接受成功结果才能转换退款预留预算"
         }
         require(!reservationReleasedNow || refundStatus == RefundStatus.FAILED) {
-            "a released reservation requires FAILED refund status"
+            "释放预算时退款状态必须为 FAILED"
         }
         require(!reservationConvertedToSuccessNow || refundStatus == RefundStatus.SUCCEEDED) {
-            "a converted reservation requires SUCCEEDED refund status"
+            "预算转成功时退款状态必须为 SUCCEEDED"
         }
         when (disposition) {
             RefundResultDisposition.REJECTED,
             RefundResultDisposition.REJECTED_DUPLICATE,
             RefundResultDisposition.ATTEMPT_NOT_FOUND ->
                 require(!rejectionSummary.isNullOrBlank()) {
-                    "rejected refund outcomes require a rejection summary"
+                    "被拒绝的退款结果必须包含拒绝摘要"
                 }
             RefundResultDisposition.CONFLICT ->
                 require(!conflictSummary.isNullOrBlank()) {
-                    "conflicting refund outcomes require a conflict summary"
+                    "冲突退款结果必须包含冲突摘要"
                 }
             else -> Unit
         }

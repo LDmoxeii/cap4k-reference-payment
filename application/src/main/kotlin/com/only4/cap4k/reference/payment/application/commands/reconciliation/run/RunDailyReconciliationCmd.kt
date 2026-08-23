@@ -18,6 +18,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @DesignBlockMetadata(
@@ -32,12 +33,17 @@ object RunDailyReconciliationCmd {
 
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * ordinary scheduler 只负责发送该 Command。Handler 以 channel/currency/business-date 幂等装载批次，
+         * 再分别调用权威账单 Pull 与平台事实投影；任一 provider 失败都保存受控中文阻断摘要，
+         * 原始异常只写日志，不能把失败伪装成空账单完成。
+         */
         override fun handle(command: Request): Response {
             val channelId = command.channelId.trim()
             val currency = command.currency.trim().uppercase()
             val timezone = BUSINESS_TIMEZONE
-            require(channelId.isNotBlank()) { "channelId must not be blank" }
-            require(currency.isNotBlank()) { "currency must not be blank" }
+            require(channelId.isNotBlank()) { "渠道身份不能为空" }
+            require(currency.isNotBlank()) { "币种不能为空" }
             val zone = ZoneId.of(timezone)
             val reconciliationDate = command.triggeredAt.atZone(zone).toLocalDate().minusDays(1)
 
@@ -54,7 +60,7 @@ object RunDailyReconciliationCmd {
                         reconciliationDate.plusDays(2).atStartOfDay(zone).toInstant(),
                         ZoneOffset.UTC,
                     ),
-                    blockingReason = "Awaiting channel statement",
+                    blockingReason = "等待渠道账单",
                     completedAt = null,
                 )
             )
@@ -96,10 +102,8 @@ object RunDailyReconciliationCmd {
             triggeredAt: Instant,
         ): Response {
             val failedAt = LocalDateTime.ofInstant(triggeredAt, ZoneOffset.UTC)
-            val reason = failure.message?.takeIf { it.isNotBlank() }
-                ?: failure::class.simpleName
-                ?: "Statement provider failure"
-            batch.markStatementFetchFailed(failedAt, reason)
+            log.warn("日终对账拉取账单或平台事实失败：batchId={}", batch.id, failure)
+            batch.markStatementFetchFailed(failedAt, "渠道账单或平台资金事实暂时不可用")
             return Response(
                 batchId = batch.id.toString(),
                 runId = null,
@@ -127,6 +131,7 @@ object RunDailyReconciliationCmd {
     )
 
     private const val BUSINESS_TIMEZONE = "Asia/Shanghai"
+    private val log = LoggerFactory.getLogger(RunDailyReconciliationCmd::class.java)
 
     private fun findBatch(channelId: String, currency: String, date: LocalDate): ReconciliationBatch? =
         Mediator.repositories.findOne(

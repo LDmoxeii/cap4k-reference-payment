@@ -39,14 +39,19 @@ object PrepareMerchantSettlementCmd {
 
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * 以 merchant/channel/currency/业务日形成稳定 scope，先复用当前有效结算单，再读取 current-effective-run 候选。
+         * 候选必须逐条核对归属、币种、`[periodStart, periodEnd)` 和 Payment fee snapshot；通过后一次性冻结
+         * SettlementLine 与 root 汇总。replacement 在 predecessor 释放前延迟激活，避免短暂双重消费。
+         */
         override fun handle(command: Request): Response {
             val merchantId = command.merchantId.trim()
             val channelId = command.channelId.trim()
             val currency = command.currency.trim().uppercase()
-            require(merchantId.isNotBlank()) { "merchantId must not be blank" }
-            require(channelId.isNotBlank()) { "channelId must not be blank" }
-            require(currency.isNotBlank()) { "currency must not be blank" }
-            require(command.requestedBy.isNotBlank()) { "requestedBy must not be blank" }
+            require(merchantId.isNotBlank()) { "商户身份不能为空" }
+            require(channelId.isNotBlank()) { "渠道身份不能为空" }
+            require(currency.isNotBlank()) { "币种不能为空" }
+            require(command.requestedBy.isNotBlank()) { "请求操作员不能为空" }
 
             val zone = ZoneId.of(BUSINESS_TIMEZONE)
             val periodStartInstant = command.settlementDate.atStartOfDay(zone).toInstant()
@@ -156,18 +161,18 @@ object PrepareMerchantSettlementCmd {
             periodStart: Instant,
             periodEnd: Instant,
         ) {
-            require(fact.merchantId == merchantId) { "candidate ${fact.sourceFactIdentity} merchant attribution mismatch" }
-            require(fact.channelId == channelId) { "candidate ${fact.sourceFactIdentity} channel attribution mismatch" }
-            require(fact.currency == currency) { "candidate ${fact.sourceFactIdentity} currency mismatch" }
+            require(fact.merchantId == merchantId) { "候选事实 ${fact.sourceFactIdentity} 的商户归属不一致" }
+            require(fact.channelId == channelId) { "候选事实 ${fact.sourceFactIdentity} 的渠道归属不一致" }
+            require(fact.currency == currency) { "候选事实 ${fact.sourceFactIdentity} 的币种不一致" }
             require(!fact.occurredAt.isBefore(periodStart) && fact.occurredAt.isBefore(periodEnd)) {
-                "candidate ${fact.sourceFactIdentity} is outside the settlement period"
+                "候选事实 ${fact.sourceFactIdentity} 不在结算周期内"
             }
-            require(fact.sourceFactIdentity.isNotBlank()) { "candidate sourceFactIdentity must not be blank" }
+            require(fact.sourceFactIdentity.isNotBlank()) { "候选事实身份不能为空" }
             if (fact.transactionKind == ReconciliationTransactionKind.PAYMENT) {
-                require(fact.feeFactIdentity?.isNotBlank() == true) { "payment candidate is missing fee fact identity" }
+                require(fact.feeFactIdentity?.isNotBlank() == true) { "支付候选缺少手续费事实身份" }
                 require(fact.feeBasisPoints != null && fact.feeFixedAmount != null && fact.feeRoundingMode != null &&
                     fact.feeCurrencyPrecision != null && fact.feeCalculationAmount != null) {
-                    "payment candidate ${fact.sourceFactIdentity} has an incomplete fee snapshot"
+                    "支付候选 ${fact.sourceFactIdentity} 缺少完整手续费快照"
                 }
             }
         }

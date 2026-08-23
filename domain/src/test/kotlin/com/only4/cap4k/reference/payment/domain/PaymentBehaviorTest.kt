@@ -148,11 +148,11 @@ class PaymentBehaviorTest {
         )
 
         assertThat(decision.accepted).isFalse()
-        assertThat(decision.rejectionSummary).contains("does not match attempt channel")
+        assertThat(decision.rejectionSummary).contains("与支付尝试渠道")
         assertThat(payment.status).isEqualTo(PaymentStatus.PROCESSING)
         assertThat(attempt.paymentNotificationReceipts).hasSize(1)
         assertThat(attempt.paymentNotificationReceipts.single().decision).isEqualTo(ChannelResultDisposition.REJECTED)
-        assertThat(attempt.paymentNotificationReceipts.single().rejectionSummary).contains("does not match attempt channel")
+        assertThat(attempt.paymentNotificationReceipts.single().rejectionSummary).contains("与支付尝试渠道")
     }
 
 

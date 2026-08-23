@@ -8,6 +8,10 @@ import com.only4.cap4k.reference.payment.domain.aggregates.refund.values.RefundR
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
+/**
+ * 创建或复用退款渠道尝试。PROCESSING attempt 是应用重试的幂等边界；
+ * RESULT_UNKNOWN/REVIEW_REQUIRED 不会释放 Payment 预算，只有明确失败才允许重新发起。
+ */
 fun Refund.startAttempt(
     now: LocalDateTime,
     channelId: String,
@@ -17,7 +21,7 @@ fun Refund.startAttempt(
     reviewAfterAt: LocalDateTime,
 ): RefundAttempt {
     require(status == RefundStatus.PROCESSING || status == RefundStatus.RESULT_UNKNOWN || status == RefundStatus.REVIEW_REQUIRED) {
-        "refund $id cannot start while $status"
+        "退款单 $id 当前状态为 $status，不能发起渠道退款"
     }
     attempts.firstOrNull { it.status == RefundAttemptStatus.PROCESSING }?.let { return it }
     val attempt = RefundAttempt(
@@ -44,9 +48,9 @@ fun Refund.markChannelAccepted(
     acceptedAt: LocalDateTime,
 ) {
     val attempt = attempts.firstOrNull { it.id == attemptId }
-        ?: error("refund attempt $attemptId does not belong to refund $id")
+        ?: error("退款尝试 $attemptId 不属于退款单 $id")
     require(attempt.status == RefundAttemptStatus.PROCESSING) {
-        "refund attempt $attemptId cannot be accepted while ${attempt.status}"
+        "退款尝试 $attemptId 当前状态为 ${attempt.status}，不能标记为渠道已受理"
     }
     attempt.acceptedAt = acceptedAt
     attempt.channelRefundId = channelRefundId
@@ -54,13 +58,14 @@ fun Refund.markChannelAccepted(
     channelAcceptedAt = acceptedAt
 }
 
+/** 渠道请求明确拒绝时终结 attempt 并释放 Payment 侧预留预算；未知异常不能走此分支。 */
 fun Refund.rejectAttemptStart(
     attemptId: RefundAttemptId,
     failureCode: String,
     diagnosticSummary: String?,
 ) {
     val attempt = attempts.firstOrNull { it.id == attemptId }
-        ?: error("refund attempt $attemptId does not belong to refund $id")
+        ?: error("退款尝试 $attemptId 不属于退款单 $id")
     attempt.status = RefundAttemptStatus.FAILED
     attempt.finalResult = RefundAttemptFinalResult.GATEWAY_REJECTED
     attempt.rejectionSummary = listOfNotNull(failureCode, diagnosticSummary).joinToString(": ")
@@ -72,6 +77,10 @@ fun Refund.rejectAttemptStart(
     rejectedNotificationCount += 1
 }
 
+/**
+ * 追加并裁决退款渠道结果。notification identity 负责去重，同 identity 异 payload 或终态后的相反结果
+ * 只形成冲突证据；成功把 reserved 原子转换为 successful，失败释放 reserved，未知继续占用并等待复核。
+ */
 fun Refund.recordChannelResult(
     attemptId: RefundAttemptId,
     channelId: String,
@@ -87,7 +96,7 @@ fun Refund.recordChannelResult(
 ): RefundResultRecordingOutcome {
     val normalizedResult = result.trim().uppercase()
     require(normalizedResult in setOf("SUCCESS", "FAILED", "UNKNOWN")) {
-        "unsupported refund channel result: $result"
+        "不支持的渠道退款结果：$result"
     }
     val normalizedCurrency = currency.trim().uppercase()
     notificationReceiveCount += 1
@@ -96,7 +105,7 @@ fun Refund.recordChannelResult(
 
     val attempt = attempts.firstOrNull { it.id == attemptId }
         ?: run {
-            val rejection = "refund attempt $attemptId does not belong to refund $id"
+            val rejection = "退款尝试 $attemptId 不属于退款单 $id"
             rejectedNotificationCount += 1
             lastRejectionSummary = rejection
             return outcome(null, RefundResultDisposition.ATTEMPT_NOT_FOUND, rejection)
@@ -110,7 +119,7 @@ fun Refund.recordChannelResult(
         existing.receiveCount += 1
         existing.lastReceivedAt = receivedAt
         if (!existing.samePayload(channelId, channelRefundId, amount, normalizedCurrency, normalizedResult, occurredAt)) {
-            return markConflict(attempt, existing, "notification $notificationId was reused with a conflicting payload")
+            return markConflict(attempt, existing, "通知 $notificationId 被重复使用，但 payload 与首次接收内容冲突")
         }
         val disposition = when {
             existing.decision == RefundResultDisposition.CONFLICT -> RefundResultDisposition.CONFLICT
@@ -138,15 +147,15 @@ fun Refund.recordChannelResult(
     attempt.refundNotificationReceipts.add(receipt)
 
     if (attempt.finalResult != null || status == RefundStatus.SUCCEEDED) {
-        return markConflict(attempt, receipt, "notification $notificationId conflicts with finalized refund attempt ${attempt.id}")
+        return markConflict(attempt, receipt, "通知 $notificationId 与已终结的退款尝试 ${attempt.id} 冲突")
     }
 
     val rejection = when {
-        !verified -> verificationSummary ?: "channel verification failed"
-        attempt.channelId != channelId -> "channel $channelId does not match attempt channel ${attempt.channelId}"
-        this.amount.compareTo(amount) != 0 -> "notification amount $amount does not match refund amount ${this.amount}"
-        this.currency != normalizedCurrency -> "notification currency $normalizedCurrency does not match refund currency ${this.currency}"
-        attempt.channelRefundId != null && attempt.channelRefundId != channelRefundId -> "channel refund id does not match the accepted attempt"
+        !verified -> verificationSummary ?: "渠道退款结果核验失败"
+        attempt.channelId != channelId -> "渠道 $channelId 与退款尝试渠道 ${attempt.channelId} 不一致"
+        this.amount.compareTo(amount) != 0 -> "通知金额 $amount 与退款金额 ${this.amount} 不一致"
+        this.currency != normalizedCurrency -> "通知币种 $normalizedCurrency 与退款币种 ${this.currency} 不一致"
+        attempt.channelRefundId != null && attempt.channelRefundId != channelRefundId -> "渠道退款号与已受理的退款尝试不一致"
         else -> null
     }
     if (rejection != null) {
@@ -161,7 +170,7 @@ fun Refund.recordChannelResult(
 
     receipt.accepted = true
     attempt.verifiedNotificationCount += 1
-    attempt.verdictSummary = verificationSummary ?: "verified"
+    attempt.verdictSummary = verificationSummary ?: "渠道退款结果核验通过"
     attempt.channelRefundId = channelRefundId
     this.channelRefundId = channelRefundId
     attempt.resultOccurredAt = occurredAt
@@ -199,6 +208,7 @@ fun Refund.recordChannelResult(
     }
 }
 
+/** 超过冻结阈值仍无最终结果时只进入 REVIEW_REQUIRED；预算继续占用，避免未知状态下重复退款。 */
 fun Refund.markReviewRequired(now: LocalDateTime): Boolean {
     var changed = false
     attempts.filter {
@@ -215,6 +225,7 @@ fun Refund.markReviewRequired(now: LocalDateTime): Boolean {
     return changed
 }
 
+/** 冲突 receipt 只追加审计并阻断结算，不覆盖已经形成的退款成功事实。 */
 private fun Refund.markConflict(
     attempt: RefundAttempt,
     receipt: RefundNotificationReceipt,

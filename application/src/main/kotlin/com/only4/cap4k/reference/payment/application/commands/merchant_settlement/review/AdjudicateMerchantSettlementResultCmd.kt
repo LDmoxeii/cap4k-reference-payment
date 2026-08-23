@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service
 object AdjudicateMerchantSettlementResultCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /** 授权人工裁决通过 append-only receipt 收敛 UNKNOWN，保留全部渠道历史，并与 callback 共用成功事实形成逻辑。 */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
                 SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))

@@ -40,7 +40,10 @@ class LoadMerchantSettlementCandidatesHandler(
     private val entityManager: EntityManager,
 ) : CapabilityHandler<LoadMerchantSettlementCandidates.Request, LoadMerchantSettlementCandidates.Response> {
 
-    override fun call(request: LoadMerchantSettlementCandidates.Request): LoadMerchantSettlementCandidates.Response {
+    /**
+     * 只读取 current effective reconciliation run，并在候选时重新核对 Payment 当前 review eligibility。
+     * 未决交易按交易粒度排除，旧 run、陈旧 settlementBlocked 摘要或 confirmation 都不能绕过当前复核阻断。
+     */    override fun call(request: LoadMerchantSettlementCandidates.Request): LoadMerchantSettlementCandidates.Response {
         val zone = ZoneId.of(request.businessTimezone)
         val startDate = request.periodStart.atZone(zone).toLocalDate()
         val endDate = request.periodEnd.minusNanos(1).atZone(zone).toLocalDate()
@@ -60,14 +63,14 @@ class LoadMerchantSettlementCandidatesHandler(
         batches.forEach { batch ->
             val currentRun = currentRun(batch)
             if (currentRun == null) {
-                blockers += "reconciliation batch ${batch.id} has no current effective run"
+                blockers += "对账批次 ${batch.id} 没有当前有效运行"
                 excluded += 1
                 return@forEach
             }
             currentRun.reconciliationItems.forEach { item ->
                 if (item.settlementBlocked || !item.resolved) {
                     excluded += 1
-                    blockers += "${item.differenceIdentity}: ${item.differenceType.name} remains settlement-blocking"
+                    blockers += "${item.differenceIdentity}：${item.differenceType.name} 仍阻断结算"
                     return@forEach
                 }
                 val confirmations = item.reconciliationConfirmationFacts.toList()
@@ -80,7 +83,7 @@ class LoadMerchantSettlementCandidatesHandler(
                 }
                 if (item.differenceType != ReconciliationDifferenceType.MATCHED) {
                     excluded += 1
-                    blockers += "${item.differenceIdentity}: resolved difference has no confirmation fact"
+                    blockers += "${item.differenceIdentity}：差异虽已处置，但没有确认事实"
                     return@forEach
                 }
                 val projected = projectMatched(request, batch, currentRun, item, blockers)
@@ -108,27 +111,27 @@ class LoadMerchantSettlementCandidatesHandler(
         blockers: MutableList<String>,
     ): SettlementCandidateFact? = when (item.transactionKind) {
         ReconciliationTransactionKind.PAYMENT -> {
-            val paymentId = item.paymentId ?: return blocked(blockers, item, "matched payment is missing paymentId")
+            val paymentId = item.paymentId ?: return blocked(blockers, item, "已匹配支付缺少 paymentId")
             val payment = entityManager.find(Payment::class.java, PaymentId.parse(paymentId))
-                ?: return blocked(blockers, item, "payment $paymentId was not found")
+                ?: return blocked(blockers, item, "未找到支付单 $paymentId")
             val reviewEligibility = payment.currentReviewEligibility()
             if (!reviewEligibility.settlementEligible) {
                 blocked(
                     blockers,
                     item,
-                    "payment $paymentId has unresolved review ${reviewEligibility.blockingReviewIdentities.joinToString(",")}",
+                    "支付单 $paymentId 仍有未解决复核 ${reviewEligibility.blockingReviewIdentities.joinToString(",")}",
                 )
             } else {
                 paymentFact(request, batch, run, item, payment)
-                    ?: blocked(blockers, item, "payment $paymentId lacks merchant/channel/fee eligibility")
+                    ?: blocked(blockers, item, "支付单 $paymentId 缺少商户、渠道或手续费资格证据")
             }
         }
         ReconciliationTransactionKind.REFUND -> {
-            val refundId = item.refundId ?: return blocked(blockers, item, "matched refund is missing refundId")
+            val refundId = item.refundId ?: return blocked(blockers, item, "已匹配退款缺少 refundId")
             val refund = entityManager.find(Refund::class.java, RefundId.parse(refundId))
-                ?: return blocked(blockers, item, "refund $refundId was not found")
+                ?: return blocked(blockers, item, "未找到退款单 $refundId")
             refundFact(request, batch, run, item, refund)
-                ?: blocked(blockers, item, "refund $refundId lacks merchant/channel eligibility")
+                ?: blocked(blockers, item, "退款单 $refundId 缺少商户或渠道资格证据")
         }
     }
 
@@ -142,15 +145,15 @@ class LoadMerchantSettlementCandidatesHandler(
     ): SettlementCandidateFact? {
         if (confirmation.merchantId != request.merchantId || confirmation.channelId != request.channelId ||
             confirmation.currency != request.currency.uppercase()) {
-            return blocked(blockers, item, "confirmation ${confirmation.id} attribution does not match the settlement scope")
+            return blocked(blockers, item, "确认事实 ${confirmation.id} 的归属与结算范围不一致")
         }
         val payment = confirmation.paymentId?.let { entityManager.find(Payment::class.java, PaymentId.parse(it)) }
         val refund = confirmation.refundId?.let { entityManager.find(Refund::class.java, RefundId.parse(it)) }
         if (confirmation.transactionKind == ReconciliationTransactionKind.PAYMENT && payment == null) {
-            return blocked(blockers, item, "payment confirmation ${confirmation.id} has no frozen payment fee fact")
+            return blocked(blockers, item, "支付确认事实 ${confirmation.id} 缺少冻结的支付手续费事实")
         }
         if (payment != null && payment.merchantId != request.merchantId) {
-            return blocked(blockers, item, "confirmation payment merchant attribution mismatch")
+            return blocked(blockers, item, "确认事实引用的支付商户归属不一致")
         }
         if (payment != null) {
             val eligibility = payment.currentReviewEligibility()
@@ -158,17 +161,17 @@ class LoadMerchantSettlementCandidatesHandler(
                 return blocked(
                     blockers,
                     item,
-                    "payment ${payment.id} has unresolved review ${eligibility.blockingReviewIdentities.joinToString(",")}",
+                    "支付单 ${payment.id} 仍有未解决复核 ${eligibility.blockingReviewIdentities.joinToString(",")}",
                 )
             }
         }
         if (refund != null && (refund.merchantId != request.merchantId || refund.channelId != request.channelId)) {
-            return blocked(blockers, item, "confirmation refund attribution mismatch")
+            return blocked(blockers, item, "确认事实引用的退款归属不一致")
         }
         val fee = payment?.settlementFeeAmount ?: BigDecimal.ZERO
         val occurredAt = confirmation.confirmedAt.toInstant(ZoneOffset.UTC)
         if (!within(occurredAt, request.periodStart, request.periodEnd)) {
-            return blocked(blockers, item, "confirmation ${confirmation.id} is outside the settlement period")
+            return blocked(blockers, item, "确认事实 ${confirmation.id} 不在结算周期内")
         }
         val signed = if (confirmation.transactionKind == ReconciliationTransactionKind.PAYMENT) {
             confirmation.amount - fee

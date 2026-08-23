@@ -220,7 +220,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(item.requiredText("paymentReviewIdentitySnapshot")).contains(reviewIdentity)
         assertThat(item.requiredText("paymentReviewSummary"))
             .contains("FAILURE_OR_UNKNOWN_AFTER_SUCCESS")
-            .contains("settlement-blocking")
+            .contains("阻断结算")
     }
 
     @Test
@@ -648,7 +648,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
-    fun `unavailable and incomplete statements remain queryable and cannot complete`() {
+    fun `暂时不可用 and incomplete statements remain queryable and can不完整`() {
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
                 channelId = "C-001",
@@ -658,7 +658,7 @@ class ReconciliationReferenceApplicationTests(
         )
         assertThat(response.runId).isNull()
         assertThat(response.batchStatus).isEqualTo("FETCH_FAILED")
-        assertThat(response.blockingReason).contains("unavailable")
+        assertThat(response.blockingReason).contains("暂时不可用")
 
         var batch = getJson("/api/reconciliation-batches/${response.batchId}")
         assertThat(batch.requiredText("status")).isEqualTo("FETCH_FAILED")
@@ -685,7 +685,7 @@ class ReconciliationReferenceApplicationTests(
         batch = getJson("/api/reconciliation-batches/${response.batchId}")
         assertThat(batch.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
         assertThat(batch["settlementBlocked"].asBoolean()).isTrue()
-        assertThat(batch.requiredText("blockingReason")).contains("not complete")
+        assertThat(batch.requiredText("blockingReason")).contains("不完整")
         assertThat(batch["runs"]).hasSize(1)
         assertThat(batch["runs"][0].requiredText("statementCompleteness")).isEqualTo("INCOMPLETE")
         assertThat(batch["runs"][0]["items"]).isEmpty()

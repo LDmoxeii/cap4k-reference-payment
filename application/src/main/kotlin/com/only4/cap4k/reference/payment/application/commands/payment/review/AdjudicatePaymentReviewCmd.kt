@@ -12,6 +12,7 @@ import com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_con
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfigurationId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentReviewException
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.SettlementFeeRule
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.adjudicateReview
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentAttemptStatus
@@ -29,6 +30,11 @@ import org.springframework.stereotype.Service
 object AdjudicatePaymentReviewCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * 编排顺序必须保持清晰：先解析并验证授权，再在需要接受迟到成功时抢占商户订单成功身份、
+         * 重建当时应冻结的手续费规则，最后把显式 code 的领域裁决结果投影为应用响应。
+         * 任何一步失败都由同一 UoW 回滚，不留下部分 decision、无手续费的成功或错误通知意图。
+         */
         override fun handle(command: Request): Response {
             val payment = Mediator.repositories.findOne(SPayment.predicateById(PaymentId.parse(command.paymentId)))
                 ?: throw PaymentNotFoundException(command.paymentId)
@@ -46,19 +52,19 @@ object AdjudicatePaymentReviewCmd {
                             (schema.status eq PaymentStatus.SUCCEEDED)
                     }
                 )?.takeIf { it.id != payment.id }?.let {
-                    throw PaymentConflictException("ORDER_ALREADY_PAID", "merchant order ${payment.merchantOrderNumber} already has a successful payment")
+                    throw PaymentConflictException("ORDER_ALREADY_PAID", "商户订单 ${payment.merchantOrderNumber} 已经存在成功支付")
                 }
                 val attempt = payment.attempts.firstOrNull { it.status == PaymentAttemptStatus.SUCCEEDED }
-                    ?: throw PaymentConflictException("REVIEW_DECISION_NOT_ALLOWED", "review has no trustworthy success evidence")
+                    ?: throw PaymentConflictException("REVIEW_DECISION_NOT_ALLOWED", "复核中没有可信的成功证据")
                 val configuration = Mediator.repositories.findOne(
                     SMerchantChannelConfiguration.predicateById(MerchantChannelConfigurationId.parse(attempt.channelConfigurationId))
-                ) ?: throw PaymentConflictException("REVIEW_DECISION_NOT_ALLOWED", "success evidence references a missing channel configuration")
+                ) ?: throw PaymentConflictException("REVIEW_DECISION_NOT_ALLOWED", "成功证据引用的渠道配置不存在")
                 SettlementFeeRule(
                     configurationId = configuration.id.toString(),
                     basisPoints = configuration.settlementFeeBasisPoints,
                     fixedFeeAmount = configuration.settlementFixedFeeAmount,
                     roundingMode = runCatching { RoundingMode.valueOf(configuration.settlementFeeRoundingMode.trim().uppercase()) }
-                        .getOrElse { throw PaymentConflictException("REVIEW_DECISION_NOT_ALLOWED", "unsupported settlement fee rounding mode") },
+                        .getOrElse { throw PaymentConflictException("REVIEW_DECISION_NOT_ALLOWED", "不支持该渠道配置中的结算手续费舍入模式") },
                     currencyPrecision = Money.fractionDigits(payment.currency),
                 )
             } else null
@@ -78,12 +84,8 @@ object AdjudicatePaymentReviewCmd {
                     remediationReference = command.remediationReference,
                     settlementFeeRule = feeRule,
                 )
-            } catch (error: IllegalStateException) {
-                val code = error.message?.takeIf { it.startsWith("REVIEW_") } ?: "REVIEW_DECISION_NOT_ALLOWED"
-                throw PaymentConflictException(code, error.message ?: code)
-            } catch (error: IllegalArgumentException) {
-                val code = error.message?.takeIf { it.startsWith("REVIEW_") } ?: "REVIEW_DECISION_NOT_ALLOWED"
-                throw PaymentConflictException(code, error.message ?: code)
+            } catch (error: PaymentReviewException) {
+                throw PaymentConflictException(error.code, requireNotNull(error.message), error.details)
             }
             return Response(
                 paymentStatus = outcome.paymentStatus.name,
@@ -120,7 +122,7 @@ object AdjudicatePaymentReviewCmd {
 
     private inline fun <reified E : Enum<E>> enumValueOrConflict(value: String, code: String): E =
         runCatching { enumValueOf<E>(value.trim().uppercase()) }
-            .getOrElse { throw PaymentConflictException(code, "unsupported value: $value") }
+            .getOrElse { throw PaymentConflictException(code, "不支持的复核参数值：$value", mapOf("value" to value)) }
 
     private const val AUTHORIZED_ROLE = "PAYMENT_REVIEW_OPERATOR"
     private const val AUTHORIZED_MATERIAL = "AUTHORIZED"

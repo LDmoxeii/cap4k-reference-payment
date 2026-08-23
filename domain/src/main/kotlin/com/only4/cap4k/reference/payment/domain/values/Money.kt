@@ -23,7 +23,7 @@ data class Money private constructor(
             require(normalizedCurrency in SUPPORTED_FRACTION_DIGITS) {
                 "unsupported payment currency: $normalizedCurrency"
             }
-            require(amount > BigDecimal.ZERO) { "payment amount must be positive" }
+            require(amount > BigDecimal.ZERO) { "支付金额必须大于零" }
             require(amount.scale() <= fractionDigits(normalizedCurrency)) {
                 "payment amount exceeds the supported precision for $normalizedCurrency"
             }

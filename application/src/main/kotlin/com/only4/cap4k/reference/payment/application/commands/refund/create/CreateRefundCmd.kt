@@ -28,6 +28,7 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @DesignBlockMetadata(
@@ -42,11 +43,15 @@ object CreateRefundCmd {
 
     @Service
     class Handler : CommandHandler<Request, Response> {
+        /**
+         * 创建退款先按 merchantRefundNumber 做幂等判定，再装载成功 Payment、检查期限与渠道资格并占用退款预算。
+         * Refund/Attempt 创建、Gateway 结果和 Payment 预算释放或保留都在同一 UoW 收敛，任一步失败不得半提交。
+         */
         override fun handle(command: Request): Response {
             val merchantId = command.merchantId.trim()
             val merchantRefundNumber = command.merchantRefundNumber.trim()
-            require(merchantId.isNotBlank()) { "merchantId must not be blank" }
-            require(merchantRefundNumber.isNotBlank()) { "merchantRefundNumber must not be blank" }
+            require(merchantId.isNotBlank()) { "商户身份不能为空" }
+            require(merchantRefundNumber.isNotBlank()) { "商户退款号不能为空" }
             val money = Money.of(command.amount, command.currency)
             val requestedAt = LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC)
 
@@ -63,31 +68,31 @@ object CreateRefundCmd {
                 if (!sameRequest) {
                     throw RefundConflictException(
                         code = "REFUND_IDEMPOTENCY_CONFLICT",
-                        message = "merchant refund number is already bound to a different refund",
+                        message = "商户退款号已绑定到内容不同的退款申请",
                     )
                 }
                 val attempt = existing.attempts.firstOrNull()
-                    ?: throw RefundConflictException("REFUND_WITHOUT_ATTEMPT", "refund ${existing.id} has no attempt")
+                    ?: throw RefundConflictException("REFUND_WITHOUT_ATTEMPT", "退款单 ${existing.id} 没有退款尝试")
                 return Response(
                     refundId = existing.id.toString(),
                     refundAttemptId = attempt.id.toString(),
                     status = existing.status.name,
                     requestIdentity = attempt.requestIdentity,
                     idempotentReplay = true,
-                    diagnosticSummary = "replayed an existing refund request",
+                    diagnosticSummary = "复用了已有退款申请",
                 )
             }
 
             val payment = Mediator.repositories.findOne(
                 SPayment.predicateById(PaymentId.parse(command.paymentId))
             ) ?: throw PaymentNotFoundException(command.paymentId)
-            require(payment.merchantId == merchantId) { "payment does not belong to merchant $merchantId" }
+            require(payment.merchantId == merchantId) { "支付单不属于商户 $merchantId" }
             require(payment.currency == money.currency) {
-                "payment ${payment.id} currency ${payment.currency} does not match refund currency ${money.currency}"
+                "支付单 ${payment.id} 的币种 ${payment.currency} 与退款币种 ${money.currency} 不一致"
             }
-            require(payment.status == PaymentStatus.SUCCEEDED) { "payment ${payment.id} is not refundable while ${payment.status}" }
-            val succeededAt = requireNotNull(payment.succeededAt) { "payment ${payment.id} has no succeededAt" }
-            require(!requestedAt.isBefore(succeededAt)) { "refund requestedAt must not precede payment success" }
+            require(payment.status == PaymentStatus.SUCCEEDED) { "支付单 ${payment.id} 当前状态为 ${payment.status}，不能退款" }
+            val succeededAt = requireNotNull(payment.succeededAt) { "支付单 ${payment.id} 缺少成功时间" }
+            require(!requestedAt.isBefore(succeededAt)) { "退款申请时间不能早于支付成功时间" }
 
             val configuration = Mediator.repositories.findOne(
                 SMerchantChannelConfiguration.predicate { schema ->
@@ -98,10 +103,10 @@ object CreateRefundCmd {
                         (schema.minimumAmount le money.amount) and
                         (schema.maximumAmount ge money.amount)
                 }
-            ) ?: throw NoEligibleChannelException("refund $merchantId and ${money.currency}/${payment.paymentMethod}")
+            ) ?: throw NoEligibleChannelException("商户 $merchantId 的 ${money.currency}/${payment.paymentMethod} 退款")
 
             val deadline = succeededAt.plusDays(configuration.refundWindowDays.toLong())
-            require(!requestedAt.isAfter(deadline)) { "refund window expired at $deadline" }
+            require(!requestedAt.isAfter(deadline)) { "退款期限已于 $deadline 结束" }
             payment.reserveRefund(money.amount)
 
             val snapshot = listOf(
@@ -160,7 +165,8 @@ object CreateRefundCmd {
                     )
                 )
             } catch (error: RuntimeException) {
-                val diagnostic = "channel gateway failed: ${error.message ?: error::class.simpleName}"
+                log.warn("退款渠道调用失败：refundId={}, attemptId={}", refund.id, attempt.id, error)
+                val diagnostic = "退款渠道调用失败，请稍后重试"
                 refund.rejectAttemptStart(attempt.id, "CHANNEL_GATEWAY_ERROR", diagnostic)
                 payment.releaseRefundReservation(refund.amount)
                 return Response(
@@ -172,11 +178,15 @@ object CreateRefundCmd {
                     diagnosticSummary = diagnostic,
                 )
             }
+            val safeDiagnostic = refundGatewaySummary(gateway.accepted, gateway.failureCode)
             if (!gateway.accepted || gateway.channelRefundId.isNullOrBlank()) {
+                gateway.diagnosticSummary?.takeIf { it.isNotBlank() }?.let {
+                    log.warn("退款渠道拒绝原始诊断仅记录日志：refundId={}, attemptId={}, diagnostic={}", refund.id, attempt.id, it)
+                }
                 refund.rejectAttemptStart(
                     attempt.id,
                     gateway.failureCode ?: "CHANNEL_REJECTED",
-                    gateway.diagnosticSummary,
+                    safeDiagnostic,
                 )
                 payment.releaseRefundReservation(refund.amount)
                 return Response(
@@ -185,10 +195,7 @@ object CreateRefundCmd {
                     status = refund.status.name,
                     requestIdentity = attempt.requestIdentity,
                     idempotentReplay = false,
-                    diagnosticSummary = listOfNotNull(
-                        gateway.failureCode ?: "CHANNEL_REJECTED",
-                        gateway.diagnosticSummary,
-                    ).joinToString(": "),
+                    diagnosticSummary = safeDiagnostic,
                 )
             }
             refund.markChannelAccepted(attempt.id, gateway.channelRefundId, requestedAt)
@@ -198,10 +205,18 @@ object CreateRefundCmd {
                 status = refund.status.name,
                 requestIdentity = attempt.requestIdentity,
                 idempotentReplay = false,
-                diagnosticSummary = gateway.diagnosticSummary,
+                diagnosticSummary = safeDiagnostic,
             )
         }
     }
+
+    private fun refundGatewaySummary(accepted: Boolean, failureCode: String?): String = when {
+        accepted -> "退款渠道已受理请求"
+        failureCode?.trim()?.uppercase() == "UNSUPPORTED_CHANNEL" -> "退款渠道不支持当前请求"
+        else -> "退款渠道拒绝了请求"
+    }
+
+    private val log = LoggerFactory.getLogger(CreateRefundCmd::class.java)
 
     data class Request(
         val merchantId: String,

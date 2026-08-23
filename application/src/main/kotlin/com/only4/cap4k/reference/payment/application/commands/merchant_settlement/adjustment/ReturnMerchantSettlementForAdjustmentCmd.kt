@@ -59,9 +59,9 @@ object ReturnMerchantSettlementForAdjustmentCmd {
             val replacementId = prepared.settlementId
                 ?: throw MerchantSettlementConflictException(
                     code = "MERCHANT_SETTLEMENT_REPREPARE_EMPTY",
-                    message = "returning settlement ${previous.id} produced no eligible replacement",
+                    message = "退回结算单 ${previous.id} 后没有可生成的有效替代单",
                 )
-            require(replacementId != previous.id.toString()) { "replacement settlement must differ from the returned settlement" }
+            require(replacementId != previous.id.toString()) { "替代结算单必须与被退回结算单不同" }
             previous.linkReplacement(MerchantSettlementId.parse(replacementId))
             return Response(
                 previousSettlementId = previous.id.toString(),

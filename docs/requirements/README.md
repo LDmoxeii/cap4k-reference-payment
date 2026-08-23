@@ -96,7 +96,8 @@
 - [统一语言](glossary.md)
 - [支付到结算生命周期](business/payment-lifecycle.md)
 - [业务规则与不变量](business/payment-rules.md)
-- [验收场景](acceptance/payment-scenarios.md)
+- [验收场景（业务断言）](acceptance/payment-scenarios.md)
+- [人工验收指南（执行、架构、测试与观察点）](acceptance/payment-acceptance-guide.md)
 
 ## 6. 关键待确认假设
 

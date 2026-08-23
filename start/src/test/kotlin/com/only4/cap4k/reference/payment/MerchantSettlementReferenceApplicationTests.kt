@@ -653,7 +653,7 @@ class MerchantSettlementReferenceApplicationTests(
                     returnedAt = Instant.parse("2026-06-15T03:05:00Z"),
                 )
             )
-        }.hasMessageContaining("cannot be returned for adjustment")
+        }.hasMessageContaining("不能退回调整")
     }
 
     @Test
@@ -727,7 +727,7 @@ class MerchantSettlementReferenceApplicationTests(
         val prepared = prepare(date, "b4-partial-exclusion")
         assertThat(prepared["eligibleCount"].asInt()).isEqualTo(1)
         assertThat(prepared["excludedCount"].asInt()).isEqualTo(1)
-        assertThat(prepared.requiredText("blockerSummary")).contains("AMOUNT_MISMATCH").contains("settlement-blocking")
+        assertThat(prepared.requiredText("blockerSummary")).contains("AMOUNT_MISMATCH").contains("阻断结算")
         assertThat(prepared["paymentGrossAmount"].decimalValue()).isEqualByComparingTo("100.00")
         assertThat(prepared["feeTotalAmount"].decimalValue()).isEqualByComparingTo("2.00")
         assertThat(prepared["netAmount"].decimalValue()).isEqualByComparingTo("98.00")
@@ -777,7 +777,7 @@ class MerchantSettlementReferenceApplicationTests(
         assertThat(prepared["eligibleCount"].asInt()).isZero()
         assertThat(prepared["excludedCount"].asInt()).isEqualTo(1)
         assertThat(prepared.requiredText("blockerSummary"))
-            .contains("unresolved review")
+            .contains("未解决复核")
             .contains(reviewIdentity)
         assertThat(
             jdbcTemplate.queryForObject(
@@ -877,7 +877,7 @@ class MerchantSettlementReferenceApplicationTests(
         }
         Mockito.reset(activationHandler)
         result.getOrNull()?.let { response ->
-            assertThat(response.status).isEqualTo(409)
+            assertThat(response.status).isEqualTo(500)
         }
 
         val original = getJson("/api/merchant-settlements/$originalId")

@@ -32,18 +32,23 @@ object ProcessAvailableChannelStatementCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
 
+        /**
+         * 入站事件只声明某个 statement revision 已可获取，不携带账单正文。
+         * Handler 仍通过 PullChannelStatement 取得权威数据，并与 scheduler/manual rerun 共享 batch/run 唯一性；
+         * 重放 event 或迟到旧 revision 都不能创建第二套对账状态机或回退 effective pointer。
+         */
         override fun handle(command: Request): Response {
             val eventIdentity = command.eventIdentity.trim()
             val channelId = command.channelId.trim()
             val currency = command.currency.trim().uppercase()
             val statementIdentity = command.statementIdentity.trim()
             val statementRevision = command.statementRevision.trim()
-            require(eventIdentity.isNotBlank()) { "eventIdentity must not be blank" }
-            require(channelId.isNotBlank()) { "channelId must not be blank" }
-            require(currency.isNotBlank()) { "currency must not be blank" }
-            require(statementIdentity.isNotBlank()) { "statementIdentity must not be blank" }
+            require(eventIdentity.isNotBlank()) { "事件身份不能为空" }
+            require(channelId.isNotBlank()) { "渠道身份不能为空" }
+            require(currency.isNotBlank()) { "币种不能为空" }
+            require(statementIdentity.isNotBlank()) { "账单身份不能为空" }
             require(statementRevision.matches(POSITIVE_REVISION)) {
-                "statementRevision must be a positive integer"
+                "statementRevision 必须为正整数"
             }
 
             val timezone = BUSINESS_TIMEZONE
@@ -74,7 +79,7 @@ object ProcessAvailableChannelStatementCmd {
                         command.reconciliationDate.plusDays(2).atStartOfDay(zone).toInstant(),
                         ZoneOffset.UTC,
                     ),
-                    blockingReason = "Awaiting channel statement",
+                    blockingReason = "等待渠道账单",
                     completedAt = null,
                 )
             )
@@ -83,13 +88,13 @@ object ProcessAvailableChannelStatementCmd {
                 PullChannelStatement.Request(channelId, currency, command.reconciliationDate, timezone)
             ).statement
             require(statement.statementIdentity == statementIdentity) {
-                "pulled statement identity ${statement.statementIdentity} does not match announced $statementIdentity"
+                "实际拉取的账单身份 ${statement.statementIdentity} 与事件声明的 $statementIdentity 不一致"
             }
             require(statement.statementRevision.matches(POSITIVE_REVISION)) {
-                "pulled statement revision must be a positive integer"
+                "pulled 账单 revision 必须为正整数"
             }
             require(compareStatementRevision(statement.statementRevision, statementRevision) >= 0) {
-                "pulled statement revision ${statement.statementRevision} is older than announced $statementRevision"
+                "实际拉取的账单 revision ${statement.statementRevision} 早于事件声明的 $statementRevision"
             }
 
             val facts = Mediator.capabilities.call(

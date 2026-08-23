@@ -9,7 +9,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 
 /**
- * A merchant settlement formed its first accepted terminal success fact
+ * 商户结算单首次形成已接受的终态成功事实
  */
 @Service
 @DesignBlockMetadata(
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service
 class MerchantSettlementCompletedDomainEventSubscriber {
 
     @EventListener(MerchantSettlementCompletedDomainEvent::class)
+    /** 映射为稳定 published event 并交给 reliable Event/JPA；这里不直接调用 HTTP 或创建第二个业务 identity。 */
     fun on(event: MerchantSettlementCompletedDomainEvent) {
         Mediator.events.enqueue(
             MerchantSettlementCompletedIntegrationEvent(

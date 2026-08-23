@@ -8,7 +8,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 
 /**
- * Signal that a revisioned channel statement is available for authoritative pull
+ * 通知应用某个账单 revision 已可供权威拉取；事件本身不携带账单正文
  */
 @Service
 @DesignBlockMetadata(
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service
 class ChannelStatementAvailableIntegrationEventSubscriber {
 
     @EventListener(ChannelStatementAvailableIntegrationEvent::class)
+    /** 薄 listener 只传递标量和追踪身份并发送 Command，Repository 与 provider Pull 均留在应用路径。 */
     fun on(event: ChannelStatementAvailableIntegrationEvent) {
         Mediator.commands.send(
             ProcessAvailableChannelStatementCmd.Request(
