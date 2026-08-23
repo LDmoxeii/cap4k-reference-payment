@@ -274,7 +274,7 @@ acceptance:
   PAY-AC-014:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-014
     projection_ids: [PAY-CP-001, PAY-CP-004, PAY-CP-005]
-    evidence_ids: [PAY-EV-002, PAY-EV-009, PAY-EV-010]
+    evidence_ids: [PAY-EV-002, PAY-EV-009]
     status: verified
   PAY-AC-015:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-015
@@ -439,7 +439,7 @@ acceptance:
   PAY-AC-082:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-082
     projection_ids: [PAY-CP-003, PAY-CP-008, PAY-CP-012]
-    evidence_ids: [PAY-EV-007, PAY-EV-020, PAY-EV-027]
+    evidence_ids: [PAY-EV-007, PAY-EV-020]
     status: verified
   PAY-AC-083:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-083
@@ -665,7 +665,25 @@ build_slices:
     cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
     repository_local_path: none
     cap4k_commit: 6575866043ad34008843d7245c49563e15b38b54
-    composition_audit: deferred-to-github-issue-8-after-merge
+    composition_audit: in-progress-by-final-composition-audit
+  FINAL_COMPOSITION_AUDIT:
+    title: accepted-lineage payment reference composition and evidence closure
+    issue: https://github.com/LDmoxeii/cap4k-reference-payment/issues/8
+    status: planned
+    regression_acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-007, PAY-AC-008, PAY-AC-009, PAY-AC-010, PAY-AC-011, PAY-AC-012, PAY-AC-013, PAY-AC-014, PAY-AC-015, PAY-AC-016, PAY-AC-017, PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023, PAY-AC-024, PAY-AC-025, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-029, PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-046, PAY-AC-047, PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-082, PAY-AC-083, PAY-AC-085, PAY-AC-087, PAY-AC-088]
+    evidence_ids: [PAY-EV-027, PAY-EV-034, PAY-EV-035, PAY-EV-036]
+    accepted_lineage:
+      B1: 6a40c5da2b2057e310c97989d3889d0ce125d06e
+      B2: 43a598285713e1fdace4be2cc501f80d10e5cec0
+      B3: 8750a4b75346eecc33bd1db444d3267455c96ad8
+      B4: 4e347650f8bb2cb9cf0e0adb1c0dc2db89774a15
+      B5: 3fd59cda87e3f2430fea88092a08e1b1939936bb
+      PAYMENT_TIMEOUT_CONFLICT_REVIEW: e702e725674c4ab1271441cf1ed011bad3b75021
+    cap4k_validation: explicit-local-composite
+    cap4k_local_resolution: gradle-property-then-environment-then-released-2.0.1
+    repository_local_path: none
+    cap4k_commit: 6575866043ad34008843d7245c49563e15b38b54
+    published_coordinate_cold_start: deferred-to-B6-release-gate
 
 evidence:
   PAY-EV-001:
@@ -1016,8 +1034,16 @@ evidence:
     status: not-built
   PAY-EV-027:
     kind: end-to-end-business-traceability-test
-    path: planned
-    status: not-built
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/MerchantSettlementReferenceApplicationTests.kt
+    related_paths:
+      - start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentReferenceApplicationTests.kt
+      - start/src/test/kotlin/com/only4/cap4k/reference/payment/ReconciliationReferenceApplicationTests.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/reconciliation/api/GetReconciliationBatchEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/merchant_settlement/api/GetMerchantSettlementEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/events/integration/outbound/merchant_settlement/MerchantSettlementCompletedIntegrationEvent.kt
+    command: .\gradlew.bat :start:test --tests "*MerchantSettlementReferenceApplicationTests.payment refund reconciliation and settlement preserve one durable composition trail" --no-daemon --console=plain
+    result: 1 composition test / 0 failures; one Spring/H2/JPA database trail preserved Payment and partial Refund identities through the authoritative Reconciliation run and Settlement lines, produced net CNY 78.00, and formed exactly one durable MerchantSettlementCompleted reliable-event record
+    status: verified
   PAY-EV-028:
     kind: reconciliation-inbound-integration-event-test
     path: start/src/test/kotlin/com/only4/cap4k/reference/payment/ReconciliationReferenceApplicationTests.kt
@@ -1096,6 +1122,30 @@ evidence:
       - build/cap4k/agent/diagnostics.json
     command: .\gradlew.bat clean build --no-daemon --console=plain; .\gradlew.bat cap4kPlan cap4kGenerate cap4kGenerateSources cap4kAnalysisPlan cap4kAnalysisGenerate cap4kAgentSnapshot --no-daemon --console=plain
     result: 100 tests / 23 suites / 0 failures / 0 errors / 0 skips; repeated ordinary plan hash fab5609830ae59a64c995dd5922a33dd2ba0e5b51e289a5270ef5b0ad08c38e8 and analysis plan hash 10d563059ab0c28866e554f7fcdc7aac008e6fa8abc2ab4272a3b8e25cfccc2e; 197 ownership items; Analyzer ok with 46 outputs, 19 flows, and empty diagnostics; the accepted B1-B5 84-test baseline remains green within the expanded suite
+    status: verified
+
+  PAY-EV-034:
+    kind: accepted-lineage-audit
+    path: docs/requirements/traceability.yaml
+    related_paths:
+      - README.md
+      - docs/requirements/projection/cap4k-current.md
+    command: git fetch origin; git merge-base --is-ancestor <required-commit> origin/main for B1, B2, B3, B4, B5, and PAYMENT_TIMEOUT_CONFLICT_REVIEW
+    result: origin/main e702e725674c4ab1271441cf1ed011bad3b75021 contains required commits 6a40c5da, 43a59828, 8750a4b7, 4e347650, 3fd59cda, and e702e725 on one accepted lineage
+    status: verified
+  PAY-EV-035:
+    kind: clean-checkout-composition-verification
+    path: planned
+    status: not-built
+  PAY-EV-036:
+    kind: traceability-contract-test
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/TraceabilityContractTests.kt
+    related_paths:
+      - docs/requirements/traceability.yaml
+      - docs/requirements/projection/cap4k-current.md
+      - README.md
+    command: .\gradlew.bat :start:test --tests "*TraceabilityContractTests" --no-daemon --console=plain
+    result: 1 traceability contract test / 0 failures; duplicate YAML keys, invalid IDs/statuses/references, missing sources/anchors, unverified evidence on verified acceptance, non-portable evidence paths, broken verified slice closure, and accidental promotion of deferred acceptance/evidence/projection boundaries are rejected
     status: verified
 
 known_gaps:

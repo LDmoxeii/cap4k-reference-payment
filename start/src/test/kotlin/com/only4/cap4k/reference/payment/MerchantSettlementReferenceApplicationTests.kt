@@ -196,6 +196,123 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    fun `payment refund reconciliation and settlement preserve one durable composition trail`() {
+        val date = LocalDate.parse("2026-06-29")
+        val payment = createSucceededPayment("ISSUE8-COMPOSITION", "100.00", "2026-06-29T02:00:00Z")
+        val refund = createSucceededRefund(
+            paymentId = payment.paymentId,
+            merchantRefundNumber = "R-ISSUE8-COMPOSITION-20",
+            amount = "20.00",
+            requestedAt = "2026-06-29T03:00:00Z",
+            occurredAt = "2026-06-29T04:00:00Z",
+        )
+        val reconciliation = reconcile(
+            date = date,
+            identity = "statement-issue8-composition",
+            payments = listOf(payment to "100.00"),
+            refunds = listOf(refund to "20.00"),
+        )
+        val runId = requireNotNull(reconciliation.runId)
+
+        val batch = getJson("/api/reconciliation-batches/${reconciliation.batchId}")
+        assertThat(batch.requiredText("status")).isEqualTo("COMPLETED")
+        assertThat(batch.requiredText("currentEffectiveRunId")).isEqualTo(runId)
+        assertThat(batch["matchedCount"].asInt()).isEqualTo(2)
+        assertThat(batch["differenceCount"].asInt()).isZero()
+        assertThat(batch["unresolvedDifferenceCount"].asInt()).isZero()
+        assertThat(batch["settlementBlocked"].asBoolean()).isFalse()
+        val run = batch["runs"].arrayItem("runId", runId)
+        assertThat(run.requiredText("statementIdentity")).isEqualTo("statement-issue8-composition")
+        assertThat(run.requiredText("statementRevision")).isEqualTo("1")
+        assertThat(run["items"]).hasSize(2)
+        val paymentItem = run["items"].arrayItem("paymentId", payment.paymentId)
+        val refundItem = run["items"].arrayItem("refundId", refund.refundId)
+        assertThat(paymentItem.requiredText("differenceType")).isEqualTo("MATCHED")
+        assertThat(paymentItem.requiredText("platformFactIdentity")).isEqualTo("PAYMENT:${payment.paymentId}")
+        assertThat(paymentItem.requiredText("channelTransactionIdentity")).isEqualTo(payment.channelTransactionId)
+        assertThat(paymentItem["resolved"].asBoolean()).isTrue()
+        assertThat(paymentItem["settlementBlocked"].asBoolean()).isFalse()
+        assertThat(refundItem.requiredText("differenceType")).isEqualTo("MATCHED")
+        assertThat(refundItem.requiredText("platformFactIdentity")).isEqualTo("REFUND:${refund.refundId}")
+        assertThat(refundItem.requiredText("channelTransactionIdentity")).isEqualTo(refund.channelRefundId)
+        assertThat(refundItem["resolved"].asBoolean()).isTrue()
+        assertThat(refundItem["settlementBlocked"].asBoolean()).isFalse()
+
+        val prepared = prepare(date, "issue8-composition")
+        assertThat(prepared.requiredText("status")).isEqualTo("PREPARED")
+        assertThat(prepared["eligibleCount"].asInt()).isEqualTo(2)
+        assertThat(prepared["paymentGrossAmount"].decimalValue()).isEqualByComparingTo("100.00")
+        assertThat(prepared["refundGrossAmount"].decimalValue()).isEqualByComparingTo("20.00")
+        assertThat(prepared["feeTotalAmount"].decimalValue()).isEqualByComparingTo("2.00")
+        assertThat(prepared["netAmount"].decimalValue()).isEqualByComparingTo("78.00")
+        val settlementId = prepared.requiredText("settlementId")
+
+        var settlement = getJson("/api/merchant-settlements/$settlementId")
+        assertThat(settlement["lines"]).hasSize(2)
+        val paymentLine = settlement["lines"].arrayItem("sourceFactIdentity", "PAYMENT:${payment.paymentId}")
+        val refundLine = settlement["lines"].arrayItem("sourceFactIdentity", "REFUND:${refund.refundId}")
+        assertThat(paymentLine.requiredText("sourceKind")).isEqualTo("PAYMENT")
+        assertThat(paymentLine.requiredText("transactionKind")).isEqualTo("PAYMENT")
+        assertThat(paymentLine.requiredText("paymentId")).isEqualTo(payment.paymentId)
+        assertThat(paymentLine.requiredText("reconciliationBatchId")).isEqualTo(reconciliation.batchId)
+        assertThat(paymentLine.requiredText("reconciliationRunId")).isEqualTo(runId)
+        assertThat(paymentLine.requiredText("reconciliationItemId")).isEqualTo(paymentItem.requiredText("itemId"))
+        assertThat(paymentLine.requiredText("externalTransactionIdentity")).isEqualTo(payment.channelTransactionId)
+        assertThat(paymentLine["grossAmount"].decimalValue()).isEqualByComparingTo("100.00")
+        assertThat(paymentLine["feeAmount"].decimalValue()).isEqualByComparingTo("2.00")
+        assertThat(paymentLine["signedNetAmount"].decimalValue()).isEqualByComparingTo("98.00")
+        assertThat(paymentLine.requiredText("eligibilityBasis")).isEqualTo("CURRENT_EFFECTIVE_RECONCILIATION_MATCH")
+        assertThat(refundLine.requiredText("sourceKind")).isEqualTo("REFUND")
+        assertThat(refundLine.requiredText("transactionKind")).isEqualTo("REFUND")
+        assertThat(refundLine.requiredText("refundId")).isEqualTo(refund.refundId)
+        assertThat(refundLine.requiredText("reconciliationBatchId")).isEqualTo(reconciliation.batchId)
+        assertThat(refundLine.requiredText("reconciliationRunId")).isEqualTo(runId)
+        assertThat(refundLine.requiredText("reconciliationItemId")).isEqualTo(refundItem.requiredText("itemId"))
+        assertThat(refundLine.requiredText("externalTransactionIdentity")).isEqualTo(refund.channelRefundId)
+        assertThat(refundLine["grossAmount"].decimalValue()).isEqualByComparingTo("20.00")
+        assertThat(refundLine["feeAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(refundLine["signedNetAmount"].decimalValue()).isEqualByComparingTo("-20.00")
+        assertThat(refundLine.requiredText("eligibilityBasis")).isEqualTo("CURRENT_EFFECTIVE_RECONCILIATION_MATCH")
+
+        confirm(settlementId, "2026-06-30T02:00:00Z")
+        val execution = startExecution(settlementId, "2026-06-30T03:00:00Z")
+        val eventResult = postJson(
+            "/api/channel/settlement-results",
+            settlementResultRequest(
+                settlementId = settlementId,
+                attemptId = execution.requiredText("attemptId"),
+                groupIdentity = execution.requiredText("executionGroupIdentity"),
+                requestIdentity = execution.requiredText("requestIdentity"),
+                externalIdentity = "STL-${execution.requiredText("requestIdentity")}",
+                notificationId = "N-ISSUE8-COMPOSITION-SUCCESS",
+                amount = "78.00",
+                result = "SUCCESS",
+                occurredAt = "2026-06-30T03:05:00Z",
+                receivedAt = "2026-06-30T03:05:30Z",
+            ),
+            expectedStatus = 200,
+        )
+        assertThat(eventResult.requiredText("settlementStatus")).isEqualTo("SUCCEEDED")
+        assertThat(eventResult.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(eventResult["settledFactFormedNow"].asBoolean()).isTrue()
+
+        settlement = getJson("/api/merchant-settlements/$settlementId")
+        assertThat(settlement.requiredText("status")).isEqualTo("SUCCEEDED")
+        assertThat(settlement["settledFactFormed"].asBoolean()).isTrue()
+        assertThat(settlement["netAmount"].decimalValue()).isEqualByComparingTo("78.00")
+        val event = completedEventPayload(settlementId)
+        val eventIdentity = event.requiredText("eventIdentity")
+        assertThat(eventIdentity).isNotBlank()
+        assertThat(event.requiredText("settlementId")).isEqualTo(settlementId)
+        assertThat(event.requiredText("merchantId")).isEqualTo("M-001")
+        assertThat(event.requiredText("channelId")).isEqualTo("C-001")
+        assertThat(event.requiredText("currency")).isEqualTo("CNY")
+        assertThat(event["netAmount"].decimalValue()).isEqualByComparingTo("78.00")
+        assertThat(event.requiredText("correlationIdentity")).isEqualTo(settlementId)
+        assertThat(event.requiredText("causationIdentity")).isEqualTo(eventIdentity)
+    }
+
+    @Test
     fun `unknown result blocks retry until review and manual adjudication`() {
         val date = LocalDate.parse("2026-06-12")
         val payment = createSucceededPayment("B4-UNKNOWN", "100.00", "2026-06-12T02:00:00Z")
@@ -977,7 +1094,7 @@ class MerchantSettlementReferenceApplicationTests(
         identity: String,
         payments: List<Pair<SucceededPayment, String>> = emptyList(),
         refunds: List<Pair<SucceededRefund, String>> = emptyList(),
-    ) {
+    ): RunDailyReconciliationCmd.Response {
         val records = buildList {
             payments.forEachIndexed { index, (payment, amount) ->
                 add(record("$identity-payment-$index", ReconciliationTransactionKind.PAYMENT, payment.channelTransactionId, amount, payment.occurredAt))
@@ -991,6 +1108,7 @@ class MerchantSettlementReferenceApplicationTests(
         val result = Mediator.commands.send(RunDailyReconciliationCmd.Request("C-001", "CNY", triggeredAt))
         assertThat(result.batchStatus).isEqualTo("COMPLETED")
         assertThat(result.unresolvedDifferenceCount).isZero()
+        return result
     }
 
     private fun createSucceededPayment(prefix: String, amount: String, occurredAt: String): SucceededPayment {
@@ -1192,6 +1310,17 @@ class MerchantSettlementReferenceApplicationTests(
             "payment.merchant-settlement.completed.v1",
             "%\"settlementId\":\"$settlementId\"%",
         ) ?: 0L
+
+    private fun completedEventPayload(settlementId: String): JsonNode {
+        val events = jdbcTemplate.query(
+            "select data from __event where event_type = ? and data like ?",
+            { resultSet, _ -> objectMapper.readTree(resultSet.getString("data")) },
+            MerchantSettlementCompletedIntegrationEvent.EVENT_NAME,
+            "%\"settlementId\":\"$settlementId\"%",
+        )
+        assertThat(events).hasSize(1)
+        return events.single()
+    }
 
     private fun postJson(path: String, payload: Any, expectedStatus: Int): JsonNode {
         val result = mockMvc.perform(
