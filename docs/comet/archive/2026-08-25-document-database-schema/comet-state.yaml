@@ -1,0 +1,706 @@
+schema: comet.native.v4
+name: document-database-schema
+language: zh-CN
+phase: archive
+status: done
+state_version: 25
+brief: brief.md
+spec_changes:
+  - capability: database-schema-comments
+    operation: create
+    source: specs/database-schema-comments/spec.md
+workspace:
+  isolation: worktree
+  change_branch: comet/document-database-schema
+  target_branch: main
+  finish: merge
+loop:
+  stage: done
+  goal_cycle: 4
+  iteration: 2
+  attempt: 1
+  retry_epoch: 0
+  failed_iteration_count: 0
+  no_progress_count: 0
+  execution_failure_count: 0
+  previous_unresolved_ids: []
+  next_action: null
+acceptance:
+  - id: A1
+    source: brief.md
+    text: "**DBDOC-001**：`design/schema.sql` 的 18 张表均有包含中文自然语言的表级 COMMENT（已有
+      `@Parent` 时与 token 共存），且每条说明包含业务职责或聚合定位。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A2
+    source: brief.md
+    text: "**DBDOC-002**：18 张表的业务字段均有中文列 COMMENT；技术审计字段使用统一模板，不重复制造噪音。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A3
+    source: brief.md
+    text: "**DBDOC-003**：现有
+      `@Managed`、`@Type`、`@ParentRef`、`@Parent`、`@RefAggregate`
+      机器指令逐字保留，生成器分析仍可读取 schema。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A4
+    source: brief.md
+    text: "**DBDOC-004**：运行时 H2 `schema.sql` 在约束补丁后写入同一套表/列备注，应用启动不因 H2 方言失败。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A5
+    source: brief.md
+    text: "**DBDOC-005**：设计脚本与运行时投影的备注集合可由静态合同测试对齐；缺表备注、缺关键列备注、机器注释被改写时测试失败。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A6
+    source: brief.md
+    text: "**DBDOC-006**：README/验收指南明确从 `design/schema.sql` 查看表备注、字段备注和 `@...`
+      机器元数据，并说明 `start/schema.sql` 是运行时投影。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A7
+    source: brief.md
+    text: "**DBDOC-007**：现有 Gradle build、数据库分析、应用测试和 Analyzer/traceability 合同不回退。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A8
+    source: brief.md
+    text: "**DBDOC-008**：`design/value-objects.json` 的 112 个值对象字段均有中文
+      `description`，且字段对象采用压缩的最小键集合。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A9
+    source: brief.md
+    text: "**DBDOC-009**：`design/design.json` 的 1188 个 fields/resultFields 均有中文
+      `description`，且 JSON 使用稳定压缩格式；原有 tag/name/type/defaultValue 等键和值不漂移。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A10
+    source: brief.md
+    text: "**DBDOC-010**：新增合同测试统计并校验 SQL、值对象 JSON、设计 JSON 的字段备注覆盖、中文内容、压缩格式和结构不漂移。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A11
+    source: specs/database-schema-comments/spec.md
+    text: "`cap4k-reference-payment` 的 SQL 当前已经包含供生成器使用的机器元数据，但业务职责主要依赖代码和文档推断。本
+      capability 只增加数据库元数据的可读性：让人打开 `design/schema.sql` 或运行时 H2 schema
+      时，可以直接知道表的职责、聚合归属和关键字段含义。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A12
+    source: specs/database-schema-comments/spec.md
+    text: 设计 schema、表结构、约束、字段名和机器元数据继续由既有 `payment-reference-build` 合同定义；本规格不新增业务能力。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A13
+    source: specs/database-schema-comments/spec.md
+    text: 以下现有语法必须保持不变：
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A14
+    source: specs/database-schema-comments/spec.md
+    text: "`@Managed=...;`"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A15
+    source: specs/database-schema-comments/spec.md
+    text: "`@Type=...;`"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A16
+    source: specs/database-schema-comments/spec.md
+    text: "`@ParentRef;`"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A17
+    source: specs/database-schema-comments/spec.md
+    text: "`@Parent=...;`"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A18
+    source: specs/database-schema-comments/spec.md
+    text: "`@RefAggregate=...;`"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A19
+    source: specs/database-schema-comments/spec.md
+    text: 它们继续位于字段 `comment '...'` 或表级 `comment on table ... is '...'` 中，供 cap4k DB
+      source 和生成器读取。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A20
+    source: specs/database-schema-comments/spec.md
+    text: 新增备注与机器 token 共存于同一个 COMMENT 值，采用“自然语言在前、机器区在后”的语法：
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A21
+    source: specs/database-schema-comments/spec.md
+    text: 机器 token 必须逐个以分号结束，并与前后自然语言留空格；不能用第二条 COMMENT ON
+      覆盖原有机器元数据。表备注至少说明业务职责与聚合定位；列备注至少说明字段代表的业务事实、状态、快照、计数、时间点或关联身份。自然语言避免出现形如
+      `@Word` 的未知 token。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A22
+    source: specs/database-schema-comments/spec.md
+    text: 为以下 18 张表补充表备注，并覆盖其业务列：
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A23
+    source: specs/database-schema-comments/spec.md
+    text: Payment：`payment`、`payment_attempt`、`payment_notification_receipt`、`payment_review_case`、`payment_review_decision`
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A24
+    source: specs/database-schema-comments/spec.md
+    text: Refund：`refund`、`refund_attempt`、`refund_notification_receipt`
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A25
+    source: specs/database-schema-comments/spec.md
+    text: Routing：`merchant_channel_configuration`
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A26
+    source: specs/database-schema-comments/spec.md
+    text: Reconciliation：`reconciliation_batch`、`reconciliation_run`、`reconciliation_item`、`reconciliation_disposition`、`reconciliation_confirmation_fact`
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A27
+    source: specs/database-schema-comments/spec.md
+    text: Settlement：`merchant_settlement`、`settlement_line`、`settlement_execution_attempt`、`settlement_result_receipt`
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A28
+    source: specs/database-schema-comments/spec.md
+    text: "`id/version/created_at/created_by/updated_at/updated_by`
+      等通用技术字段使用统一中文模板即可；业务字段不得只写“字段值”之类空泛备注。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A29
+    source: specs/database-schema-comments/spec.md
+    text: "`design/value-objects.json` 的 11 个值对象、112 个字段均增加中文 `description`。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A30
+    source: specs/database-schema-comments/spec.md
+    text: 字段对象保留 `name`、`type` 等既有键；`description` 只增加人工可读语义，不参与值对象类型解析。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A31
+    source: specs/database-schema-comments/spec.md
+    text: 描述采用短句或短语，优先说明字段所代表的身份、金额、状态、事实、计数或时间点；不重复对象级 description。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A32
+    source: specs/database-schema-comments/spec.md
+    text: "`design/design.json` 的 57 个 entry 中，`fields` 与 `resultFields` 共 1188
+      个字段均增加中文 `description`。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A33
+    source: specs/database-schema-comments/spec.md
+    text: 字段对象采用与 Analyzer 产物一致的紧凑最小表达：保留 `name`、`type`、可选 `defaultValue` 和
+      `description`，不复制对象级 `description`。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A34
+    source: specs/database-schema-comments/spec.md
+    text: JSON 文件使用稳定压缩格式，压缩只移除无意义空白，不改变键和值、数组顺序或生成器现有语义。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A35
+    source: specs/database-schema-comments/spec.md
+    text: "`design/schema.sql`：唯一设计/生成器输入，包含建表、约束、机器元数据和中文表/列备注。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A36
+    source: specs/database-schema-comments/spec.md
+    text: "`start/src/main/resources/schema.sql`：Hibernate `ddl-auto=create-drop`
+      后执行的 H2 投影，保留可靠事件列宽与复合唯一约束补丁，并追加与设计 schema 对齐的中文备注。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A37
+    source: specs/database-schema-comments/spec.md
+    text: 不引入 Flyway/Liquibase，不把运行时 schema.sql 伪装成生产迁移脚本。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A38
+    source: specs/database-schema-comments/spec.md
+    text: 18 张表每张都有包含中文自然语言和（如已有）机器 token 的表级 COMMENT，且说明包含职责/聚合/owned graph/事实来源之一。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A39
+    source: specs/database-schema-comments/spec.md
+    text: 每张表的业务列都有中文列 COMMENT；通用审计列可复用统一模板，但不能缺失关键业务字段说明。备注集合按 `table.column`
+      比较设计脚本和运行时脚本。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A40
+    source: specs/database-schema-comments/spec.md
+    text: 静态检查确认所有既有 `@Managed`、`@Type`、`@ParentRef`、`@Parent`、`@RefAggregate` token
+      仍存在且数量不减少。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A41
+    source: specs/database-schema-comments/spec.md
+    text: 使用项目既有 H2 `MODE=MySQL` 运行设计 INIT 和 start schema 初始化；`COMMENT ON
+      TABLE/COLUMN` 不得导致启动、生成器 DB 分析或测试失败。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A42
+    source: specs/database-schema-comments/spec.md
+    text: 新增测试读取两个 SQL 文件，解析独立表/列备注，检查 18 表覆盖、设计/运行时集合相等、中文内容存在、机器 token 保留。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A43
+    source: specs/database-schema-comments/spec.md
+    text: requirements README 或验收指南说明查看 SQL 备注的入口、两份 schema 的职责边界和机器元数据与人类备注的分层。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A44
+    source: specs/database-schema-comments/spec.md
+    text: 现有业务测试、Analyzer/traceability、代码生成和最终 `clean build` 全部通过。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A45
+    source: specs/database-schema-comments/spec.md
+    text: "`design/value-objects.json` 的 112 个字段均有非空中文 `description`；字段对象不丢失
+      `name`/`type`，且 JSON 为稳定压缩格式。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A46
+    source: specs/database-schema-comments/spec.md
+    text: "`design/design.json` 的 1188 个 `fields`/`resultFields` 均有非空中文
+      `description`；原有生成器字段键和值保持不变，文件使用稳定压缩格式。"
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A47
+    source: specs/database-schema-comments/spec.md
+    text: 新增测试解析两份 JSON，统计对象和字段数量、验证中文 description、检查压缩格式，并将去除 description
+      后的结构与变更前快照比较。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A48
+    source: specs/database-schema-comments/spec.md
+    text: 不修改业务字段值、DDL 类型、唯一约束、外键策略、表/列命名和聚合行为。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A49
+    source: specs/database-schema-comments/spec.md
+    text: 不迁移历史数据库，不增加 reset API，不增加数据库管理 UI。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+  - id: A50
+    source: specs/database-schema-comments/spec.md
+    text: 不把中文备注当作 HTTP 文案，也不翻译稳定 code、enum、event name、provider raw result 或用户输入证据。
+    result: passed
+    reason:
+      text: 独立只读复核与干净 Runtime 检查均通过。
+      truncated: false
+builder_handoff:
+  candidate_id: d168b22a-15c3-4bcd-8cd1-307bb7607f76
+  identity_provider: skill-coordinated
+  builder_execution_ref: skill-coordinated:builder:0bf345ce-d9ba-4aed-9fc7-68ffcb9e00d3
+  iteration: 2
+  summary:
+    text: 保持实现与已确认需求不变，修复 Verify 执行编排：首轮 Runtime 使用 gradlew.bat
+      未解析当前目录导致旧必需检查失败；本轮将由 Runtime 直接使用 .\\gradlew.bat 重跑同一套检查。SQL/JSON
+      备注实现、合同测试、验收指南和独立静态复核均已完成。
+    truncated: false
+  addressed_acceptance_ids:
+    - A1
+    - A2
+    - A3
+    - A4
+    - A5
+    - A6
+    - A7
+    - A8
+    - A9
+    - A10
+    - A11
+    - A12
+    - A13
+    - A14
+    - A15
+    - A16
+    - A17
+    - A18
+    - A19
+    - A20
+    - A21
+    - A22
+    - A23
+    - A24
+    - A25
+    - A26
+    - A27
+    - A28
+    - A29
+    - A30
+    - A31
+    - A32
+    - A33
+    - A34
+    - A35
+    - A36
+    - A37
+    - A38
+    - A39
+    - A40
+    - A41
+    - A42
+    - A43
+    - A44
+    - A45
+    - A46
+    - A47
+    - A48
+    - A49
+    - A50
+  checks:
+    - name:
+        text: :start:test DatabaseSchemaCommentContractTests
+        truncated: false
+      result: passed
+      note:
+        text: focused SQL/JSON contract test passed with .\\gradlew.bat
+        truncated: false
+    - name:
+        text: :start:test
+        truncated: false
+      result: passed
+      note:
+        text: all start tests passed with .\\gradlew.bat
+        truncated: false
+    - name:
+        text: clean build
+        truncated: false
+      result: passed
+      note:
+        text: clean build passed with .\\gradlew.bat
+        truncated: false
+    - name:
+        text: cap4kGenerateSources
+        truncated: false
+      result: passed
+      note:
+        text: source generation passed with .\\gradlew.bat
+        truncated: false
+    - name:
+        text: git diff --check
+        truncated: false
+      result: passed
+      note:
+        text: no whitespace errors
+        truncated: false
+  checks_truncated: false
+  known_limits: []
+  known_limits_truncated: false
+  submitted_at: 2026-08-25T11:25:35.012Z
+blockers: []
+verification:
+  candidate_id: d168b22a-15c3-4bcd-8cd1-307bb7607f76
+  identity_provider: skill-coordinated
+  verifier_execution_ref: skill-coordinated:verifier:5fb230bb-4b84-424a-a1df-207ca95decba
+  iteration: 2
+  attempt: 1
+  assurance: skill-coordinated
+  verdict: pass
+  checks:
+    - id: focused-database-schema-contract-retry
+      name:
+        text: Focused database and JSON comment contract test
+        truncated: false
+      argv_display:
+        - text: :start:test
+          truncated: false
+        - text: --tests
+          truncated: false
+        - text: com.only4.cap4k.reference.payment.DatabaseSchemaCommentContractTests
+          truncated: false
+        - text: --no-daemon
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 16023
+    - id: start-test-suite-retry
+      name:
+        text: Full start test suite
+        truncated: false
+      argv_display:
+        - text: :start:test
+          truncated: false
+        - text: --no-daemon
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 39703
+    - id: clean-build-retry
+      name:
+        text: Clean Gradle build
+        truncated: false
+      argv_display:
+        - text: clean
+          truncated: false
+        - text: build
+          truncated: false
+        - text: --no-daemon
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 73850
+    - id: cap4k-generate-sources-retry
+      name:
+        text: cap4k source generation
+        truncated: false
+      argv_display:
+        - text: cap4kGenerateSources
+          truncated: false
+        - text: --no-daemon
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 14056
+    - id: git-diff-check-retry
+      name:
+        text: Git whitespace check
+        truncated: false
+      argv_display:
+        - text: diff
+          truncated: false
+        - text: --check
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 72
+  summary:
+    text: 独立只读 Verifier 已确认：设计与 H2 SQL 的 18 个表、479 个字段备注映射完全一致并保留 cap4k
+      机器标记；value-objects.json 共 11 个值对象、112 个字段，design.json 共 57 个条目、1188
+      个字段，均补充中文 description、按分析器风格压缩为稳定单行且除 description 外结构不变；验收指南与契约测试已覆盖。干净
+      Runtime 的聚焦测试、start 全量测试、clean build、源码生成和 git diff 检查全部通过。
+    truncated: false
+  risks: []
+  risks_truncated: false
+  completed_at: 2026-08-25T11:29:21.730Z
+history:
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 0
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: Native confirmed acceptance criteria changed
+      truncated: false
+    completed_at: 2026-08-25T09:57:42.102Z
+  - goal_cycle: 2
+    iteration: 1
+    attempt: 1
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: 独立只读 Verifier 已复核当前 Shape、完整 Spec、实现和静态证据；18 张表、479
+        个字段的设计/运行时备注完全对齐，机器元数据保持，DDL 无漂移。此前独立运行遇到的 payment-design.mv.db 锁在停止
+        Gradle daemon 后复测消除，:start:test focused、:start:test 和 clean build 均成功，因此
+        A1-A38 全部通过。
+      truncated: false
+    completed_at: 2026-08-25T10:04:41.984Z
+  - goal_cycle: 2
+    iteration: 1
+    attempt: 1
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: 用户补充范围：除 SQL 表/列 COMMENT 外，design/value-objects.json 的值对象字段和 design.json
+        的设计字段也必须具备中文备注；字段备注应采用与 Analyzer 生成输出一致的压缩表达，避免冗长重复。保留原有 SQL 备注、机器
+        token、DDL 不漂移约束。
+      truncated: false
+    completed_at: 2026-08-25T10:33:35.291Z
+  - goal_cycle: 3
+    iteration: 1
+    attempt: 0
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: Native confirmed acceptance criteria changed
+      truncated: false
+    completed_at: 2026-08-25T10:51:34.845Z
+  - goal_cycle: 4
+    iteration: 1
+    attempt: 1
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: "Native Verifier response was invalid: Native Verifier check ID
+        focused-database-schema-contract conflicts with a Runtime check"
+      truncated: false
+    completed_at: 2026-08-25T11:00:48.551Z
+  - goal_cycle: 4
+    iteration: 1
+    attempt: 2
+    outcome: execution-error
+    unresolved_ids: []
+    summary:
+      text: "Native Verifier response was invalid: Native verification cannot pass
+        before every required check succeeds"
+      truncated: false
+    completed_at: 2026-08-25T11:19:51.020Z
+  - goal_cycle: 4
+    iteration: 1
+    attempt: 3
+    outcome: blocked
+    unresolved_ids:
+      - A44
+    summary:
+      text: 独立只读 Verifier 已确认实现满足 A1-A50 的内容要求，且补充 Runtime 检查全部通过；但首轮 Comet Runtime
+        必需检查因 Windows PowerShell 未解析当前目录中的 gradlew.bat 而保留失败记录，当前不能直接提交
+        pass。该阻塞属于 Verify 执行环境与候选检查记录问题，不是代码或需求失败，建议将当前候选返回 Build 后无代码改动重交，并从干净
+        Runtime 计划用 .\\gradlew.bat 重新执行。
+      truncated: false
+    completed_at: 2026-08-25T11:25:09.968Z
+  - goal_cycle: 4
+    iteration: 1
+    attempt: 3
+    outcome: recovery
+    unresolved_ids: []
+    summary:
+      text: Runtime 必需检查计划首次使用了未解析当前目录的 gradlew.bat；实现和独立验证均通过。保持已确认需求与代码不变，返回 Build
+        仅重建候选并用 .\\gradlew.bat 重新执行干净 Verify。
+      truncated: false
+    completed_at: 2026-08-25T11:25:20.304Z
+  - goal_cycle: 4
+    iteration: 2
+    attempt: 1
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: 独立只读 Verifier 已确认：设计与 H2 SQL 的 18 个表、479 个字段备注映射完全一致并保留 cap4k
+        机器标记；value-objects.json 共 11 个值对象、112 个字段，design.json 共 57 个条目、1188
+        个字段，均补充中文 description、按分析器风格压缩为稳定单行且除 description 外结构不变；验收指南与契约测试已覆盖。干净
+        Runtime 的聚焦测试、start 全量测试、clean build、源码生成和 git diff 检查全部通过。
+      truncated: false
+    completed_at: 2026-08-25T11:29:21.730Z
+history_overflow:
+  dropped_entries: 0
+  first_dropped_at: null
+  last_dropped_at: null
+  outcome_counts:
+    pass: 0
+    fail: 0
+    blocked: 0
+    execution-error: 0
+    recovery: 0
+verification_result: pass
+verification_report: verification.md
+archived: true
+created_at: 2026-08-25T09:29:22.243Z
