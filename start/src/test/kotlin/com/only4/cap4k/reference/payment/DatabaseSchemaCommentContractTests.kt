@@ -65,14 +65,14 @@ class DatabaseSchemaCommentContractTests {
     }
 
     @Test
-    fun `value object and design fields have compact Chinese descriptions without changing source structure`() {
+    fun `value object and design fields have descriptions and analyzer style formatting without changing source structure`() {
         val mapper = ObjectMapper()
         val valueObjectsPath = repositoryRoot().resolve("design/value-objects.json")
         val designPath = repositoryRoot().resolve("design/design.json")
         val valueObjectsText = Files.readString(valueObjectsPath)
         val designText = Files.readString(designPath)
         assertThat(valueObjectsText.trim()).doesNotContain("\n").doesNotContain("\r")
-        assertThat(designText.trim()).doesNotContain("\n").doesNotContain("\r")
+        assertPartialDesignJsonFormatting(designText)
 
         val valueObjects = mapper.readTree(valueObjectsText)
         val designEntries = mapper.readTree(designText)
@@ -108,6 +108,25 @@ class DatabaseSchemaCommentContractTests {
             .contains("@Type")
             .contains("COMMENT")
             .contains("不是生产迁移脚本")
+    }
+
+    private fun assertPartialDesignJsonFormatting(text: String) {
+        val trimmed = text.trim()
+        assertThat(trimmed).contains("\n").doesNotContain("\r")
+        assertThat(trimmed).startsWith("[\n  {").endsWith("\n]")
+        assertThat(text).contains("\n    \"fields\": [\n")
+        assertThat(text).contains("\n    \"resultFields\": [\n")
+
+        val compactFieldLines = text.lineSequence()
+            .map(String::trim)
+            .filter { it.startsWith("{ \"name\":") }
+            .toList()
+        assertThat(compactFieldLines).isNotEmpty
+        compactFieldLines.forEach { line ->
+            assertThat(line).matches(
+                "\\{ \"name\": \"[^\"]+\", \"type\": \"[^\"]+\"(, \"defaultValue\": \"[^\"]*\")?, \"description\": \"[^\"]+\" \\},?",
+            )
+        }
     }
 
     private fun jsonFields(root: JsonNode): List<JsonNode> {
