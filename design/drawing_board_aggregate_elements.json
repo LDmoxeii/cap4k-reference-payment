@@ -49,7 +49,7 @@
     "aggregate": "MerchantChannelConfiguration",
     "name": "SMerchantChannelConfiguration",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration",
-    "description": "",
+    "description": "商户渠道配置：保存商户在渠道、币种和支付方式维度上的路由与费用快照来源",
     "type": "schema",
     "root": false
   },
@@ -58,7 +58,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SMerchantSettlement",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
-    "description": "",
+    "description": "商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期",
     "type": "schema",
     "root": false
   },
@@ -67,7 +67,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SSettlementExecutionAttempt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
-    "description": "",
+    "description": "结算执行尝试：保存一次出款请求、等待窗口、结果和重试/冲突证据",
     "type": "schema",
     "root": false
   },
@@ -76,7 +76,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SSettlementLine",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
-    "description": "",
+    "description": "结算明细：保存一条被纳入结算的支付、退款或对账确认来源及其费用快照",
     "type": "schema",
     "root": false
   },
@@ -85,7 +85,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SSettlementResultReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
-    "description": "",
+    "description": "结算结果回执：保存渠道出款回调的稳定身份、金额、结果和重复/矛盾证据",
     "type": "schema",
     "root": false
   },
@@ -94,7 +94,7 @@
     "aggregate": "Payment",
     "name": "SPayment",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
-    "description": "",
+    "description": "支付主聚合：记录商户订单的金额、状态、成功事实、通知收敛、复核和退款预算",
     "type": "schema",
     "root": false
   },
@@ -103,7 +103,7 @@
     "aggregate": "Payment",
     "name": "SPaymentAttempt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
-    "description": "",
+    "description": "支付尝试：Payment 聚合内一次渠道请求及其最终结果与通知证据",
     "type": "schema",
     "root": false
   },
@@ -112,7 +112,7 @@
     "aggregate": "Payment",
     "name": "SPaymentNotificationReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
-    "description": "",
+    "description": "支付通知回执：保存渠道回调的原始身份、校验结果和重复/矛盾处理证据",
     "type": "schema",
     "root": false
   },
@@ -121,7 +121,7 @@
     "aggregate": "Payment",
     "name": "SPaymentReviewCase",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
-    "description": "",
+    "description": "支付复核案件：保存迟到、未知或矛盾支付结果的人工复核上下文",
     "type": "schema",
     "root": false
   },
@@ -130,7 +130,7 @@
     "aggregate": "Payment",
     "name": "SPaymentReviewDecision",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
-    "description": "",
+    "description": "支付复核决定：保存授权操作人对复核案件作出的追加式裁决证据",
     "type": "schema",
     "root": false
   },
@@ -139,7 +139,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "SReconciliationBatch",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch",
-    "description": "",
+    "description": "对账批次：以渠道、币种和业务日为范围维护对账周期、有效运行和结算阻断状态",
     "type": "schema",
     "root": false
   },
@@ -148,7 +148,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "SReconciliationConfirmationFact",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch",
-    "description": "",
+    "description": "对账确认事实：保存经授权确认后的外部交易事实，不覆盖原始差异证据",
     "type": "schema",
     "root": false
   },
@@ -157,7 +157,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "SReconciliationDisposition",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch",
-    "description": "",
+    "description": "对账差异处置：保存操作人对差异项的授权、结论、影响和证据",
     "type": "schema",
     "root": false
   },
@@ -166,7 +166,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "SReconciliationItem",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch",
-    "description": "",
+    "description": "对账差异项：保存渠道事实与平台事实的双方快照、匹配依据和处置状态",
     "type": "schema",
     "root": false
   },
@@ -175,7 +175,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "SReconciliationRun",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch",
-    "description": "",
+    "description": "对账运行：保存某一账单身份与修订版本的拉取、匹配和完成结果",
     "type": "schema",
     "root": false
   },
@@ -184,7 +184,7 @@
     "aggregate": "Refund",
     "name": "SRefund",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.refund",
-    "description": "",
+    "description": "退款主聚合：记录退款申请、退款预算占用、渠道结果和最终退款事实",
     "type": "schema",
     "root": false
   },
@@ -193,7 +193,7 @@
     "aggregate": "Refund",
     "name": "SRefundAttempt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.refund",
-    "description": "",
+    "description": "退款尝试：Refund 聚合内一次渠道退款请求及其等待、结果和通知证据",
     "type": "schema",
     "root": false
   },
@@ -202,7 +202,7 @@
     "aggregate": "Refund",
     "name": "SRefundNotificationReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.refund",
-    "description": "",
+    "description": "退款通知回执：保存渠道退款回调的身份、金额、校验和冲突证据",
     "type": "schema",
     "root": false
   },
@@ -211,7 +211,7 @@
     "aggregate": "MerchantChannelConfiguration",
     "name": "MerchantChannelConfiguration",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration",
-    "description": "",
+    "description": "商户渠道配置：保存商户在渠道、币种和支付方式维度上的路由与费用快照来源",
     "type": "entity",
     "root": true
   },
@@ -238,7 +238,7 @@
     "aggregate": "MerchantSettlement",
     "name": "MerchantSettlement",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement",
-    "description": "",
+    "description": "商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期",
     "type": "entity",
     "root": true
   },
@@ -256,7 +256,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SettlementExecutionAttempt",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement",
-    "description": "",
+    "description": "结算执行尝试：保存一次出款请求、等待窗口、结果和重试/冲突证据",
     "type": "entity",
     "root": false
   },
@@ -274,7 +274,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SettlementLine",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement",
-    "description": "",
+    "description": "结算明细：保存一条被纳入结算的支付、退款或对账确认来源及其费用快照",
     "type": "entity",
     "root": false
   },
@@ -292,7 +292,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SettlementResultReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement",
-    "description": "",
+    "description": "结算结果回执：保存渠道出款回调的稳定身份、金额、结果和重复/矛盾证据",
     "type": "entity",
     "root": false
   },
@@ -319,7 +319,7 @@
     "aggregate": "Payment",
     "name": "Payment",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
-    "description": "",
+    "description": "支付主聚合：记录商户订单的金额、状态、成功事实、通知收敛、复核和退款预算",
     "type": "entity",
     "root": true
   },
@@ -328,7 +328,7 @@
     "aggregate": "Payment",
     "name": "PaymentAttempt",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
-    "description": "",
+    "description": "支付尝试：Payment 聚合内一次渠道请求及其最终结果与通知证据",
     "type": "entity",
     "root": false
   },
@@ -355,7 +355,7 @@
     "aggregate": "Payment",
     "name": "PaymentNotificationReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
-    "description": "",
+    "description": "支付通知回执：保存渠道回调的原始身份、校验结果和重复/矛盾处理证据",
     "type": "entity",
     "root": false
   },
@@ -373,7 +373,7 @@
     "aggregate": "Payment",
     "name": "PaymentReviewCase",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
-    "description": "",
+    "description": "支付复核案件：保存迟到、未知或矛盾支付结果的人工复核上下文",
     "type": "entity",
     "root": false
   },
@@ -391,7 +391,7 @@
     "aggregate": "Payment",
     "name": "PaymentReviewDecision",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
-    "description": "",
+    "description": "支付复核决定：保存授权操作人对复核案件作出的追加式裁决证据",
     "type": "entity",
     "root": false
   },
@@ -418,7 +418,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "ReconciliationBatch",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch",
-    "description": "",
+    "description": "对账批次：以渠道、币种和业务日为范围维护对账周期、有效运行和结算阻断状态",
     "type": "entity",
     "root": true
   },
@@ -436,7 +436,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "ReconciliationConfirmationFact",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch",
-    "description": "",
+    "description": "对账确认事实：保存经授权确认后的外部交易事实，不覆盖原始差异证据",
     "type": "entity",
     "root": false
   },
@@ -454,7 +454,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "ReconciliationDisposition",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch",
-    "description": "",
+    "description": "对账差异处置：保存操作人对差异项的授权、结论、影响和证据",
     "type": "entity",
     "root": false
   },
@@ -472,7 +472,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "ReconciliationItem",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch",
-    "description": "",
+    "description": "对账差异项：保存渠道事实与平台事实的双方快照、匹配依据和处置状态",
     "type": "entity",
     "root": false
   },
@@ -490,7 +490,7 @@
     "aggregate": "ReconciliationBatch",
     "name": "ReconciliationRun",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch",
-    "description": "",
+    "description": "对账运行：保存某一账单身份与修订版本的拉取、匹配和完成结果",
     "type": "entity",
     "root": false
   },
@@ -517,7 +517,7 @@
     "aggregate": "Refund",
     "name": "Refund",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
-    "description": "",
+    "description": "退款主聚合：记录退款申请、退款预算占用、渠道结果和最终退款事实",
     "type": "entity",
     "root": true
   },
@@ -526,7 +526,7 @@
     "aggregate": "Refund",
     "name": "RefundAttempt",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
-    "description": "",
+    "description": "退款尝试：Refund 聚合内一次渠道退款请求及其等待、结果和通知证据",
     "type": "entity",
     "root": false
   },
@@ -553,7 +553,7 @@
     "aggregate": "Refund",
     "name": "RefundNotificationReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.refund",
-    "description": "",
+    "description": "退款通知回执：保存渠道退款回调的身份、金额、校验和冲突证据",
     "type": "entity",
     "root": false
   },
