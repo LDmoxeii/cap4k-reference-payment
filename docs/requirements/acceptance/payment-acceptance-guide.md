@@ -136,7 +136,7 @@ $attempt = Invoke-RestMethod -Method Post -Uri "$base/api/payments/$($payment.pa
 - `start/src/main/resources/schema.sql` 是 Hibernate `create-drop` 后的 H2 运行时投影，补充复合唯一约束和同一套表/字段备注；它不是生产迁移脚本。
 - 验收时，表备注回答“这张表属于哪个业务聚合、保存哪类事实”，字段备注回答“这个值代表什么、何时形成、是否是快照/计数/证据”。
 - `design/value-objects.json` 的 `fields` 与 `design/design.json` 的 `fields` / `resultFields` 也提供字段级中文 `description`；验收值对象、Command/Query/Endpoint 入参出参时，先看 `name` / `type`，再用 `description` 理解业务含义。
-- 两份 JSON 已按分析器产物的紧凑风格压缩为单行；压缩只改变空白，不改变 `name`、`type`、`defaultValue`、聚合引用或入口语义。字段备注是人工阅读元数据，cap4k source provider 会忽略它，不要把 `description` 当成运行时字段。
+- JSON 字段对象已按分析器产物的紧凑风格局部压缩：`value-objects.json` 保持单行，`design.json` 保留顶层和 entry 的多行结构，`fields` / `resultFields` 数组逐行展示紧凑字段对象。压缩只改变空白，不改变 `name`、`type`、`defaultValue`、聚合引用或入口语义。字段备注是人工阅读元数据，cap4k source provider 会忽略它，不要把 `description` 当成运行时字段。
 
 ## 5. 支付：PAY-AC-001..017
 
