@@ -40,11 +40,36 @@ object ConfirmMerchantSettlementCmd {
     }
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 操作员身份
+         */
         val operatorIdentity: String,
+        /**
+         * 操作员角色
+         */
         val operatorRole: String,
+        /**
+         * 确认时间
+         */
         val confirmedAt: Instant
     ) : Command<Response>
 
-    data class Response(val settlementId: String, val status: String, val netAmount: BigDecimal)
+    data class Response(
+        /**
+         * 结算标识
+         */
+        val settlementId: String,
+        /**
+         * 状态
+         */
+        val status: String,
+        /**
+         * 净金额
+         */
+        val netAmount: BigDecimal
+    )
 }

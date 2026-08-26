@@ -13,10 +13,16 @@ import com.only4.cap4k.ddd.core.application.capability.CapabilityCall
 )
 object SerializeMerchantOrderSuccess {
     data class Request(
+        /**
+         * 商户标识
+         */
         val merchantId: String,
     ) : CapabilityCall<Response>
 
     data class Response(
+        /**
+         * 锁定配置数量
+         */
         val lockedConfigurationCount: Int,
     )
 }

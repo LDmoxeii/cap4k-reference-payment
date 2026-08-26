@@ -244,12 +244,33 @@ object PrepareMerchantSettlementCmd {
     }
 
     data class Request(
+        /**
+         * 商户标识
+         */
         val merchantId: String,
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 结算日期
+         */
         val settlementDate: LocalDate,
+        /**
+         * 请求操作人
+         */
         val requestedBy: String,
+        /**
+         * 请求时间
+         */
         val requestedAt: Instant,
+        /**
+         * 前序结算标识
+         */
         val predecessorSettlementId: String?,
     ) : Command<Response>
 

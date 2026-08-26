@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "ReconciliationTransactionKind",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
-    description = "",
+    description = "对账资金事实交易类型",
     aggregates = ["ReconciliationBatch"],
     family = "enum"
 )
@@ -16,9 +16,9 @@ enum class ReconciliationTransactionKind(
     val description: String
 ) {
 
-    PAYMENT(0, "Payment funds fact"),
+    PAYMENT(0, "支付资金事实"),
 
-    REFUND(1, "Refund funds fact");
+    REFUND(1, "退款资金事实");
 
     companion object {
         private val enumMap: Map<Int, ReconciliationTransactionKind> = entries.associateBy { it.value }

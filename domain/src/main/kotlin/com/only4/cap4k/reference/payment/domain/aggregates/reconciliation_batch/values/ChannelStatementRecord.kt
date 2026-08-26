@@ -14,12 +14,36 @@ import java.time.Instant
     family = "value-object"
 )
 data class ChannelStatementRecord(
+    /**
+     * 记录身份
+     */
     val recordIdentity: String,
+    /**
+     * 交易类型
+     */
     val transactionKind: ReconciliationTransactionKind,
+    /**
+     * 渠道交易身份
+     */
     val channelTransactionIdentity: String,
+    /**
+     * 金额
+     */
     val amount: BigDecimal,
+    /**
+     * 币种
+     */
     val currency: String,
+    /**
+     * 渠道原始状态
+     */
     val rawStatus: String,
+    /**
+     * 发生时间
+     */
     val occurredAt: Instant,
+    /**
+     * 接收时间
+     */
     val receivedAt: Instant
 )

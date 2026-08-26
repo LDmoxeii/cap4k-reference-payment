@@ -11,7 +11,16 @@ import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
     family = "value-object"
 )
 data class PaymentReviewEligibility(
+    /**
+     * 是否符合结算条件
+     */
     val settlementEligible: Boolean,
+    /**
+     * 复核
+     */
     val blockingReviewIdentities: List<String>,
+    /**
+     * 复核
+     */
     val blockingReviewSummaries: List<String>
 )

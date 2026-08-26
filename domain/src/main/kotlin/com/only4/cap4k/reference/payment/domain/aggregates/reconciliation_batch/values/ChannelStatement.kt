@@ -14,13 +14,40 @@ import java.time.LocalDate
     family = "value-object"
 )
 data class ChannelStatement(
+    /**
+     * 渠道标识
+     */
     val channelId: String,
+    /**
+     * 币种
+     */
     val currency: String,
+    /**
+     * 对账日期
+     */
     val reconciliationDate: LocalDate,
+    /**
+     * 业务时区
+     */
     val businessTimezone: String,
+    /**
+     * 对账单身份
+     */
     val statementIdentity: String,
+    /**
+     * 对账单版本
+     */
     val statementRevision: String,
+    /**
+     * 完整性
+     */
     val completeness: StatementCompleteness,
+    /**
+     * 抓取时间
+     */
     val fetchedAt: Instant,
+    /**
+     * 记录列表
+     */
     val records: List<ChannelStatementRecord>
 )

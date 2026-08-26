@@ -39,9 +39,21 @@ object RunDailyMerchantSettlementCmd {
     }
 
     data class Request(
+        /**
+         * 商户标识
+         */
         val merchantId: String,
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 触发时间
+         */
         val triggeredAt: Instant
     ) : Command<Response>
 

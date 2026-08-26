@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "ReconciliationDispositionConclusion",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
-    description = "",
+    description = "对账差异处置结论",
     aggregates = ["ReconciliationBatch"],
     family = "enum"
 )
@@ -16,15 +16,15 @@ enum class ReconciliationDispositionConclusion(
     val description: String
 ) {
 
-    ACCEPT_AS_MATCHED(0, "Evidence establishes an acceptable match"),
+    ACCEPT_AS_MATCHED(0, "现有证据足以确认可接受的匹配"),
 
-    CONFIRM_PLATFORM_FACT(1, "Channel evidence authorizes a new platform confirmation fact"),
+    CONFIRM_PLATFORM_FACT(1, "渠道证据授权新增平台确认事实"),
 
-    ACCEPT_CHANNEL_FACT(2, "Channel-only fact is accepted with evidence"),
+    ACCEPT_CHANNEL_FACT(2, "已基于证据接受仅渠道侧存在的事实"),
 
-    NO_SETTLEMENT_IMPACT(3, "Difference is documented as not affecting settlement"),
+    NO_SETTLEMENT_IMPACT(3, "已记录该差异不影响结算"),
 
-    ESCALATE(4, "Difference remains open for follow-up");
+    ESCALATE(4, "差异保持未解决，等待后续跟进");
 
     companion object {
         private val enumMap: Map<Int, ReconciliationDispositionConclusion> = entries.associateBy { it.value }

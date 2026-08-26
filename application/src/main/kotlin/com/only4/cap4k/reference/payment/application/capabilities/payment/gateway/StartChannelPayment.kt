@@ -15,17 +15,44 @@ import java.math.BigDecimal
 object StartChannelPayment {
 
     data class Request(
+        /**
+         * 支付尝试标识
+         */
         val paymentAttemptId: String,
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 请求身份
+         */
         val requestIdentity: String,
+        /**
+         * 金额
+         */
         val amount: BigDecimal,
+        /**
+         * 币种
+         */
         val currency: String
     ) : CapabilityCall<Response>
 
     data class Response(
+        /**
+         * 是否接受
+         */
         val accepted: Boolean,
+        /**
+         * 渠道引用
+         */
         val channelReference: String?,
+        /**
+         * 失败代码
+         */
         val failureCode: String?,
+        /**
+         * 诊断摘要
+         */
         val diagnosticSummary: String?
     )
 

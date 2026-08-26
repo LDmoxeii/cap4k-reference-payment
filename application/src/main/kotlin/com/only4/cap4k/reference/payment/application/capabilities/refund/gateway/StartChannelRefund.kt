@@ -15,17 +15,44 @@ import java.math.BigDecimal
 object StartChannelRefund {
 
     data class Request(
+        /**
+         * 退款尝试标识
+         */
         val refundAttemptId: String,
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 请求身份
+         */
         val requestIdentity: String,
+        /**
+         * 金额
+         */
         val amount: BigDecimal,
+        /**
+         * 币种
+         */
         val currency: String
     ) : CapabilityCall<Response>
 
     data class Response(
+        /**
+         * 是否接受
+         */
         val accepted: Boolean,
+        /**
+         * 渠道退款标识
+         */
         val channelRefundId: String?,
+        /**
+         * 失败代码
+         */
         val failureCode: String?,
+        /**
+         * 诊断摘要
+         */
         val diagnosticSummary: String?
     )
 

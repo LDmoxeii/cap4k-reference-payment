@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "SettlementImpact",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
-    description = "",
+    description = "对账差异对结算的影响",
     aggregates = ["ReconciliationBatch"],
     family = "enum"
 )
@@ -16,11 +16,11 @@ enum class SettlementImpact(
     val description: String
 ) {
 
-    BLOCKS_SETTLEMENT(0, "Difference blocks automatic settlement"),
+    BLOCKS_SETTLEMENT(0, "差异阻断自动结算"),
 
-    DOES_NOT_BLOCK_SETTLEMENT(1, "Authorized evidence removes settlement blocking"),
+    DOES_NOT_BLOCK_SETTLEMENT(1, "经授权的证据解除结算阻断"),
 
-    CONFIRMS_SETTLEMENT_FACT(2, "Disposition creates an additional confirmed funds fact");
+    CONFIRMS_SETTLEMENT_FACT(2, "处置产生额外的已确认资金事实");
 
     companion object {
         private val enumMap: Map<Int, SettlementImpact> = entries.associateBy { it.value }

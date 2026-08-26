@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "SettlementResultDisposition",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
-    description = "",
+    description = "结算划款结果通知处置结果",
     aggregates = ["MerchantSettlement"],
     family = "enum"
 )
@@ -18,23 +18,23 @@ enum class SettlementResultDisposition(
     val terminal: Boolean
 ) {
 
-    RECEIVED(0, "The result notification was durably received", "pending", false),
+    RECEIVED(0, "结果通知已持久化接收", "pending", false),
 
-    REJECTED(1, "The notification failed verification or business matching", "rejected", true),
+    REJECTED(1, "通知未通过验证或业务匹配", "rejected", true),
 
-    SUCCESS_ACCEPTED(2, "A verified successful settlement result was accepted", "accepted", true),
+    SUCCESS_ACCEPTED(2, "已接受通过验证的结算成功结果", "accepted", true),
 
-    FAILURE_ACCEPTED(3, "A verified failed settlement result was accepted", "accepted", true),
+    FAILURE_ACCEPTED(3, "已接受通过验证的结算失败结果", "accepted", true),
 
-    UNKNOWN_ACCEPTED(4, "A verified unknown settlement result was accepted", "review", true),
+    UNKNOWN_ACCEPTED(4, "已接受通过验证的结算未知结果", "review", true),
 
-    ACCEPTED_DUPLICATE(5, "A duplicate notification repeated accepted facts", "accepted", true),
+    ACCEPTED_DUPLICATE(5, "重复通知重放了已接受的事实", "accepted", true),
 
-    REJECTED_DUPLICATE(6, "A duplicate notification repeated rejected facts", "rejected", true),
+    REJECTED_DUPLICATE(6, "重复通知重放了已拒绝的事实", "rejected", true),
 
-    CONFLICT(7, "A notification identity was reused with conflicting facts", "conflict", true),
+    CONFLICT(7, "同一通知身份被重复使用且事实发生冲突", "conflict", true),
 
-    ATTEMPT_NOT_FOUND(8, "The referenced attempt does not belong to the settlement", "rejected", true);
+    ATTEMPT_NOT_FOUND(8, "引用的划款尝试不属于当前结算单", "rejected", true);
 
     companion object {
         private val enumMap: Map<Int, SettlementResultDisposition> = entries.associateBy { it.value }

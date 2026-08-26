@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "ReconciliationBatchStatus",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
-    description = "",
+    description = "对账批次业务生命周期状态",
     aggregates = ["ReconciliationBatch"],
     family = "enum"
 )
@@ -16,19 +16,19 @@ enum class ReconciliationBatchStatus(
     val description: String
 ) {
 
-    PENDING(0, "Batch exists and awaits statement retrieval"),
+    PENDING(0, "对账批次已创建，等待拉取对账单"),
 
-    FETCHING(1, "Channel statement retrieval is in progress"),
+    FETCHING(1, "正在拉取渠道对账单"),
 
-    RECONCILING(2, "A statement revision is being reconciled"),
+    RECONCILING(2, "正在对账当前对账单修订版本"),
 
-    AWAITING_DISPOSITION(3, "Current run has unresolved differences"),
+    AWAITING_DISPOSITION(3, "当前有效运行仍存在未解决差异"),
 
-    COMPLETED(4, "Current effective run satisfies completion conditions"),
+    COMPLETED(4, "当前有效运行已满足完成条件"),
 
-    FETCH_FAILED(5, "Statement retrieval failed"),
+    FETCH_FAILED(5, "渠道对账单拉取失败"),
 
-    REVIEW_REQUIRED(6, "The statement deadline or evidence requires operator review");
+    REVIEW_REQUIRED(6, "对账单时限或证据需要人工复核");
 
     companion object {
         private val enumMap: Map<Int, ReconciliationBatchStatus> = entries.associateBy { it.value }

@@ -20,17 +20,44 @@ object VoidMerchantSettlementEndpoint {
     const val OPERATION_NAME: String = "merchant-settlement.void"
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 操作员身份
+         */
         val operatorIdentity: String,
+        /**
+         * 操作员角色
+         */
         val operatorRole: String,
+        /**
+         * 原因
+         */
         val reason: String,
+        /**
+         * 作废时间
+         */
         val voidedAt: Instant,
+        /**
+         * 是否创建替代项
+         */
         val createReplacement: Boolean
     ) : EndpointRequest<Response>
 
     data class Response(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 状态
+         */
         val status: String,
+        /**
+         * 替代结算标识
+         */
         val replacementSettlementId: String?
     )
 

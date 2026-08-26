@@ -93,17 +93,44 @@ object ReturnMerchantSettlementForAdjustmentCmd {
     }
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 操作员身份
+         */
         val operatorIdentity: String,
+        /**
+         * 操作员角色
+         */
         val operatorRole: String,
+        /**
+         * 原因
+         */
         val reason: String,
+        /**
+         * 返回时间
+         */
         val returnedAt: Instant
     ) : Command<Response>
 
     data class Response(
+        /**
+         * 前一结算标识
+         */
         val previousSettlementId: String,
+        /**
+         * 前一状态
+         */
         val previousStatus: String,
+        /**
+         * 替代结算标识
+         */
         val replacementSettlementId: String,
+        /**
+         * 替代状态
+         */
         val replacementStatus: String
     )
 

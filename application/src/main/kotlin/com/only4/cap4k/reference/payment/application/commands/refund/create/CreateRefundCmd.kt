@@ -219,20 +219,56 @@ object CreateRefundCmd {
     private val log = LoggerFactory.getLogger(CreateRefundCmd::class.java)
 
     data class Request(
+        /**
+         * 商户标识
+         */
         val merchantId: String,
+        /**
+         * 商户退款单号
+         */
         val merchantRefundNumber: String,
+        /**
+         * 支付标识
+         */
         val paymentId: String,
+        /**
+         * 金额
+         */
         val amount: BigDecimal,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 请求时间
+         */
         val requestedAt: Instant,
     ) : Command<Response>
 
     data class Response(
+        /**
+         * 退款标识
+         */
         val refundId: String,
+        /**
+         * 退款尝试标识
+         */
         val refundAttemptId: String,
+        /**
+         * 状态
+         */
         val status: String,
+        /**
+         * 请求身份
+         */
         val requestIdentity: String,
+        /**
+         * 是否幂等重放
+         */
         val idempotentReplay: Boolean,
+        /**
+         * 诊断摘要
+         */
         val diagnosticSummary: String?,
     )
 }

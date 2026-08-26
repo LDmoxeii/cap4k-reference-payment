@@ -116,17 +116,44 @@ object RunDailyReconciliationCmd {
     }
 
     data class Request(
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 触发时间
+         */
         val triggeredAt: Instant
     ) : Command<Response>
 
     data class Response(
+        /**
+         * 批次标识
+         */
         val batchId: String,
+        /**
+         * 运行标识
+         */
         val runId: String?,
+        /**
+         * 批次状态
+         */
         val batchStatus: String,
+        /**
+         * 是否幂等重放
+         */
         val idempotentReplay: Boolean,
+        /**
+         * 未解决差异数量
+         */
         val unresolvedDifferenceCount: Int,
+        /**
+         * 原因
+         */
         val blockingReason: String?
     )
 

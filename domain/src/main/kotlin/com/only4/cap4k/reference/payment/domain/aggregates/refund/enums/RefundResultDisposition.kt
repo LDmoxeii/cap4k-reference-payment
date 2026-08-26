@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "RefundResultDisposition",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.refund.enums",
-    description = "",
+    description = "退款渠道结果通知处置结果",
     aggregates = ["Refund"],
     family = "enum"
 )
@@ -18,23 +18,23 @@ enum class RefundResultDisposition(
     val terminal: Boolean
 ) {
 
-    RECEIVED(0, "The refund notification was durably received before adjudication", "pending", false),
+    RECEIVED(0, "退款通知已持久化接收，等待裁定", "pending", false),
 
-    REJECTED(1, "The refund notification failed verification or business matching", "rejected", true),
+    REJECTED(1, "退款通知未通过验证或业务匹配", "rejected", true),
 
-    SUCCESS_ACCEPTED(2, "A verified successful refund result was accepted", "accepted", true),
+    SUCCESS_ACCEPTED(2, "已接受通过验证的退款成功结果", "accepted", true),
 
-    FAILURE_ACCEPTED(3, "A verified failed refund result was accepted", "accepted", true),
+    FAILURE_ACCEPTED(3, "已接受通过验证的退款失败结果", "accepted", true),
 
-    UNKNOWN_ACCEPTED(4, "A verified non-final refund result was accepted while budget remains reserved", "pending", true),
+    UNKNOWN_ACCEPTED(4, "已接受通过验证但尚未最终确定的退款结果，退款预算继续占用", "pending", true),
 
-    ACCEPTED_DUPLICATE(5, "A duplicate notification repeated an already accepted payload", "accepted", true),
+    ACCEPTED_DUPLICATE(5, "重复通知重放了已接受的载荷", "accepted", true),
 
-    REJECTED_DUPLICATE(6, "A duplicate notification repeated an already rejected payload", "rejected", true),
+    REJECTED_DUPLICATE(6, "重复通知重放了已拒绝的载荷", "rejected", true),
 
-    CONFLICT(7, "A refund notification conflicts with an immutable prior result", "conflict", true),
+    CONFLICT(7, "退款通知与不可变的既有结果发生冲突", "conflict", true),
 
-    ATTEMPT_NOT_FOUND(8, "The referenced attempt does not belong to the refund", "rejected", true);
+    ATTEMPT_NOT_FOUND(8, "引用的退款尝试不属于当前退款单", "rejected", true);
 
     companion object {
         private val enumMap: Map<Int, RefundResultDisposition> = entries.associateBy { it.value }

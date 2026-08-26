@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "SettlementExecutionAttemptStatus",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
-    description = "",
+    description = "结算划款尝试处理状态",
     aggregates = ["MerchantSettlement"],
     family = "enum"
 )
@@ -16,17 +16,17 @@ enum class SettlementExecutionAttemptStatus(
     val description: String
 ) {
 
-    PROCESSING(0, "The transfer request was accepted and awaits a final result"),
+    PROCESSING(0, "划款请求已受理，等待最终结果"),
 
-    SUCCEEDED(1, "A verified success result was accepted"),
+    SUCCEEDED(1, "已接受通过验证的成功结果"),
 
-    FAILED(2, "A verified explicit failure result was accepted"),
+    FAILED(2, "已接受通过验证的明确失败结果"),
 
-    RESULT_UNKNOWN(3, "A verified unknown result was accepted"),
+    RESULT_UNKNOWN(3, "已接受通过验证的未知结果"),
 
-    REVIEW_REQUIRED(4, "The attempt requires authorized manual review"),
+    REVIEW_REQUIRED(4, "本次划款尝试需要经授权的人工复核"),
 
-    CONFLICT_REVIEW_REQUIRED(5, "Conflicting evidence requires authorized manual review");
+    CONFLICT_REVIEW_REQUIRED(5, "冲突证据需要经授权的人工复核");
 
     companion object {
         private val enumMap: Map<Int, SettlementExecutionAttemptStatus> = entries.associateBy { it.value }

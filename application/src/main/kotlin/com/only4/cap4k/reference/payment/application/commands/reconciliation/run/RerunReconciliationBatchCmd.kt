@@ -95,17 +95,44 @@ object RerunReconciliationBatchCmd {
     private val log = LoggerFactory.getLogger(RerunReconciliationBatchCmd::class.java)
 
     data class Request(
+        /**
+         * 批次标识
+         */
         val batchId: String,
+        /**
+         * 请求操作人
+         */
         val requestedBy: String,
+        /**
+         * 请求时间
+         */
         val requestedAt: Instant
     ) : Command<Response>
 
     data class Response(
+        /**
+         * 批次标识
+         */
         val batchId: String,
+        /**
+         * 运行标识
+         */
         val runId: String?,
+        /**
+         * 批次状态
+         */
         val batchStatus: String,
+        /**
+         * 是否幂等重放
+         */
         val idempotentReplay: Boolean,
+        /**
+         * 对账单身份
+         */
         val statementIdentity: String?,
+        /**
+         * 对账单版本
+         */
         val statementRevision: String?
     )
 }

@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "PaymentReviewSettlementImpact",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
-    description = "",
+    description = "支付复核对结算资格的影响",
     aggregates = ["Payment"],
     family = "enum"
 )
@@ -16,9 +16,9 @@ enum class PaymentReviewSettlementImpact(
     val description: String
 ) {
 
-    BLOCKS_SETTLEMENT(0, "The review blocks automatic reconciliation and settlement eligibility"),
+    BLOCKS_SETTLEMENT(0, "复核案件阻断自动对账和结算资格"),
 
-    ALLOWS_SETTLEMENT(1, "The review no longer blocks automatic settlement eligibility");
+    ALLOWS_SETTLEMENT(1, "复核案件不再阻断自动结算资格");
 
     companion object {
         private val enumMap: Map<Int, PaymentReviewSettlementImpact> = entries.associateBy { it.value }

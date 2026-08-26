@@ -20,19 +20,52 @@ object StartMerchantSettlementExecutionEndpoint {
     const val OPERATION_NAME: String = "merchant-settlement.execution.start"
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 操作员身份
+         */
         val operatorIdentity: String,
+        /**
+         * 操作员角色
+         */
         val operatorRole: String,
+        /**
+         * 请求时间
+         */
         val requestedAt: Instant
     ) : EndpointRequest<Response>
 
     data class Response(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 尝试标识
+         */
         val attemptId: String?,
+        /**
+         * 执行组身份
+         */
         val executionGroupIdentity: String?,
+        /**
+         * 请求身份
+         */
         val requestIdentity: String?,
+        /**
+         * 状态
+         */
         val status: String,
+        /**
+         * 渠道是否接受
+         */
         val providerAccepted: Boolean,
+        /**
+         * 诊断摘要
+         */
         val diagnosticSummary: String?
     )
 

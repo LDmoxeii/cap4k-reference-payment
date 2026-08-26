@@ -45,12 +45,33 @@ object AdjudicateMerchantSettlementResultCmd {
     }
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 执行尝试标识
+         */
         val executionAttemptId: String,
+        /**
+         * 操作员身份
+         */
         val operatorIdentity: String,
+        /**
+         * 操作员角色
+         */
         val operatorRole: String,
+        /**
+         * 最终结果
+         */
         val finalResult: String,
+        /**
+         * 裁定时间
+         */
         val adjudicatedAt: Instant,
+        /**
+         * 证据
+         */
         val evidence: String,
     ) : Command<Response>
 

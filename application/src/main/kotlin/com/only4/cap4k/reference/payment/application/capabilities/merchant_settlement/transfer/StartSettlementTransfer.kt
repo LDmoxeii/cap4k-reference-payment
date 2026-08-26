@@ -15,20 +15,56 @@ import java.math.BigDecimal
 object StartSettlementTransfer {
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 执行尝试标识
+         */
         val executionAttemptId: String,
+        /**
+         * 商户标识
+         */
         val merchantId: String,
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 执行组身份
+         */
         val executionGroupIdentity: String,
+        /**
+         * 请求身份
+         */
         val requestIdentity: String,
+        /**
+         * 金额
+         */
         val amount: BigDecimal,
+        /**
+         * 币种
+         */
         val currency: String
     ) : CapabilityCall<Response>
 
     data class Response(
+        /**
+         * 是否接受
+         */
         val accepted: Boolean,
+        /**
+         * 外部结算身份
+         */
         val externalSettlementIdentity: String?,
+        /**
+         * 失败代码
+         */
         val failureCode: String?,
+        /**
+         * 诊断摘要
+         */
         val diagnosticSummary: String?
     )
 

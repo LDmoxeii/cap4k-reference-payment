@@ -28,6 +28,24 @@ object ExpirePaymentsCmd {
             )
         }
     }
-    data class Request(val now: Instant) : Command<Response>
-    data class Response(val inspectedCount: Int, val closedCount: Int, val reviewOpenedCount: Int)
+    data class Request(
+        /**
+         * 当前时间
+         */
+        val now: Instant
+    ) : Command<Response>
+    data class Response(
+        /**
+         * 检查数量
+         */
+        val inspectedCount: Int,
+        /**
+         * 关闭数量
+         */
+        val closedCount: Int,
+        /**
+         * 已打开复核数量
+         */
+        val reviewOpenedCount: Int
+    )
 }

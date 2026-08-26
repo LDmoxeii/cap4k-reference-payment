@@ -14,19 +14,64 @@ import java.time.Instant
     family = "value-object"
 )
 data class PlatformReconciliationFact(
+    /**
+     * 事实身份
+     */
     val factIdentity: String,
+    /**
+     * 交易类型
+     */
     val transactionKind: ReconciliationTransactionKind,
+    /**
+     * 支付标识
+     */
     val paymentId: String?,
+    /**
+     * 支付尝试标识
+     */
     val paymentAttemptId: String?,
+    /**
+     * 退款标识
+     */
     val refundId: String?,
+    /**
+     * 退款尝试标识
+     */
     val refundAttemptId: String?,
+    /**
+     * 渠道交易身份
+     */
     val channelTransactionIdentity: String,
+    /**
+     * 金额
+     */
     val amount: BigDecimal,
+    /**
+     * 币种
+     */
     val currency: String,
+    /**
+     * 渠道原始状态
+     */
     val rawStatus: String,
+    /**
+     * 发生时间
+     */
     val occurredAt: Instant,
+    /**
+     * 记录时间
+     */
     val recordedAt: Instant,
+    /**
+     * 复核身份快照
+     */
     val paymentReviewIdentitySnapshot: String? = null,
+    /**
+     * 复核摘要
+     */
     val paymentReviewSummary: String? = null,
+    /**
+     * 是否符合结算条件
+     */
     val settlementEligible: Boolean = true,
 )

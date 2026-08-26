@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "MerchantChannelConfigurationStatus",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.enums",
-    description = "",
+    description = "商户渠道配置生命周期状态",
     aggregates = ["MerchantChannelConfiguration"],
     family = "enum"
 )
@@ -16,9 +16,9 @@ enum class MerchantChannelConfigurationStatus(
     val description: String
 ) {
 
-    ACTIVE(0, "The merchant channel configuration is eligible for routing"),
+    ACTIVE(0, "商户渠道配置可参与路由"),
 
-    RETIRED(1, "The merchant channel configuration is no longer eligible");
+    RETIRED(1, "商户渠道配置已停用，不再参与路由");
 
     companion object {
         private val enumMap: Map<Int, MerchantChannelConfigurationStatus> = entries.associateBy { it.value }

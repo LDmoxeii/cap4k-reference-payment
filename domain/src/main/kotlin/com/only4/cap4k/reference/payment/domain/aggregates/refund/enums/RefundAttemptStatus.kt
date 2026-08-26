@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "RefundAttemptStatus",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.refund.enums",
-    description = "",
+    description = "退款渠道尝试处理状态",
     aggregates = ["Refund"],
     family = "enum"
 )
@@ -16,15 +16,15 @@ enum class RefundAttemptStatus(
     val description: String
 ) {
 
-    PROCESSING(0, "The channel refund attempt is in progress"),
+    PROCESSING(0, "渠道退款尝试正在处理中"),
 
-    SUCCEEDED(1, "The channel refund attempt completed successfully"),
+    SUCCEEDED(1, "渠道退款尝试已成功完成"),
 
-    FAILED(2, "The channel refund attempt completed unsuccessfully"),
+    FAILED(2, "渠道退款尝试已失败完成"),
 
-    RESULT_UNKNOWN(3, "The channel returned a trusted but non-final result"),
+    RESULT_UNKNOWN(3, "渠道返回了可信但尚未最终确定的结果"),
 
-    REVIEW_REQUIRED(4, "The attempt requires review after the configured threshold");
+    REVIEW_REQUIRED(4, "渠道退款尝试超过配置阈值，需要复核");
 
     companion object {
         private val enumMap: Map<Int, RefundAttemptStatus> = entries.associateBy { it.value }

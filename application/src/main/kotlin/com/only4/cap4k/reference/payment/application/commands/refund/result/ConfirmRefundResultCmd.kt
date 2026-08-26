@@ -86,15 +86,45 @@ object ConfirmRefundResultCmd {
     }
 
     data class Request(
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 通知标识
+         */
         val notificationId: String,
+        /**
+         * 退款标识
+         */
         val refundId: String,
+        /**
+         * 退款尝试标识
+         */
         val refundAttemptId: String,
+        /**
+         * 渠道退款标识
+         */
         val channelRefundId: String,
+        /**
+         * 金额
+         */
         val amount: BigDecimal,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 结果
+         */
         val result: String,
+        /**
+         * 发生时间
+         */
         val occurredAt: Instant,
+        /**
+         * 核验材料
+         */
         val verificationMaterial: String,
     ) : Command<Response>
 

@@ -22,14 +22,41 @@ import java.time.LocalDate
     variant = "inbound"
 )
 data class ChannelStatementAvailableIntegrationEvent(
+    /**
+     * 身份
+     */
     val eventIdentity: String,
+    /**
+     * 渠道标识
+     */
     val channelId: String,
+    /**
+     * 币种
+     */
     val currency: String,
+    /**
+     * 对账日期
+     */
     val reconciliationDate: LocalDate,
+    /**
+     * 对账单身份
+     */
     val statementIdentity: String,
+    /**
+     * 对账单版本
+     */
     val statementRevision: String,
+    /**
+     * 发布时间
+     */
     val publishedAt: Instant,
+    /**
+     * 关联身份
+     */
     val correlationIdentity: String? = null,
+    /**
+     * 因果身份
+     */
     val causationIdentity: String? = null
 ) {
     companion object {

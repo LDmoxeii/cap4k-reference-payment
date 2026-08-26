@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "SettlementLineSourceKind",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums",
-    description = "",
+    description = "结算明细来源类型",
     aggregates = ["MerchantSettlement"],
     family = "enum"
 )
@@ -16,13 +16,13 @@ enum class SettlementLineSourceKind(
     val description: String
 ) {
 
-    PAYMENT(0, "A verified payment success fact"),
+    PAYMENT(0, "已验证的支付成功事实"),
 
-    REFUND(1, "A verified refund success fact"),
+    REFUND(1, "已验证的退款成功事实"),
 
-    RECONCILIATION_CONFIRMATION(2, "An authorized reconciliation confirmation fact"),
+    RECONCILIATION_CONFIRMATION(2, "经授权的对账确认事实"),
 
-    ADJUSTMENT(3, "A traceable settlement adjustment fact");
+    ADJUSTMENT(3, "可追溯的结算调整事实");
 
     companion object {
         private val enumMap: Map<Int, SettlementLineSourceKind> = entries.associateBy { it.value }

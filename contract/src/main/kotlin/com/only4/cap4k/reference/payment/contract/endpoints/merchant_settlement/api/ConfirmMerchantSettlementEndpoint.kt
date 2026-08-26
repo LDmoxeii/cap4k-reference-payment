@@ -21,15 +21,36 @@ object ConfirmMerchantSettlementEndpoint {
     const val OPERATION_NAME: String = "merchant-settlement.confirm"
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 操作员身份
+         */
         val operatorIdentity: String,
+        /**
+         * 操作员角色
+         */
         val operatorRole: String,
+        /**
+         * 确认时间
+         */
         val confirmedAt: Instant
     ) : EndpointRequest<Response>
 
     data class Response(
+        /**
+         * 结算标识
+         */
         val settlementId: String,
+        /**
+         * 状态
+         */
         val status: String,
+        /**
+         * 净金额
+         */
         val netAmount: BigDecimal
     )
 

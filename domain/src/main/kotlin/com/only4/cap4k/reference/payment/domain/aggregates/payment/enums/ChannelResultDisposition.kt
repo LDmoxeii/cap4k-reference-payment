@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "ChannelResultDisposition",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
-    description = "",
+    description = "支付渠道结果通知处置结果",
     aggregates = ["Payment"],
     family = "enum"
 )
@@ -18,21 +18,21 @@ enum class ChannelResultDisposition(
     val terminal: Boolean
 ) {
 
-    RECEIVED(0, "The channel notification was durably received before adjudication", "pending", false),
+    RECEIVED(0, "渠道通知已持久化接收，等待裁定", "pending", false),
 
-    REJECTED(1, "The channel notification failed verification or business matching", "rejected", true),
+    REJECTED(1, "渠道通知未通过验证或业务匹配", "rejected", true),
 
-    SUCCESS_ACCEPTED(2, "A verified successful result was accepted", "accepted", true),
+    SUCCESS_ACCEPTED(2, "已接受通过验证的成功结果", "accepted", true),
 
-    FAILURE_ACCEPTED(3, "A verified failed result was accepted", "accepted", true),
+    FAILURE_ACCEPTED(3, "已接受通过验证的失败结果", "accepted", true),
 
-    ACCEPTED_DUPLICATE(4, "A duplicate notification repeated an already accepted payload", "accepted", true),
+    ACCEPTED_DUPLICATE(4, "重复通知重放了已接受的载荷", "accepted", true),
 
-    REJECTED_DUPLICATE(5, "A duplicate notification repeated an already rejected payload", "rejected", true),
+    REJECTED_DUPLICATE(5, "重复通知重放了已拒绝的载荷", "rejected", true),
 
-    CONFLICT(6, "A notification identity was reused with conflicting facts", "conflict", true),
+    CONFLICT(6, "同一通知身份被重复使用且事实发生冲突", "conflict", true),
 
-    ATTEMPT_NOT_FOUND(7, "The referenced attempt does not belong to the payment", "rejected", true);
+    ATTEMPT_NOT_FOUND(7, "引用的支付尝试不属于当前支付单", "rejected", true);
 
     fun isAccepted(): Boolean = group == "accepted"
 

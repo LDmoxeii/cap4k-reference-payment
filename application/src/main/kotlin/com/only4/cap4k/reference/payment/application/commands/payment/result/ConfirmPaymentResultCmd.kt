@@ -150,19 +150,52 @@ object ConfirmPaymentResultCmd {
     }
 
     data class Request(
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 通知标识
+         */
         val notificationId: String,
+        /**
+         * 支付标识
+         */
         val paymentId: String,
+        /**
+         * 支付尝试标识
+         */
         val paymentAttemptId: String,
+        /**
+         * 渠道交易标识
+         */
         val channelTransactionId: String,
+        /**
+         * 金额
+         */
         val amount: BigDecimal,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 结果
+         */
         val result: String,
+        /**
+         * 发生时间
+         */
         val occurredAt: Instant,
+        /**
+         * 核验材料
+         */
         val verificationMaterial: String
     ) : Command<Response>
 
     data class Response(
+        /**
+         * 结果
+         */
         val outcome: ChannelResultRecordingOutcome
     )
 }

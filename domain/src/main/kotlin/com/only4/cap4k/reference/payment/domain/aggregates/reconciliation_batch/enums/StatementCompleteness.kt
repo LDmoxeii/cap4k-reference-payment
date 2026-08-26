@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "StatementCompleteness",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
-    description = "",
+    description = "渠道对账单完整性",
     aggregates = ["ReconciliationBatch"],
     family = "enum"
 )
@@ -16,11 +16,11 @@ enum class StatementCompleteness(
     val description: String
 ) {
 
-    UNKNOWN(0, "Provider did not establish completeness"),
+    UNKNOWN(0, "渠道提供方未能确认对账单完整性"),
 
-    INCOMPLETE(1, "Statement is explicitly incomplete"),
+    INCOMPLETE(1, "对账单已明确标记为不完整"),
 
-    COMPLETE(2, "Statement covers the requested business scope");
+    COMPLETE(2, "对账单覆盖了请求的业务范围");
 
     companion object {
         private val enumMap: Map<Int, StatementCompleteness> = entries.associateBy { it.value }

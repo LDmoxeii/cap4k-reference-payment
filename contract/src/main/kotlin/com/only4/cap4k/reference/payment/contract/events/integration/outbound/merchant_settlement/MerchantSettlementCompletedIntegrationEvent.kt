@@ -22,14 +22,41 @@ import java.time.Instant
     variant = "outbound"
 )
 data class MerchantSettlementCompletedIntegrationEvent(
+    /**
+     * 身份
+     */
     val eventIdentity: String,
+    /**
+     * 结算标识
+     */
     val settlementId: String,
+    /**
+     * 商户标识
+     */
     val merchantId: String,
+    /**
+     * 渠道标识
+     */
     val channelId: String,
+    /**
+     * 币种
+     */
     val currency: String,
+    /**
+     * 净金额
+     */
     val netAmount: BigDecimal,
+    /**
+     * 完成时间
+     */
     val completedAt: Instant,
+    /**
+     * 关联身份
+     */
     val correlationIdentity: String? = null,
+    /**
+     * 因果身份
+     */
     val causationIdentity: String? = null
 ) {
     companion object {

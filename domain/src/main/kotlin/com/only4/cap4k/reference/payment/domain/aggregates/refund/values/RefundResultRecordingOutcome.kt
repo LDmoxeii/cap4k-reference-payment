@@ -14,14 +14,41 @@ import com.only4.cap4k.reference.payment.domain.aggregates.refund.enums.RefundSt
     family = "value-object"
 )
 data class RefundResultRecordingOutcome(
+    /**
+     * 退款状态
+     */
     val refundStatus: RefundStatus,
+    /**
+     * 尝试状态
+     */
     val attemptStatus: RefundAttemptStatus?,
+    /**
+     * 通知接收次数
+     */
     val notificationReceiveCount: Int,
+    /**
+     * 处置结果
+     */
     val disposition: RefundResultDisposition,
+    /**
+     * 当前是否释放预留
+     */
     val reservationReleasedNow: Boolean,
+    /**
+     * 当前是否转为成功
+     */
     val reservationConvertedToSuccessNow: Boolean,
+    /**
+     * 当前是否需要复核
+     */
     val reviewRequiredNow: Boolean,
+    /**
+     * 拒绝摘要
+     */
     val rejectionSummary: String?,
+    /**
+     * 冲突摘要
+     */
     val conflictSummary: String?
 ) {
     init {

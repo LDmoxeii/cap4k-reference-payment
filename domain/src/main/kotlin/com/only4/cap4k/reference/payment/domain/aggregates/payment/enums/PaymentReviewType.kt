@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "PaymentReviewType",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
-    description = "",
+    description = "支付复核类型",
     aggregates = ["Payment"],
     family = "enum"
 )
@@ -16,19 +16,19 @@ enum class PaymentReviewType(
     val description: String
 ) {
 
-    EXPIRY_RESULT_UNKNOWN(0, "An expired processing attempt requires result review"),
+    EXPIRY_RESULT_UNKNOWN(0, "已过期的处理中支付尝试需要结果复核"),
 
-    LATE_SUCCESS_AFTER_TERMINAL(1, "A trustworthy success arrived after closed or failed terminal state"),
+    LATE_SUCCESS_AFTER_TERMINAL(1, "支付已关闭或失败后收到可信的迟到成功结果"),
 
-    MULTIPLE_ATTEMPT_SUCCESS(2, "More than one attempt contains trustworthy success evidence"),
+    MULTIPLE_ATTEMPT_SUCCESS(2, "多个支付尝试包含可信的成功证据"),
 
-    SUCCESS_AFTER_FAILURE_CONFLICT(3, "Success evidence arrived after an accepted failure"),
+    SUCCESS_AFTER_FAILURE_CONFLICT(3, "已接受失败结果后又收到成功证据"),
 
-    FAILURE_OR_UNKNOWN_AFTER_SUCCESS(4, "Failure or unknown evidence arrived after accepted success"),
+    FAILURE_OR_UNKNOWN_AFTER_SUCCESS(4, "已接受成功结果后又收到失败或未知证据"),
 
-    NOTIFICATION_PAYLOAD_CONFLICT(5, "One notification identity was reused with a different payload"),
+    NOTIFICATION_PAYLOAD_CONFLICT(5, "同一通知身份被用于不同载荷"),
 
-    MERCHANT_ORDER_SUCCESS_CONFLICT(6, "Another payment already owns the merchant-order accepted-success claim");
+    MERCHANT_ORDER_SUCCESS_CONFLICT(6, "另一支付单已占有该商户订单的已接受成功声明");
 
     companion object {
         private val enumMap: Map<Int, PaymentReviewType> = entries.associateBy { it.value }

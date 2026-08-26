@@ -33,10 +33,16 @@ object ActivateMerchantSettlementCmd {
     }
 
     data class Request(
+        /**
+         * 结算标识
+         */
         val settlementId: String
     ) : Command<Response>
 
     data class Response(
+        /**
+         * 状态
+         */
         val status: String
     )
 

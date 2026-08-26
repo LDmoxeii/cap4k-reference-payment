@@ -6,36 +6,12 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PENDING",
-        "desc": "Payment was accepted but no active attempt has completed"
-      },
-      {
-        "value": 1,
-        "name": "PROCESSING",
-        "desc": "At least one payment attempt is in progress"
-      },
-      {
-        "value": 2,
-        "name": "SUCCEEDED",
-        "desc": "A verified channel result completed the payment successfully"
-      },
-      {
-        "value": 3,
-        "name": "FAILED",
-        "desc": "The payment reached an accepted failure result"
-      },
-      {
-        "value": 4,
-        "name": "CLOSED",
-        "desc": "The payment was closed without success"
-      },
-      {
-        "value": 5,
-        "name": "RESULT_UNKNOWN",
-        "desc": "The final result requires reconciliation"
-      }
+      {"value": 0, "name": "PENDING", "desc": "支付已受理，但尚无有效支付尝试完成"},
+      {"value": 1, "name": "PROCESSING", "desc": "至少有一次支付尝试正在处理中"},
+      {"value": 2, "name": "SUCCEEDED", "desc": "已验证的渠道结果确认支付成功"},
+      {"value": 3, "name": "FAILED", "desc": "支付已形成可接受的失败结果"},
+      {"value": 4, "name": "CLOSED", "desc": "支付已关闭且未成功"},
+      {"value": 5, "name": "RESULT_UNKNOWN", "desc": "最终结果仍需通过对账确认"}
     ]
   },
   {
@@ -45,26 +21,10 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PROCESSING",
-        "desc": "The channel attempt is in progress"
-      },
-      {
-        "value": 1,
-        "name": "SUCCEEDED",
-        "desc": "The channel attempt completed successfully"
-      },
-      {
-        "value": 2,
-        "name": "FAILED",
-        "desc": "The channel attempt completed unsuccessfully"
-      },
-      {
-        "value": 3,
-        "name": "RESULT_UNKNOWN",
-        "desc": "The channel attempt has no final result and requires review"
-      }
+      {"value": 0, "name": "PROCESSING", "desc": "渠道支付尝试正在处理中"},
+      {"value": 1, "name": "SUCCEEDED", "desc": "渠道支付尝试已成功完成"},
+      {"value": 2, "name": "FAILED", "desc": "渠道支付尝试已失败完成"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "渠道支付尝试尚无最终结果，需要复核"}
     ]
   },
   {
@@ -74,26 +34,10 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "SUCCESS",
-        "desc": "The channel reported a verified successful result"
-      },
-      {
-        "value": 1,
-        "name": "FAILED",
-        "desc": "The channel reported a verified failed result"
-      },
-      {
-        "value": 2,
-        "name": "GATEWAY_REJECTED",
-        "desc": "The gateway rejected the attempt before a channel result"
-      },
-      {
-        "value": 3,
-        "name": "RESULT_UNKNOWN",
-        "desc": "The channel attempt expired without a trustworthy final result"
-      }
+      {"value": 0, "name": "SUCCESS", "desc": "渠道已返回并通过验证的成功结果"},
+      {"value": 1, "name": "FAILED", "desc": "渠道已返回并通过验证的失败结果"},
+      {"value": 2, "name": "GATEWAY_REJECTED", "desc": "网关在获得渠道结果前拒绝了本次尝试"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "渠道支付尝试已过期，且没有可信的最终结果"}
     ]
   },
   {
@@ -103,72 +47,18 @@
       "Payment"
     ],
     "fields": [
-      {
-        "name": "group",
-        "type": "String"
-      },
-      {
-        "name": "terminal",
-        "type": "Boolean"
-      }
+      {"name": "group", "type": "String"},
+      {"name": "terminal", "type": "Boolean"}
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "RECEIVED",
-        "desc": "The channel notification was durably received before adjudication",
-        "group": "pending",
-        "terminal": false
-      },
-      {
-        "value": 1,
-        "name": "REJECTED",
-        "desc": "The channel notification failed verification or business matching",
-        "group": "rejected",
-        "terminal": true
-      },
-      {
-        "value": 2,
-        "name": "SUCCESS_ACCEPTED",
-        "desc": "A verified successful result was accepted",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 3,
-        "name": "FAILURE_ACCEPTED",
-        "desc": "A verified failed result was accepted",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 4,
-        "name": "ACCEPTED_DUPLICATE",
-        "desc": "A duplicate notification repeated an already accepted payload",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 5,
-        "name": "REJECTED_DUPLICATE",
-        "desc": "A duplicate notification repeated an already rejected payload",
-        "group": "rejected",
-        "terminal": true
-      },
-      {
-        "value": 6,
-        "name": "CONFLICT",
-        "desc": "A notification identity was reused with conflicting facts",
-        "group": "conflict",
-        "terminal": true
-      },
-      {
-        "value": 7,
-        "name": "ATTEMPT_NOT_FOUND",
-        "desc": "The referenced attempt does not belong to the payment",
-        "group": "rejected",
-        "terminal": true
-      }
+      {"value": 0, "name": "RECEIVED", "desc": "渠道通知已持久化接收，等待裁定", "group": "pending", "terminal": false},
+      {"value": 1, "name": "REJECTED", "desc": "渠道通知未通过验证或业务匹配", "group": "rejected", "terminal": true},
+      {"value": 2, "name": "SUCCESS_ACCEPTED", "desc": "已接受通过验证的成功结果", "group": "accepted", "terminal": true},
+      {"value": 3, "name": "FAILURE_ACCEPTED", "desc": "已接受通过验证的失败结果", "group": "accepted", "terminal": true},
+      {"value": 4, "name": "ACCEPTED_DUPLICATE", "desc": "重复通知重放了已接受的载荷", "group": "accepted", "terminal": true},
+      {"value": 5, "name": "REJECTED_DUPLICATE", "desc": "重复通知重放了已拒绝的载荷", "group": "rejected", "terminal": true},
+      {"value": 6, "name": "CONFLICT", "desc": "同一通知身份被重复使用且事实发生冲突", "group": "conflict", "terminal": true},
+      {"value": 7, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的支付尝试不属于当前支付单", "group": "rejected", "terminal": true}
     ]
   },
   {
@@ -178,16 +68,8 @@
       "MerchantChannelConfiguration"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "ACTIVE",
-        "desc": "The merchant channel configuration is eligible for routing"
-      },
-      {
-        "value": 1,
-        "name": "RETIRED",
-        "desc": "The merchant channel configuration is no longer eligible"
-      }
+      {"value": 0, "name": "ACTIVE", "desc": "商户渠道配置可参与路由"},
+      {"value": 1, "name": "RETIRED", "desc": "商户渠道配置已停用，不再参与路由"}
     ]
   },
   {
@@ -197,31 +79,11 @@
       "Refund"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PROCESSING",
-        "desc": "Refund budget is reserved and a channel request is in progress"
-      },
-      {
-        "value": 1,
-        "name": "SUCCEEDED",
-        "desc": "A verified channel result completed the refund successfully"
-      },
-      {
-        "value": 2,
-        "name": "FAILED",
-        "desc": "The refund failed and its reserved payment budget was released"
-      },
-      {
-        "value": 3,
-        "name": "RESULT_UNKNOWN",
-        "desc": "A trusted channel result is not yet final and budget remains reserved"
-      },
-      {
-        "value": 4,
-        "name": "REVIEW_REQUIRED",
-        "desc": "The accepted refund request exceeded its review threshold without a final result"
-      }
+      {"value": 0, "name": "PROCESSING", "desc": "退款预算已占用，渠道退款请求正在处理中"},
+      {"value": 1, "name": "SUCCEEDED", "desc": "已验证的渠道结果确认退款成功"},
+      {"value": 2, "name": "FAILED", "desc": "退款失败，已释放占用的支付退款预算"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "可信的渠道结果尚未最终确定，退款预算继续占用"},
+      {"value": 4, "name": "REVIEW_REQUIRED", "desc": "已受理的退款请求超过复核阈值且仍无最终结果"}
     ]
   },
   {
@@ -231,31 +93,11 @@
       "Refund"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PROCESSING",
-        "desc": "The channel refund attempt is in progress"
-      },
-      {
-        "value": 1,
-        "name": "SUCCEEDED",
-        "desc": "The channel refund attempt completed successfully"
-      },
-      {
-        "value": 2,
-        "name": "FAILED",
-        "desc": "The channel refund attempt completed unsuccessfully"
-      },
-      {
-        "value": 3,
-        "name": "RESULT_UNKNOWN",
-        "desc": "The channel returned a trusted but non-final result"
-      },
-      {
-        "value": 4,
-        "name": "REVIEW_REQUIRED",
-        "desc": "The attempt requires review after the configured threshold"
-      }
+      {"value": 0, "name": "PROCESSING", "desc": "渠道退款尝试正在处理中"},
+      {"value": 1, "name": "SUCCEEDED", "desc": "渠道退款尝试已成功完成"},
+      {"value": 2, "name": "FAILED", "desc": "渠道退款尝试已失败完成"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "渠道返回了可信但尚未最终确定的结果"},
+      {"value": 4, "name": "REVIEW_REQUIRED", "desc": "渠道退款尝试超过配置阈值，需要复核"}
     ]
   },
   {
@@ -265,21 +107,9 @@
       "Refund"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "SUCCESS",
-        "desc": "The channel reported a verified successful refund"
-      },
-      {
-        "value": 1,
-        "name": "FAILED",
-        "desc": "The channel reported a verified failed refund"
-      },
-      {
-        "value": 2,
-        "name": "GATEWAY_REJECTED",
-        "desc": "The gateway rejected the refund request before processing"
-      }
+      {"value": 0, "name": "SUCCESS", "desc": "渠道已返回并通过验证的退款成功结果"},
+      {"value": 1, "name": "FAILED", "desc": "渠道已返回并通过验证的退款失败结果"},
+      {"value": 2, "name": "GATEWAY_REJECTED", "desc": "网关在处理前拒绝了退款请求"}
     ]
   },
   {
@@ -289,79 +119,19 @@
       "Refund"
     ],
     "fields": [
-      {
-        "name": "group",
-        "type": "String"
-      },
-      {
-        "name": "terminal",
-        "type": "Boolean"
-      }
+      {"name": "group", "type": "String"},
+      {"name": "terminal", "type": "Boolean"}
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "RECEIVED",
-        "desc": "The refund notification was durably received before adjudication",
-        "group": "pending",
-        "terminal": false
-      },
-      {
-        "value": 1,
-        "name": "REJECTED",
-        "desc": "The refund notification failed verification or business matching",
-        "group": "rejected",
-        "terminal": true
-      },
-      {
-        "value": 2,
-        "name": "SUCCESS_ACCEPTED",
-        "desc": "A verified successful refund result was accepted",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 3,
-        "name": "FAILURE_ACCEPTED",
-        "desc": "A verified failed refund result was accepted",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 4,
-        "name": "UNKNOWN_ACCEPTED",
-        "desc": "A verified non-final refund result was accepted while budget remains reserved",
-        "group": "pending",
-        "terminal": true
-      },
-      {
-        "value": 5,
-        "name": "ACCEPTED_DUPLICATE",
-        "desc": "A duplicate notification repeated an already accepted payload",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 6,
-        "name": "REJECTED_DUPLICATE",
-        "desc": "A duplicate notification repeated an already rejected payload",
-        "group": "rejected",
-        "terminal": true
-      },
-      {
-        "value": 7,
-        "name": "CONFLICT",
-        "desc": "A refund notification conflicts with an immutable prior result",
-        "group": "conflict",
-        "terminal": true
-      },
-      {
-        "value": 8,
-        "name": "ATTEMPT_NOT_FOUND",
-        "desc": "The referenced attempt does not belong to the refund",
-        "group": "rejected",
-        "terminal": true
-      }
+      {"value": 0, "name": "RECEIVED", "desc": "退款通知已持久化接收，等待裁定", "group": "pending", "terminal": false},
+      {"value": 1, "name": "REJECTED", "desc": "退款通知未通过验证或业务匹配", "group": "rejected", "terminal": true},
+      {"value": 2, "name": "SUCCESS_ACCEPTED", "desc": "已接受通过验证的退款成功结果", "group": "accepted", "terminal": true},
+      {"value": 3, "name": "FAILURE_ACCEPTED", "desc": "已接受通过验证的退款失败结果", "group": "accepted", "terminal": true},
+      {"value": 4, "name": "UNKNOWN_ACCEPTED", "desc": "已接受通过验证但尚未最终确定的退款结果，退款预算继续占用", "group": "pending", "terminal": true},
+      {"value": 5, "name": "ACCEPTED_DUPLICATE", "desc": "重复通知重放了已接受的载荷", "group": "accepted", "terminal": true},
+      {"value": 6, "name": "REJECTED_DUPLICATE", "desc": "重复通知重放了已拒绝的载荷", "group": "rejected", "terminal": true},
+      {"value": 7, "name": "CONFLICT", "desc": "退款通知与不可变的既有结果发生冲突", "group": "conflict", "terminal": true},
+      {"value": 8, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的退款尝试不属于当前退款单", "group": "rejected", "terminal": true}
     ]
   },
   {
@@ -371,41 +141,13 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PENDING",
-        "desc": "Batch exists and awaits statement retrieval"
-      },
-      {
-        "value": 1,
-        "name": "FETCHING",
-        "desc": "Channel statement retrieval is in progress"
-      },
-      {
-        "value": 2,
-        "name": "RECONCILING",
-        "desc": "A statement revision is being reconciled"
-      },
-      {
-        "value": 3,
-        "name": "AWAITING_DISPOSITION",
-        "desc": "Current run has unresolved differences"
-      },
-      {
-        "value": 4,
-        "name": "COMPLETED",
-        "desc": "Current effective run satisfies completion conditions"
-      },
-      {
-        "value": 5,
-        "name": "FETCH_FAILED",
-        "desc": "Statement retrieval failed"
-      },
-      {
-        "value": 6,
-        "name": "REVIEW_REQUIRED",
-        "desc": "The statement deadline or evidence requires operator review"
-      }
+      {"value": 0, "name": "PENDING", "desc": "对账批次已创建，等待拉取对账单"},
+      {"value": 1, "name": "FETCHING", "desc": "正在拉取渠道对账单"},
+      {"value": 2, "name": "RECONCILING", "desc": "正在对账当前对账单修订版本"},
+      {"value": 3, "name": "AWAITING_DISPOSITION", "desc": "当前有效运行仍存在未解决差异"},
+      {"value": 4, "name": "COMPLETED", "desc": "当前有效运行已满足完成条件"},
+      {"value": 5, "name": "FETCH_FAILED", "desc": "渠道对账单拉取失败"},
+      {"value": 6, "name": "REVIEW_REQUIRED", "desc": "对账单时限或证据需要人工复核"}
     ]
   },
   {
@@ -415,31 +157,11 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "FETCHING",
-        "desc": "Statement evidence is being acquired"
-      },
-      {
-        "value": 1,
-        "name": "RECONCILING",
-        "desc": "Platform and channel facts are being matched"
-      },
-      {
-        "value": 2,
-        "name": "COMPLETED",
-        "desc": "The run produced a complete immutable result"
-      },
-      {
-        "value": 3,
-        "name": "FAILED",
-        "desc": "The run failed and retained diagnostics"
-      },
-      {
-        "value": 4,
-        "name": "SUPERSEDED",
-        "desc": "A later revision is the current effective run"
-      }
+      {"value": 0, "name": "FETCHING", "desc": "正在获取对账单证据"},
+      {"value": 1, "name": "RECONCILING", "desc": "正在匹配平台事实与渠道事实"},
+      {"value": 2, "name": "COMPLETED", "desc": "本次运行已生成完整且不可变的结果"},
+      {"value": 3, "name": "FAILED", "desc": "本次运行失败并保留了诊断信息"},
+      {"value": 4, "name": "SUPERSEDED", "desc": "后续修订版本已成为当前有效运行"}
     ]
   },
   {
@@ -449,16 +171,8 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PAYMENT",
-        "desc": "Payment funds fact"
-      },
-      {
-        "value": 1,
-        "name": "REFUND",
-        "desc": "Refund funds fact"
-      }
+      {"value": 0, "name": "PAYMENT", "desc": "支付资金事实"},
+      {"value": 1, "name": "REFUND", "desc": "退款资金事实"}
     ]
   },
   {
@@ -468,46 +182,14 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "MATCHED",
-        "desc": "Platform and channel evidence matched"
-      },
-      {
-        "value": 1,
-        "name": "PLATFORM_ONLY",
-        "desc": "Only the platform fact exists"
-      },
-      {
-        "value": 2,
-        "name": "CHANNEL_ONLY",
-        "desc": "Only the channel record exists"
-      },
-      {
-        "value": 3,
-        "name": "AMOUNT_MISMATCH",
-        "desc": "Stable identities matched but amounts differ"
-      },
-      {
-        "value": 4,
-        "name": "CURRENCY_MISMATCH",
-        "desc": "Stable identities matched but currencies differ"
-      },
-      {
-        "value": 5,
-        "name": "STATUS_MISMATCH",
-        "desc": "Stable identities matched but final statuses differ"
-      },
-      {
-        "value": 6,
-        "name": "DUPLICATE_CHANNEL_RECORD",
-        "desc": "The statement repeats a stable channel record"
-      },
-      {
-        "value": 7,
-        "name": "UNMATCHED",
-        "desc": "No approved stable association could be formed"
-      }
+      {"value": 0, "name": "MATCHED", "desc": "平台证据与渠道证据匹配"},
+      {"value": 1, "name": "PLATFORM_ONLY", "desc": "仅存在平台事实"},
+      {"value": 2, "name": "CHANNEL_ONLY", "desc": "仅存在渠道记录"},
+      {"value": 3, "name": "AMOUNT_MISMATCH", "desc": "稳定身份匹配，但金额不一致"},
+      {"value": 4, "name": "CURRENCY_MISMATCH", "desc": "稳定身份匹配，但币种不一致"},
+      {"value": 5, "name": "STATUS_MISMATCH", "desc": "稳定身份匹配，但最终状态不一致"},
+      {"value": 6, "name": "DUPLICATE_CHANNEL_RECORD", "desc": "对账单重复包含同一稳定渠道记录"},
+      {"value": 7, "name": "UNMATCHED", "desc": "无法建立经认可的稳定关联"}
     ]
   },
   {
@@ -517,16 +199,8 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "DENIED",
-        "desc": "Operator was not authorized and the attempt is retained"
-      },
-      {
-        "value": 1,
-        "name": "AUTHORIZED",
-        "desc": "Operator was authorized to append a disposition"
-      }
+      {"value": 0, "name": "DENIED", "desc": "操作人未获授权，保留本次处置尝试"},
+      {"value": 1, "name": "AUTHORIZED", "desc": "操作人已获授权，可以追加处置记录"}
     ]
   },
   {
@@ -536,16 +210,8 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "REJECTED",
-        "desc": "Disposition attempt was rejected"
-      },
-      {
-        "value": 1,
-        "name": "APPLIED",
-        "desc": "Authorized disposition was appended"
-      }
+      {"value": 0, "name": "REJECTED", "desc": "处置尝试已被拒绝"},
+      {"value": 1, "name": "APPLIED", "desc": "已追加经授权的处置记录"}
     ]
   },
   {
@@ -555,31 +221,11 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "ACCEPT_AS_MATCHED",
-        "desc": "Evidence establishes an acceptable match"
-      },
-      {
-        "value": 1,
-        "name": "CONFIRM_PLATFORM_FACT",
-        "desc": "Channel evidence authorizes a new platform confirmation fact"
-      },
-      {
-        "value": 2,
-        "name": "ACCEPT_CHANNEL_FACT",
-        "desc": "Channel-only fact is accepted with evidence"
-      },
-      {
-        "value": 3,
-        "name": "NO_SETTLEMENT_IMPACT",
-        "desc": "Difference is documented as not affecting settlement"
-      },
-      {
-        "value": 4,
-        "name": "ESCALATE",
-        "desc": "Difference remains open for follow-up"
-      }
+      {"value": 0, "name": "ACCEPT_AS_MATCHED", "desc": "现有证据足以确认可接受的匹配"},
+      {"value": 1, "name": "CONFIRM_PLATFORM_FACT", "desc": "渠道证据授权新增平台确认事实"},
+      {"value": 2, "name": "ACCEPT_CHANNEL_FACT", "desc": "已基于证据接受仅渠道侧存在的事实"},
+      {"value": 3, "name": "NO_SETTLEMENT_IMPACT", "desc": "已记录该差异不影响结算"},
+      {"value": 4, "name": "ESCALATE", "desc": "差异保持未解决，等待后续跟进"}
     ]
   },
   {
@@ -589,21 +235,9 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "BLOCKS_SETTLEMENT",
-        "desc": "Difference blocks automatic settlement"
-      },
-      {
-        "value": 1,
-        "name": "DOES_NOT_BLOCK_SETTLEMENT",
-        "desc": "Authorized evidence removes settlement blocking"
-      },
-      {
-        "value": 2,
-        "name": "CONFIRMS_SETTLEMENT_FACT",
-        "desc": "Disposition creates an additional confirmed funds fact"
-      }
+      {"value": 0, "name": "BLOCKS_SETTLEMENT", "desc": "差异阻断自动结算"},
+      {"value": 1, "name": "DOES_NOT_BLOCK_SETTLEMENT", "desc": "经授权的证据解除结算阻断"},
+      {"value": 2, "name": "CONFIRMS_SETTLEMENT_FACT", "desc": "处置产生额外的已确认资金事实"}
     ]
   },
   {
@@ -613,21 +247,9 @@
       "ReconciliationBatch"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "UNKNOWN",
-        "desc": "Provider did not establish completeness"
-      },
-      {
-        "value": 1,
-        "name": "INCOMPLETE",
-        "desc": "Statement is explicitly incomplete"
-      },
-      {
-        "value": 2,
-        "name": "COMPLETE",
-        "desc": "Statement covers the requested business scope"
-      }
+      {"value": 0, "name": "UNKNOWN", "desc": "渠道提供方未能确认对账单完整性"},
+      {"value": 1, "name": "INCOMPLETE", "desc": "对账单已明确标记为不完整"},
+      {"value": 2, "name": "COMPLETE", "desc": "对账单覆盖了请求的业务范围"}
     ]
   },
   {
@@ -637,61 +259,17 @@
       "MerchantSettlement"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PREPARING",
-        "desc": "Settlement composition is being prepared"
-      },
-      {
-        "value": 1,
-        "name": "REVIEW_REQUIRED",
-        "desc": "Prepared evidence requires operator review"
-      },
-      {
-        "value": 2,
-        "name": "PREPARED",
-        "desc": "Settlement composition and totals are ready for confirmation"
-      },
-      {
-        "value": 3,
-        "name": "CONFIRMED",
-        "desc": "Composition is frozen and ready for execution"
-      },
-      {
-        "value": 4,
-        "name": "PROCESSING",
-        "desc": "An external transfer request was accepted"
-      },
-      {
-        "value": 5,
-        "name": "SUCCEEDED",
-        "desc": "A verified transfer result completed the settlement"
-      },
-      {
-        "value": 6,
-        "name": "FAILED",
-        "desc": "The latest transfer attempt failed explicitly"
-      },
-      {
-        "value": 7,
-        "name": "RESULT_UNKNOWN",
-        "desc": "The transfer result is credible but unknown"
-      },
-      {
-        "value": 8,
-        "name": "NEGATIVE_REVIEW_REQUIRED",
-        "desc": "Net amount is negative and external transfer is prohibited"
-      },
-      {
-        "value": 9,
-        "name": "VOIDED",
-        "desc": "The settlement was voided before external execution"
-      },
-      {
-        "value": 10,
-        "name": "CONFLICT_REVIEW_REQUIRED",
-        "desc": "Conflicting execution evidence requires manual review"
-      }
+      {"value": 0, "name": "PREPARING", "desc": "正在准备结算构成"},
+      {"value": 1, "name": "REVIEW_REQUIRED", "desc": "已准备的证据需要人工复核"},
+      {"value": 2, "name": "PREPARED", "desc": "结算构成和汇总金额已就绪，等待确认"},
+      {"value": 3, "name": "CONFIRMED", "desc": "结算构成已冻结，可以执行划款"},
+      {"value": 4, "name": "PROCESSING", "desc": "外部划款请求已受理"},
+      {"value": 5, "name": "SUCCEEDED", "desc": "已验证的划款结果确认结算成功"},
+      {"value": 6, "name": "FAILED", "desc": "最近一次划款尝试已明确失败"},
+      {"value": 7, "name": "RESULT_UNKNOWN", "desc": "划款结果可信但尚未最终确定"},
+      {"value": 8, "name": "NEGATIVE_REVIEW_REQUIRED", "desc": "净额为负，禁止发起对外划款"},
+      {"value": 9, "name": "VOIDED", "desc": "结算单在对外执行前已作废"},
+      {"value": 10, "name": "CONFLICT_REVIEW_REQUIRED", "desc": "划款证据发生冲突，需要人工复核"}
     ]
   },
   {
@@ -701,26 +279,10 @@
       "MerchantSettlement"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PAYMENT",
-        "desc": "A verified payment success fact"
-      },
-      {
-        "value": 1,
-        "name": "REFUND",
-        "desc": "A verified refund success fact"
-      },
-      {
-        "value": 2,
-        "name": "RECONCILIATION_CONFIRMATION",
-        "desc": "An authorized reconciliation confirmation fact"
-      },
-      {
-        "value": 3,
-        "name": "ADJUSTMENT",
-        "desc": "A traceable settlement adjustment fact"
-      }
+      {"value": 0, "name": "PAYMENT", "desc": "已验证的支付成功事实"},
+      {"value": 1, "name": "REFUND", "desc": "已验证的退款成功事实"},
+      {"value": 2, "name": "RECONCILIATION_CONFIRMATION", "desc": "经授权的对账确认事实"},
+      {"value": 3, "name": "ADJUSTMENT", "desc": "可追溯的结算调整事实"}
     ]
   },
   {
@@ -730,36 +292,12 @@
       "MerchantSettlement"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "PROCESSING",
-        "desc": "The transfer request was accepted and awaits a final result"
-      },
-      {
-        "value": 1,
-        "name": "SUCCEEDED",
-        "desc": "A verified success result was accepted"
-      },
-      {
-        "value": 2,
-        "name": "FAILED",
-        "desc": "A verified explicit failure result was accepted"
-      },
-      {
-        "value": 3,
-        "name": "RESULT_UNKNOWN",
-        "desc": "A verified unknown result was accepted"
-      },
-      {
-        "value": 4,
-        "name": "REVIEW_REQUIRED",
-        "desc": "The attempt requires authorized manual review"
-      },
-      {
-        "value": 5,
-        "name": "CONFLICT_REVIEW_REQUIRED",
-        "desc": "Conflicting evidence requires authorized manual review"
-      }
+      {"value": 0, "name": "PROCESSING", "desc": "划款请求已受理，等待最终结果"},
+      {"value": 1, "name": "SUCCEEDED", "desc": "已接受通过验证的成功结果"},
+      {"value": 2, "name": "FAILED", "desc": "已接受通过验证的明确失败结果"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "已接受通过验证的未知结果"},
+      {"value": 4, "name": "REVIEW_REQUIRED", "desc": "本次划款尝试需要经授权的人工复核"},
+      {"value": 5, "name": "CONFLICT_REVIEW_REQUIRED", "desc": "冲突证据需要经授权的人工复核"}
     ]
   },
   {
@@ -769,26 +307,10 @@
       "MerchantSettlement"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "SUCCESS",
-        "desc": "The external settlement completed successfully"
-      },
-      {
-        "value": 1,
-        "name": "FAILED",
-        "desc": "The external settlement failed explicitly"
-      },
-      {
-        "value": 2,
-        "name": "GATEWAY_REJECTED",
-        "desc": "The transfer request was rejected before processing"
-      },
-      {
-        "value": 3,
-        "name": "UNKNOWN",
-        "desc": "The external settlement result is unknown"
-      }
+      {"value": 0, "name": "SUCCESS", "desc": "外部结算划款已成功完成"},
+      {"value": 1, "name": "FAILED", "desc": "外部结算划款已明确失败"},
+      {"value": 2, "name": "GATEWAY_REJECTED", "desc": "划款请求在处理前被网关拒绝"},
+      {"value": 3, "name": "UNKNOWN", "desc": "外部结算划款结果未知"}
     ]
   },
   {
@@ -798,79 +320,19 @@
       "MerchantSettlement"
     ],
     "fields": [
-      {
-        "name": "group",
-        "type": "String"
-      },
-      {
-        "name": "terminal",
-        "type": "Boolean"
-      }
+      {"name": "group", "type": "String"},
+      {"name": "terminal", "type": "Boolean"}
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "RECEIVED",
-        "desc": "The result notification was durably received",
-        "group": "pending",
-        "terminal": false
-      },
-      {
-        "value": 1,
-        "name": "REJECTED",
-        "desc": "The notification failed verification or business matching",
-        "group": "rejected",
-        "terminal": true
-      },
-      {
-        "value": 2,
-        "name": "SUCCESS_ACCEPTED",
-        "desc": "A verified successful settlement result was accepted",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 3,
-        "name": "FAILURE_ACCEPTED",
-        "desc": "A verified failed settlement result was accepted",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 4,
-        "name": "UNKNOWN_ACCEPTED",
-        "desc": "A verified unknown settlement result was accepted",
-        "group": "review",
-        "terminal": true
-      },
-      {
-        "value": 5,
-        "name": "ACCEPTED_DUPLICATE",
-        "desc": "A duplicate notification repeated accepted facts",
-        "group": "accepted",
-        "terminal": true
-      },
-      {
-        "value": 6,
-        "name": "REJECTED_DUPLICATE",
-        "desc": "A duplicate notification repeated rejected facts",
-        "group": "rejected",
-        "terminal": true
-      },
-      {
-        "value": 7,
-        "name": "CONFLICT",
-        "desc": "A notification identity was reused with conflicting facts",
-        "group": "conflict",
-        "terminal": true
-      },
-      {
-        "value": 8,
-        "name": "ATTEMPT_NOT_FOUND",
-        "desc": "The referenced attempt does not belong to the settlement",
-        "group": "rejected",
-        "terminal": true
-      }
+      {"value": 0, "name": "RECEIVED", "desc": "结果通知已持久化接收", "group": "pending", "terminal": false},
+      {"value": 1, "name": "REJECTED", "desc": "通知未通过验证或业务匹配", "group": "rejected", "terminal": true},
+      {"value": 2, "name": "SUCCESS_ACCEPTED", "desc": "已接受通过验证的结算成功结果", "group": "accepted", "terminal": true},
+      {"value": 3, "name": "FAILURE_ACCEPTED", "desc": "已接受通过验证的结算失败结果", "group": "accepted", "terminal": true},
+      {"value": 4, "name": "UNKNOWN_ACCEPTED", "desc": "已接受通过验证的结算未知结果", "group": "review", "terminal": true},
+      {"value": 5, "name": "ACCEPTED_DUPLICATE", "desc": "重复通知重放了已接受的事实", "group": "accepted", "terminal": true},
+      {"value": 6, "name": "REJECTED_DUPLICATE", "desc": "重复通知重放了已拒绝的事实", "group": "rejected", "terminal": true},
+      {"value": 7, "name": "CONFLICT", "desc": "同一通知身份被重复使用且事实发生冲突", "group": "conflict", "terminal": true},
+      {"value": 8, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的划款尝试不属于当前结算单", "group": "rejected", "terminal": true}
     ]
   },
   {
@@ -880,41 +342,13 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "EXPIRY_RESULT_UNKNOWN",
-        "desc": "An expired processing attempt requires result review"
-      },
-      {
-        "value": 1,
-        "name": "LATE_SUCCESS_AFTER_TERMINAL",
-        "desc": "A trustworthy success arrived after closed or failed terminal state"
-      },
-      {
-        "value": 2,
-        "name": "MULTIPLE_ATTEMPT_SUCCESS",
-        "desc": "More than one attempt contains trustworthy success evidence"
-      },
-      {
-        "value": 3,
-        "name": "SUCCESS_AFTER_FAILURE_CONFLICT",
-        "desc": "Success evidence arrived after an accepted failure"
-      },
-      {
-        "value": 4,
-        "name": "FAILURE_OR_UNKNOWN_AFTER_SUCCESS",
-        "desc": "Failure or unknown evidence arrived after accepted success"
-      },
-      {
-        "value": 5,
-        "name": "NOTIFICATION_PAYLOAD_CONFLICT",
-        "desc": "One notification identity was reused with a different payload"
-      },
-      {
-        "value": 6,
-        "name": "MERCHANT_ORDER_SUCCESS_CONFLICT",
-        "desc": "Another payment already owns the merchant-order accepted-success claim"
-      }
+      {"value": 0, "name": "EXPIRY_RESULT_UNKNOWN", "desc": "已过期的处理中支付尝试需要结果复核"},
+      {"value": 1, "name": "LATE_SUCCESS_AFTER_TERMINAL", "desc": "支付已关闭或失败后收到可信的迟到成功结果"},
+      {"value": 2, "name": "MULTIPLE_ATTEMPT_SUCCESS", "desc": "多个支付尝试包含可信的成功证据"},
+      {"value": 3, "name": "SUCCESS_AFTER_FAILURE_CONFLICT", "desc": "已接受失败结果后又收到成功证据"},
+      {"value": 4, "name": "FAILURE_OR_UNKNOWN_AFTER_SUCCESS", "desc": "已接受成功结果后又收到失败或未知证据"},
+      {"value": 5, "name": "NOTIFICATION_PAYLOAD_CONFLICT", "desc": "同一通知身份被用于不同载荷"},
+      {"value": 6, "name": "MERCHANT_ORDER_SUCCESS_CONFLICT", "desc": "另一支付单已占有该商户订单的已接受成功声明"}
     ]
   },
   {
@@ -924,16 +358,8 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "OPEN",
-        "desc": "The review remains unresolved"
-      },
-      {
-        "value": 1,
-        "name": "RESOLVED",
-        "desc": "An authorized or deterministic decision resolved the review"
-      }
+      {"value": 0, "name": "OPEN", "desc": "复核案件尚未解决"},
+      {"value": 1, "name": "RESOLVED", "desc": "经授权或确定性决定已解决复核案件"}
     ]
   },
   {
@@ -943,16 +369,8 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "BLOCKS_SETTLEMENT",
-        "desc": "The review blocks automatic reconciliation and settlement eligibility"
-      },
-      {
-        "value": 1,
-        "name": "ALLOWS_SETTLEMENT",
-        "desc": "The review no longer blocks automatic settlement eligibility"
-      }
+      {"value": 0, "name": "BLOCKS_SETTLEMENT", "desc": "复核案件阻断自动对账和结算资格"},
+      {"value": 1, "name": "ALLOWS_SETTLEMENT", "desc": "复核案件不再阻断自动结算资格"}
     ]
   },
   {
@@ -962,36 +380,12 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "SYSTEM_ACCEPT_SUCCESS",
-        "desc": "A deterministic result resolved an unknown review as success"
-      },
-      {
-        "value": 1,
-        "name": "SYSTEM_CONFIRM_FAILURE",
-        "desc": "A deterministic result resolved an unknown review as failure"
-      },
-      {
-        "value": 2,
-        "name": "ACCEPT_LATE_SUCCESS",
-        "desc": "An authorized operator accepted trustworthy late success"
-      },
-      {
-        "value": 3,
-        "name": "CONFIRM_FAILURE",
-        "desc": "An authorized operator confirmed failure for an unknown result"
-      },
-      {
-        "value": 4,
-        "name": "KEEP_CURRENT_TERMINAL",
-        "desc": "An authorized operator kept the existing closed or failed terminal state"
-      },
-      {
-        "value": 5,
-        "name": "KEEP_ACCEPTED_SUCCESS_WITH_REMEDIATION",
-        "desc": "An authorized operator kept the first success and recorded remediation"
-      }
+      {"value": 0, "name": "SYSTEM_ACCEPT_SUCCESS", "desc": "确定性结果将未知复核裁定为成功"},
+      {"value": 1, "name": "SYSTEM_CONFIRM_FAILURE", "desc": "确定性结果将未知复核裁定为失败"},
+      {"value": 2, "name": "ACCEPT_LATE_SUCCESS", "desc": "经授权的操作人接受了可信的迟到成功结果"},
+      {"value": 3, "name": "CONFIRM_FAILURE", "desc": "经授权的操作人确认未知结果为失败"},
+      {"value": 4, "name": "KEEP_CURRENT_TERMINAL", "desc": "经授权的操作人保留现有关闭或失败终态"},
+      {"value": 5, "name": "KEEP_ACCEPTED_SUCCESS_WITH_REMEDIATION", "desc": "经授权的操作人保留首个成功结果并记录补救措施"}
     ]
   },
   {
@@ -1001,16 +395,8 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "KEEP_BLOCKED",
-        "desc": "The decision keeps settlement blocked"
-      },
-      {
-        "value": 1,
-        "name": "ALLOW_SETTLEMENT",
-        "desc": "The decision permits settlement after review"
-      }
+      {"value": 0, "name": "KEEP_BLOCKED", "desc": "该决定继续阻断结算"},
+      {"value": 1, "name": "ALLOW_SETTLEMENT", "desc": "该决定允许复核后进入结算"}
     ]
   },
   {
@@ -1020,21 +406,9 @@
       "Payment"
     ],
     "items": [
-      {
-        "value": 0,
-        "name": "READY",
-        "desc": "The stable merchant-success intent may be delivered by a future transport"
-      },
-      {
-        "value": 1,
-        "name": "HELD_FOR_REVIEW",
-        "desc": "The intent exists but cannot be delivered while review is unresolved"
-      },
-      {
-        "value": 2,
-        "name": "CANCELLED",
-        "desc": "The intent must not be delivered"
-      }
+      {"value": 0, "name": "READY", "desc": "稳定的商户成功通知意图可由后续传输机制投递"},
+      {"value": 1, "name": "HELD_FOR_REVIEW", "desc": "通知意图已存在，但复核未解决前不得投递"},
+      {"value": 2, "name": "CANCELLED", "desc": "通知意图不得投递"}
     ]
   }
 ]

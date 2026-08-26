@@ -7,7 +7,7 @@ import jakarta.persistence.AttributeConverter
     tag = "enum",
     name = "DispositionAuthorization",
     packageName = "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums",
-    description = "",
+    description = "对账差异处置授权结果",
     aggregates = ["ReconciliationBatch"],
     family = "enum"
 )
@@ -16,9 +16,9 @@ enum class DispositionAuthorization(
     val description: String
 ) {
 
-    DENIED(0, "Operator was not authorized and the attempt is retained"),
+    DENIED(0, "操作人未获授权，保留本次处置尝试"),
 
-    AUTHORIZED(1, "Operator was authorized to append a disposition");
+    AUTHORIZED(1, "操作人已获授权，可以追加处置记录");
 
     companion object {
         private val enumMap: Map<Int, DispositionAuthorization> = entries.associateBy { it.value }

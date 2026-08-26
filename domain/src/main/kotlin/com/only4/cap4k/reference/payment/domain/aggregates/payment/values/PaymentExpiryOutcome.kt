@@ -12,8 +12,20 @@ import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.Payment
     family = "value-object"
 )
 data class PaymentExpiryOutcome(
+    /**
+     * 支付状态
+     */
     val paymentStatus: PaymentStatus,
+    /**
+     * 当前是否关闭
+     */
     val closedNow: Boolean,
+    /**
+     * 当前是否打开复核
+     */
     val reviewOpenedNow: Boolean,
+    /**
+     * 复核身份
+     */
     val reviewIdentity: String?
 )

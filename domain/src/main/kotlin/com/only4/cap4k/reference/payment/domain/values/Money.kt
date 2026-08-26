@@ -14,7 +14,13 @@ import java.math.RoundingMode
 )
 @ConsistentCopyVisibility
 data class Money private constructor(
+    /**
+     * 金额
+     */
     val amount: BigDecimal,
+    /**
+     * 币种
+     */
     val currency: String,
 ) {
     companion object {

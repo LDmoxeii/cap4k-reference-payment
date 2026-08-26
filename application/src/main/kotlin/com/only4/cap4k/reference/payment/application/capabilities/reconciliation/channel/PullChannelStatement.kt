@@ -16,13 +16,28 @@ import java.time.LocalDate
 object PullChannelStatement {
 
     data class Request(
+        /**
+         * 渠道标识
+         */
         val channelId: String,
+        /**
+         * 币种
+         */
         val currency: String,
+        /**
+         * 对账日期
+         */
         val reconciliationDate: LocalDate,
+        /**
+         * 业务时区
+         */
         val businessTimezone: String
     ) : CapabilityCall<Response>
 
     data class Response(
+        /**
+         * 对账单
+         */
         val statement: ChannelStatement
     )
 

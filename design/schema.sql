@@ -67,6 +67,7 @@ create table payment (
     constraint uk_payment_merchant_order_success unique (merchant_order_success_identity),
     constraint uk_payment_notification_intent unique (merchant_success_notification_intent_identity)
 );
+comment on table payment is '支付主聚合：记录商户订单的金额、状态、成功事实、通知收敛、复核和退款预算';
 
 create table payment_attempt (
 
@@ -215,6 +216,7 @@ create table refund (
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
     constraint uk_refund_merchant_number unique (merchant_id, merchant_refund_number)
 );
+comment on table refund is '退款主聚合：记录退款申请、退款预算占用、渠道结果和最终退款事实';
 
 create table refund_attempt (
 
@@ -305,6 +307,7 @@ create table merchant_channel_configuration (
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
     constraint uk_merchant_channel_configuration unique (merchant_id, channel_id, currency, payment_method)
 );
+comment on table merchant_channel_configuration is '商户渠道配置：保存商户在渠道、币种和支付方式维度上的路由与费用快照来源';
 
 create table reconciliation_batch (
 
@@ -329,6 +332,7 @@ create table reconciliation_batch (
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
     constraint uk_reconciliation_batch_scope unique (channel_id, currency, reconciliation_date)
 );
+comment on table reconciliation_batch is '对账批次：以渠道、币种和业务日为范围维护对账周期、有效运行和结算阻断状态';
 
 create table reconciliation_run (
 
@@ -485,6 +489,7 @@ create table merchant_settlement (
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
     constraint uk_merchant_settlement_effective_scope unique (effective_scope_identity)
 );
+comment on table merchant_settlement is '商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期';
 
 create table settlement_line (
 
@@ -601,9 +606,3 @@ create table settlement_result_receipt (
     constraint uk_settlement_result_receipt unique (settlement_execution_attempt_id, notification_identity)
 );
 comment on table settlement_result_receipt is '结算结果回执：保存渠道出款回调的稳定身份、金额、结果和重复/矛盾证据 @Parent=settlement_execution_attempt;';
-
-comment on table payment is '支付主聚合：记录商户订单的金额、状态、成功事实、通知收敛、复核和退款预算';
-comment on table refund is '退款主聚合：记录退款申请、退款预算占用、渠道结果和最终退款事实';
-comment on table merchant_channel_configuration is '商户渠道配置：保存商户在渠道、币种和支付方式维度上的路由与费用快照来源';
-comment on table reconciliation_batch is '对账批次：以渠道、币种和业务日为范围维护对账周期、有效运行和结算阻断状态';
-comment on table merchant_settlement is '商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期';
