@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.reconciliation
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.commands.reconciliation.disposition.DisposeReconciliationDifferenceCmd
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.DisposeReconciliationDifferenceEndpoint
 import org.springframework.stereotype.Component
 
@@ -11,7 +12,7 @@ class DisposeReconciliationDifferenceEndpointHandler : EndpointHandler<DisposeRe
     override fun handle(request: DisposeReconciliationDifferenceEndpoint.Request): DisposeReconciliationDifferenceEndpoint.Response {
         val response = Mediator.commands.send(
             DisposeReconciliationDifferenceCmd.Request(
-                batchId = request.batchId,
+                reconciliationBatchId = ReconciliationBatchId.parse(request.batchId),
                 itemId = request.itemId,
                 merchantId = request.merchantId,
                 channelId = request.channelId,

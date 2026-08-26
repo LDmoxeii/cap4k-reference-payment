@@ -57,11 +57,11 @@ object ConfirmRefundResultCmd {
                 )
             )
             val refund = Mediator.repositories.findOne(
-                SRefund.predicateById(RefundId.parse(command.refundId))
+                SRefund.predicateById(command.refundId)
             ) ?: throw RefundNotFoundException(command.refundId)
             val payment = Mediator.repositories.findOne(
-                SPayment.predicateById(PaymentId.parse(refund.paymentId.toString()))
-            ) ?: throw PaymentNotFoundException(refund.paymentId.toString())
+                SPayment.predicateById(refund.paymentId)
+            ) ?: throw PaymentNotFoundException(refund.paymentId)
             val outcome = refund.recordChannelResult(
                 attemptId = RefundAttemptId.parse(command.refundAttemptId),
                 channelId = command.channelId,
@@ -97,7 +97,7 @@ object ConfirmRefundResultCmd {
         /**
          * 退款标识
          */
-        val refundId: String,
+        val refundId: RefundId,
         /**
          * 退款尝试标识
          */

@@ -3,15 +3,16 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.queries.payment.read.GetPaymentQry
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.GetPaymentEndpoint
 import org.springframework.stereotype.Component
 
 @Component
 class GetPaymentEndpointHandler : EndpointHandler<GetPaymentEndpoint.Request, GetPaymentEndpoint.Response> {
     override fun handle(request: GetPaymentEndpoint.Request): GetPaymentEndpoint.Response {
-        val r = Mediator.queries.ask(GetPaymentQry.Request(request.paymentId))
+        val r = Mediator.queries.ask(GetPaymentQry.Request(PaymentId.parse(request.paymentId)))
         return GetPaymentEndpoint.Response(
-            paymentId = r.paymentId, merchantId = r.merchantId, merchantOrderNumber = r.merchantOrderNumber,
+            paymentId = r.paymentId.toString(), merchantId = r.merchantId, merchantOrderNumber = r.merchantOrderNumber,
             amount = r.amount, currency = r.currency, paymentMethod = r.paymentMethod, status = r.status,
             createdAt = r.createdAt, expiresAt = r.expiresAt, succeededAt = r.succeededAt,
             closedAt = r.closedAt, closeReason = r.closeReason, channelTransactionId = r.channelTransactionId,

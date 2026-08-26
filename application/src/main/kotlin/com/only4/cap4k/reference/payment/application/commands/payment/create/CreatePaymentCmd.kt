@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.commands.payment.create
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
@@ -83,7 +85,7 @@ object CreatePaymentCmd {
                     )
                 }
                 return Response(
-                    paymentId = existing.id.toString(),
+                    paymentId = existing.id,
                     status = existing.status.name,
                     idempotentReplay = true,
                     rejectionCode = null,
@@ -123,7 +125,7 @@ object CreatePaymentCmd {
                 )
             )
             return Response(
-                paymentId = payment.id.toString(),
+                paymentId = payment.id,
                 status = payment.status.name,
                 idempotentReplay = false,
                 rejectionCode = null,
@@ -167,7 +169,7 @@ object CreatePaymentCmd {
         /**
          * 支付标识
          */
-        val paymentId: String,
+        val paymentId: PaymentId,
         /**
          * 状态
          */

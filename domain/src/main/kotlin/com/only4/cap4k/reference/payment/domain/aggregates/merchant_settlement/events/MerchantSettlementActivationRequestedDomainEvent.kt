@@ -2,6 +2,7 @@ package com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.domain.event.annotation.DomainEvent
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 
 /**
  * Activate replacement settlement ownership after the predecessor release has been persisted
@@ -16,6 +17,6 @@ import com.only4.cap4k.ddd.core.domain.event.annotation.DomainEvent
     family = "domain-event"
 )
 class MerchantSettlementActivationRequestedDomainEvent(
-    val settlementId: String
+    val merchantSettlementId: MerchantSettlementId
 ) {
 }

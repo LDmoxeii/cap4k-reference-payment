@@ -18,6 +18,7 @@ import com.only4.cap4k.reference.payment.application.commands.merchant_settlemen
 import com.only4.cap4k.reference.payment.application.commands.reconciliation.run.RunDailyReconciliationCmd
 import com.only4.cap4k.reference.payment.application.subscribers.domain.merchant_settlement.MerchantSettlementCompletedDomainEventSubscriber
 import com.only4.cap4k.reference.payment.contract.events.integration.outbound.merchant_settlement.MerchantSettlementCompletedIntegrationEvent
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.StatementCompleteness
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatement
@@ -214,7 +215,7 @@ class MerchantSettlementReferenceApplicationTests(
         )
         val runId = requireNotNull(reconciliation.runId)
 
-        val batch = getJson("/api/reconciliation-batches/${reconciliation.batchId}")
+        val batch = getJson("/api/reconciliation-batches/${reconciliation.reconciliationBatchId}")
         assertThat(batch.requiredText("status")).isEqualTo("COMPLETED")
         assertThat(batch.requiredText("currentEffectiveRunId")).isEqualTo(runId)
         assertThat(batch["matchedCount"].asInt()).isEqualTo(2)
@@ -254,7 +255,7 @@ class MerchantSettlementReferenceApplicationTests(
         assertThat(paymentLine.requiredText("sourceKind")).isEqualTo("PAYMENT")
         assertThat(paymentLine.requiredText("transactionKind")).isEqualTo("PAYMENT")
         assertThat(paymentLine.requiredText("paymentId")).isEqualTo(payment.paymentId)
-        assertThat(paymentLine.requiredText("reconciliationBatchId")).isEqualTo(reconciliation.batchId)
+        assertThat(paymentLine.requiredText("reconciliationBatchId")).isEqualTo(reconciliation.reconciliationBatchId.toString())
         assertThat(paymentLine.requiredText("reconciliationRunId")).isEqualTo(runId)
         assertThat(paymentLine.requiredText("reconciliationItemId")).isEqualTo(paymentItem.requiredText("itemId"))
         assertThat(paymentLine.requiredText("externalTransactionIdentity")).isEqualTo(payment.channelTransactionId)
@@ -265,7 +266,7 @@ class MerchantSettlementReferenceApplicationTests(
         assertThat(refundLine.requiredText("sourceKind")).isEqualTo("REFUND")
         assertThat(refundLine.requiredText("transactionKind")).isEqualTo("REFUND")
         assertThat(refundLine.requiredText("refundId")).isEqualTo(refund.refundId)
-        assertThat(refundLine.requiredText("reconciliationBatchId")).isEqualTo(reconciliation.batchId)
+        assertThat(refundLine.requiredText("reconciliationBatchId")).isEqualTo(reconciliation.reconciliationBatchId.toString())
         assertThat(refundLine.requiredText("reconciliationRunId")).isEqualTo(runId)
         assertThat(refundLine.requiredText("reconciliationItemId")).isEqualTo(refundItem.requiredText("itemId"))
         assertThat(refundLine.requiredText("externalTransactionIdentity")).isEqualTo(refund.channelRefundId)
@@ -362,7 +363,7 @@ class MerchantSettlementReferenceApplicationTests(
 
         val adjudicated = Mediator.commands.send(
             AdjudicateMerchantSettlementResultCmd.Request(
-                settlementId = settlementId,
+                merchantSettlementId = MerchantSettlementId.parse(settlementId),
                 executionAttemptId = attemptId,
                 operatorIdentity = "settlement-operator-2",
                 operatorRole = "SETTLEMENT_OPERATOR",
@@ -619,7 +620,7 @@ class MerchantSettlementReferenceApplicationTests(
 
         val returned = Mediator.commands.send(
             ReturnMerchantSettlementForAdjustmentCmd.Request(
-                settlementId = originalId,
+                merchantSettlementId = MerchantSettlementId.parse(originalId),
                 operatorIdentity = "settlement-operator-1",
                 operatorRole = "SETTLEMENT_OPERATOR",
                 reason = "rebuild after adjustment evidence was reviewed",
@@ -632,7 +633,7 @@ class MerchantSettlementReferenceApplicationTests(
 
         val replayedReturn = Mediator.commands.send(
             ReturnMerchantSettlementForAdjustmentCmd.Request(
-                settlementId = originalId,
+                merchantSettlementId = MerchantSettlementId.parse(originalId),
                 operatorIdentity = "settlement-operator-1",
                 operatorRole = "SETTLEMENT_OPERATOR",
                 reason = "same request replay",
@@ -640,13 +641,13 @@ class MerchantSettlementReferenceApplicationTests(
             )
         )
         assertThat(replayedReturn.replacementSettlementId).isEqualTo(replacementId)
-        assertThat(prepare(date, "b4-adjustment-replay").requiredText("settlementId")).isEqualTo(replacementId)
+        assertThat(prepare(date, "b4-adjustment-replay").requiredText("settlementId")).isEqualTo(replacementId.toString())
 
-        confirm(replacementId, "2026-06-15T03:00:00Z")
+        confirm(replacementId.toString(), "2026-06-15T03:00:00Z")
         assertThatThrownBy {
             Mediator.commands.send(
                 ReturnMerchantSettlementForAdjustmentCmd.Request(
-                    settlementId = replacementId,
+                    merchantSettlementId = replacementId,
                     operatorIdentity = "settlement-operator-1",
                     operatorRole = "SETTLEMENT_OPERATOR",
                     reason = "should be rejected after confirmation",

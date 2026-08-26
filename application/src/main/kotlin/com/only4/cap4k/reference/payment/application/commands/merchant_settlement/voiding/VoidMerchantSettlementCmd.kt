@@ -33,8 +33,8 @@ object VoidMerchantSettlementCmd {
         /** 仅作废未开始外部执行的结算单；replacement 通过 predecessor 链和延迟 ownership 激活保持历史与唯一消费。 */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(command.settlementId)
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             settlement.voidBeforeExecution(
                 operatorIdentity = command.operatorIdentity,
                 operatorRole = command.operatorRole,
@@ -43,7 +43,7 @@ object VoidMerchantSettlementCmd {
             )
             val replacement = if (command.createReplacement) createReplacement(settlement) else null
             if (replacement != null) settlement.linkReplacement(replacement.id)
-            return Response(settlement.id.toString(), settlement.status.name, replacement?.id?.toString())
+            return Response(settlement.id, settlement.status.name, replacement?.id)
         }
 
         private fun createReplacement(previous: MerchantSettlement): MerchantSettlement {
@@ -73,7 +73,7 @@ object VoidMerchantSettlementCmd {
                     netAmount = previous.netAmount,
                     compositionFrozen = false,
                     executionGroupIdentity = null,
-                    predecessorSettlementId = previous.id.toString(),
+                    predecessorSettlementId = previous.id,
                     replacementSettlementId = null,
                     confirmedBy = null,
                     confirmedAt = null,
@@ -132,7 +132,7 @@ object VoidMerchantSettlementCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 操作员身份
          */
@@ -159,7 +159,7 @@ object VoidMerchantSettlementCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 状态
          */
@@ -167,6 +167,6 @@ object VoidMerchantSettlementCmd {
         /**
          * 替代结算标识
          */
-        val replacementSettlementId: String?
+        val replacementSettlementId: MerchantSettlementId?
     )
 }

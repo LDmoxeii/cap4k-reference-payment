@@ -6,7 +6,6 @@ import com.only4.cap4k.ddd.core.application.query.QueryHandler
 import com.only4.cap4k.reference.payment.application.errors.ReconciliationBatchNotFoundException
 import com.only4.cap4k.reference.payment.application.queries.reconciliation.read.GetReconciliationBatchQry
 import com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch.SReconciliationBatch
-import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
 
@@ -23,10 +22,10 @@ class GetReconciliationBatchQryHandler : QueryHandler<GetReconciliationBatchQry.
 
     override fun handle(query: GetReconciliationBatchQry.Request): GetReconciliationBatchQry.Response {
         val batch = Mediator.repositories.findOne(
-            SReconciliationBatch.predicateById(ReconciliationBatchId.parse(query.batchId))
-        ) ?: throw ReconciliationBatchNotFoundException(query.batchId)
+            SReconciliationBatch.predicateById(query.reconciliationBatchId)
+        ) ?: throw ReconciliationBatchNotFoundException(query.reconciliationBatchId)
         return GetReconciliationBatchQry.Response(
-            batchId = batch.id.toString(),
+            reconciliationBatchId = batch.id,
             channelId = batch.channelId,
             currency = batch.currency,
             reconciliationDate = batch.reconciliationDate,

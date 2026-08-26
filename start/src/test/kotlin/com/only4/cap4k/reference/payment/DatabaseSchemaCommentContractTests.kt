@@ -89,10 +89,10 @@ class DatabaseSchemaCommentContractTests {
         assertJsonFieldDescriptions(designFields)
 
         assertThat(structureHash(valueObjects)).isEqualTo(
-            "e808317524f0ee11da7cd820f6fdebdc39ed6e34d301e42f1cd7436bb30293fe",
+            "d2a8a0a73478de3f769bfd0a8381bfc5475cef349580e8d0f32243a19924c0d5",
         )
         assertThat(structureHash(designEntries)).isEqualTo(
-            "114e7001046d1e395abddc86df10f112b23f045522203d8c02fb7770d76ec8a1",
+            "591c0993fecd2f42e2f9456f0233faa0c85e6cd1ab79ab1d659ec01ff56c3e02",
         )
     }
 

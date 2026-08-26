@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.merchant_settlement
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.commands.merchant_settlement.result.ConfirmMerchantSettlementResultCmd
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.ConfirmMerchantSettlementResultEndpoint
 import org.springframework.stereotype.Component
 
@@ -13,7 +14,7 @@ class ConfirmMerchantSettlementResultEndpointHandler : EndpointHandler<ConfirmMe
             ConfirmMerchantSettlementResultCmd.Request(
                 channelId = request.channelId,
                 notificationId = request.notificationId,
-                settlementId = request.settlementId,
+                merchantSettlementId = MerchantSettlementId.parse(request.settlementId),
                 executionAttemptId = request.executionAttemptId,
                 executionGroupIdentity = request.executionGroupIdentity,
                 requestIdentity = request.requestIdentity,

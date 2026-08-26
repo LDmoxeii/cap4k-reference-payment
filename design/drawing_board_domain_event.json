@@ -8,7 +8,7 @@
     "persist": false,
     "fields": [
       { "name": "eventIdentity", "type": "String" },
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "merchantId", "type": "String" },
       { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
@@ -26,7 +26,7 @@
     "aggregates": ["MerchantSettlement"],
     "persist": false,
     "fields": [
-      { "name": "settlementId", "type": "String" }
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" }
     ],
     "resultFields": [
     ]

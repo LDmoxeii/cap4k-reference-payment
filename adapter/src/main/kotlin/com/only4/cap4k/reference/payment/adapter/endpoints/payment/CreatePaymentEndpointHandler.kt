@@ -21,7 +21,7 @@ class CreatePaymentEndpointHandler : EndpointHandler<CreatePaymentEndpoint.Reque
             )
         )
         return CreatePaymentEndpoint.Response(
-            paymentId = response.paymentId,
+            paymentId = response.paymentId.toString(),
             status = response.status,
             idempotentReplay = response.idempotentReplay,
             rejectionCode = response.rejectionCode,

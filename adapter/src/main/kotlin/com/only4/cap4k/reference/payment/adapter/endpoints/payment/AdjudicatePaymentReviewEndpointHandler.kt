@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.commands.payment.review.AdjudicatePaymentReviewCmd
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.AdjudicatePaymentReviewEndpoint
 import org.springframework.stereotype.Component
 
@@ -11,7 +12,7 @@ class AdjudicatePaymentReviewEndpointHandler : EndpointHandler<AdjudicatePayment
     override fun handle(request: AdjudicatePaymentReviewEndpoint.Request): AdjudicatePaymentReviewEndpoint.Response {
         val response = Mediator.commands.send(
             AdjudicatePaymentReviewCmd.Request(
-                paymentId = request.paymentId,
+                paymentId = PaymentId.parse(request.paymentId),
                 reviewId = request.reviewId,
                 decisionIdentity = request.decisionIdentity,
                 decision = request.decision,

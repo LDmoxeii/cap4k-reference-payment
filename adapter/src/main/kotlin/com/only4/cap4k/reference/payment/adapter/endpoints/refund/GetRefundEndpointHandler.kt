@@ -3,16 +3,17 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.refund
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.queries.refund.read.GetRefundQry
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.contract.endpoints.refund.api.GetRefundEndpoint
 import org.springframework.stereotype.Component
 
 @Component
 class GetRefundEndpointHandler : EndpointHandler<GetRefundEndpoint.Request, GetRefundEndpoint.Response> {
     override fun handle(request: GetRefundEndpoint.Request): GetRefundEndpoint.Response {
-        val response = Mediator.queries.ask(GetRefundQry.Request(request.refundId))
+        val response = Mediator.queries.ask(GetRefundQry.Request(RefundId.parse(request.refundId)))
         return GetRefundEndpoint.Response(
-            refundId = response.refundId,
-            paymentId = response.paymentId,
+            refundId = response.refundId.toString(),
+            paymentId = response.paymentId.toString(),
             merchantId = response.merchantId,
             merchantRefundNumber = response.merchantRefundNumber,
             amount = response.amount,

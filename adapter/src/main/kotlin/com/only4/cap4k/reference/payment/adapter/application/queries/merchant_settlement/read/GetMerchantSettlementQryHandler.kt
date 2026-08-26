@@ -6,7 +6,6 @@ import com.only4.cap4k.ddd.core.application.query.QueryHandler
 import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementNotFoundException
 import com.only4.cap4k.reference.payment.application.queries.merchant_settlement.read.GetMerchantSettlementQry
 import com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement.SMerchantSettlement
-import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
 
@@ -23,11 +22,11 @@ class GetMerchantSettlementQryHandler : QueryHandler<GetMerchantSettlementQry.Re
 
     override fun handle(query: GetMerchantSettlementQry.Request): GetMerchantSettlementQry.Response {
         val settlement = Mediator.repositories.findOne(
-            SMerchantSettlement.predicateById(MerchantSettlementId.parse(query.settlementId))
-        ) ?: throw MerchantSettlementNotFoundException(query.settlementId)
+            SMerchantSettlement.predicateById(query.merchantSettlementId)
+        ) ?: throw MerchantSettlementNotFoundException(query.merchantSettlementId)
 
         return GetMerchantSettlementQry.Response(
-            settlementId = settlement.id.toString(),
+            merchantSettlementId = settlement.id,
             merchantId = settlement.merchantId,
             channelId = settlement.channelId,
             currency = settlement.currency,
@@ -69,11 +68,11 @@ class GetMerchantSettlementQryHandler : QueryHandler<GetMerchantSettlementQry.Re
                     transactionKind = line.transactionKind.name,
                     sourceFactIdentity = line.sourceFactIdentity,
                     feeFactIdentity = line.feeFactIdentity,
-                    paymentId = line.paymentId?.toString(),
+                    paymentId = line.paymentId,
                     paymentAttemptId = line.paymentAttemptId,
-                    refundId = line.refundId?.toString(),
+                    refundId = line.refundId,
                     refundAttemptId = line.refundAttemptId,
-                    reconciliationBatchId = line.reconciliationBatchId?.toString(),
+                    reconciliationBatchId = line.reconciliationBatchId,
                     reconciliationRunId = line.reconciliationRunId,
                     reconciliationItemId = line.reconciliationItemId,
                     reconciliationConfirmationFactId = line.reconciliationConfirmationFactId,

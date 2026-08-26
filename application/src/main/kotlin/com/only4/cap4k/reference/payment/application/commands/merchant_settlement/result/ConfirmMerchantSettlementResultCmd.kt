@@ -35,7 +35,7 @@ object ConfirmMerchantSettlementResultCmd {
                 VerifySettlementResult.Request(
                     channelId = command.channelId,
                     notificationId = command.notificationId,
-                    settlementId = command.settlementId,
+                    merchantSettlementId = command.merchantSettlementId,
                     executionAttemptId = command.executionAttemptId,
                     executionGroupIdentity = command.executionGroupIdentity,
                     requestIdentity = command.requestIdentity,
@@ -49,12 +49,12 @@ object ConfirmMerchantSettlementResultCmd {
                 )
             )
             val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(command.settlementId)
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             val payloadFingerprint = sha256(
                 listOf(
                     command.channelId,
-                    command.settlementId,
+                    command.merchantSettlementId,
                     command.executionAttemptId,
                     command.executionGroupIdentity,
                     command.requestIdentity,
@@ -103,7 +103,7 @@ object ConfirmMerchantSettlementResultCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 执行尝试标识
          */

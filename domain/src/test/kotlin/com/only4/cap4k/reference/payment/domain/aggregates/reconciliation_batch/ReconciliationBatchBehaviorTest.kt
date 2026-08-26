@@ -1,5 +1,6 @@
 package com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.*
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.factory.ReconciliationBatchFactory
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatement
@@ -247,7 +248,10 @@ class ReconciliationBatchBehaviorTest {
     private fun fact(
         id: String, tx: String, amount: String = "100.00", currency: String = "CNY",
         status: String = "SUCCESS", kind: ReconciliationTransactionKind = ReconciliationTransactionKind.PAYMENT,
-    ) = PlatformReconciliationFact(id, kind, "payment-$id", "attempt-$id", null, null, tx, BigDecimal(amount), currency, status, INSTANT, INSTANT.plusSeconds(2))
+    ) = PlatformReconciliationFact(
+        id, kind, PaymentId.parse("018f22a0-0000-7000-8000-000000000020"), "attempt-$id", null, null,
+        tx, BigDecimal(amount), currency, status, INSTANT, INSTANT.plusSeconds(2),
+    )
 
     private fun disposition(
         authorization: DispositionAuthorization,

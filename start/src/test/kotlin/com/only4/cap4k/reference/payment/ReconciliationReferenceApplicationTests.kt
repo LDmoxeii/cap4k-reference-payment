@@ -116,7 +116,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(response.batchStatus).isEqualTo("COMPLETED")
         assertThat(response.unresolvedDifferenceCount).isZero()
 
-        val batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        val batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         assertThat(batch.requiredText("status")).isEqualTo("COMPLETED")
         assertThat(batch.requiredText("currentEffectiveRunId")).isEqualTo(response.runId)
         assertThat(batch["matchedCount"].asInt()).isEqualTo(2)
@@ -212,7 +212,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(response.batchStatus).isEqualTo("AWAITING_DISPOSITION")
         assertThat(response.unresolvedDifferenceCount).isEqualTo(1)
 
-        val batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        val batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         val item = batch["runs"][0]["items"].arrayItem("transactionKind", "PAYMENT")
         assertThat(item.requiredText("differenceType")).isEqualTo("MATCHED")
         assertThat(item["resolved"].asBoolean()).isFalse()
@@ -265,7 +265,7 @@ class ReconciliationReferenceApplicationTests(
         )
         assertThat(response.batchStatus).isEqualTo("AWAITING_DISPOSITION")
 
-        var batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        var batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         val item = batch["runs"][0]["items"].arrayItem("differenceType", "STATUS_MISMATCH")
         assertThat(item.requiredText("refundId")).isEqualTo(refund.refundId)
         assertThat(item.requiredText("platformRawStatus")).isEqualTo("RESULT_UNKNOWN")
@@ -280,7 +280,7 @@ class ReconciliationReferenceApplicationTests(
         val confirmed = postJson(
             "/api/reconciliation-items/${item.requiredText("itemId")}/dispositions",
             dispositionRequest(
-                batchId = response.batchId,
+                batchId = response.reconciliationBatchId.toString(),
                 itemId = item.requiredText("itemId"),
                 operatorIdentity = "operator-status-1",
                 operatorRole = "RECONCILIATION_OPERATOR",
@@ -295,7 +295,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(confirmed.requiredText("confirmationFactId")).isNotBlank()
         assertThat(confirmed.requiredText("batchStatus")).isEqualTo("COMPLETED")
 
-        batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         val confirmedItem = batch["runs"][0]["items"].arrayItem("differenceType", "STATUS_MISMATCH")
         assertThat(confirmedItem.requiredText("platformRawStatus")).isEqualTo("RESULT_UNKNOWN")
         assertThat(confirmedItem.requiredText("channelRawStatus")).isEqualTo("SUCCEEDED")
@@ -351,7 +351,7 @@ class ReconciliationReferenceApplicationTests(
                 triggeredAt = Instant.parse("2026-08-10T04:00:00Z"),
             )
         )
-        var batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        var batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         val item = batch["runs"][0]["items"].arrayItem("differenceType", "AMOUNT_MISMATCH")
         assertThat(item["platformAmount"].decimalValue()).isEqualByComparingTo("100.00")
         assertThat(item["channelAmount"].decimalValue()).isEqualByComparingTo("99.00")
@@ -360,7 +360,7 @@ class ReconciliationReferenceApplicationTests(
         val disposed = postJson(
             "/api/reconciliation-items/${item.requiredText("itemId")}/dispositions",
             dispositionRequest(
-                batchId = response.batchId,
+                batchId = response.reconciliationBatchId.toString(),
                 itemId = item.requiredText("itemId"),
                 operatorIdentity = "operator-amount-1",
                 operatorRole = "RECONCILIATION_OPERATOR",
@@ -376,7 +376,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(disposed["confirmationFactId"].isNull).isTrue()
         assertThat(disposed.requiredText("batchStatus")).isEqualTo("COMPLETED")
 
-        batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         val disposedItem = batch["runs"][0]["items"].arrayItem("differenceType", "AMOUNT_MISMATCH")
         assertThat(disposedItem["platformAmount"].decimalValue()).isEqualByComparingTo("100.00")
         assertThat(disposedItem["channelAmount"].decimalValue()).isEqualByComparingTo("99.00")
@@ -444,8 +444,8 @@ class ReconciliationReferenceApplicationTests(
         val second = Mediator.commands.send(
             RunDailyReconciliationCmd.Request("C-001", "CNY", Instant.parse("2026-08-12T04:00:00Z"))
         )
-        val firstBatch = getJson("/api/reconciliation-batches/${first.batchId}")
-        val secondBatch = getJson("/api/reconciliation-batches/${second.batchId}")
+        val firstBatch = getJson("/api/reconciliation-batches/${first.reconciliationBatchId}")
+        val secondBatch = getJson("/api/reconciliation-batches/${second.reconciliationBatchId}")
         assertThat(firstBatch.requiredText("reconciliationDate")).isEqualTo("2026-08-10")
         assertThat(secondBatch.requiredText("reconciliationDate")).isEqualTo("2026-08-11")
         assertThat(firstBatch.requiredText("businessTimezone")).isEqualTo("Asia/Shanghai")
@@ -490,13 +490,13 @@ class ReconciliationReferenceApplicationTests(
             )
         )
         assertThat(created.batchStatus).isEqualTo("AWAITING_DISPOSITION")
-        var batch = getJson("/api/reconciliation-batches/${created.batchId}")
+        var batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
         val firstItem = batch["runs"][0]["items"].arrayItem("differenceType", "CHANNEL_ONLY")
 
         val denied = postJson(
             "/api/reconciliation-items/${firstItem.requiredText("itemId")}/dispositions",
             dispositionRequest(
-                batchId = created.batchId,
+                batchId = created.reconciliationBatchId.toString(),
                 itemId = firstItem.requiredText("itemId"),
                 operatorIdentity = "viewer-1",
                 operatorRole = "VIEWER",
@@ -510,13 +510,13 @@ class ReconciliationReferenceApplicationTests(
         assertThat(denied["settlementBlocked"].asBoolean()).isTrue()
 
         val replay = postJson(
-            "/api/reconciliation-batches/${created.batchId}/reruns",
-            rerunRequest(created.batchId, "2026-08-19T05:30:00Z"),
+            "/api/reconciliation-batches/${created.reconciliationBatchId}/reruns",
+            rerunRequest(created.reconciliationBatchId.toString(), "2026-08-19T05:30:00Z"),
             expectedStatus = 200,
         )
         assertThat(replay["idempotentReplay"].asBoolean()).isTrue()
         assertThat(replay.requiredText("runId")).isEqualTo(created.runId)
-        batch = getJson("/api/reconciliation-batches/${created.batchId}")
+        batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
         assertThat(batch["runs"]).hasSize(1)
         assertThat(batch["runs"][0]["items"][0]["dispositions"]).hasSize(1)
         assertThat(batch["runs"][0]["items"][0]["confirmationFacts"]).isEmpty()
@@ -539,15 +539,15 @@ class ReconciliationReferenceApplicationTests(
             )
         )
         val revised = postJson(
-            "/api/reconciliation-batches/${created.batchId}/reruns",
-            rerunRequest(created.batchId, "2026-08-19T06:00:00Z"),
+            "/api/reconciliation-batches/${created.reconciliationBatchId}/reruns",
+            rerunRequest(created.reconciliationBatchId.toString(), "2026-08-19T06:00:00Z"),
             expectedStatus = 200,
         )
         assertThat(revised["idempotentReplay"].asBoolean()).isFalse()
         assertThat(revised.requiredText("statementRevision")).isEqualTo("2")
         assertThat(revised.requiredText("runId")).isNotEqualTo(created.runId)
 
-        batch = getJson("/api/reconciliation-batches/${created.batchId}")
+        batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
         assertThat(batch["runs"]).hasSize(2)
         assertThat(batch.requiredText("currentEffectiveRunId")).isEqualTo(revised.requiredText("runId"))
         val oldRun = batch["runs"].arrayItem("statementRevision", "1")
@@ -562,7 +562,7 @@ class ReconciliationReferenceApplicationTests(
         val confirmed = postJson(
             "/api/reconciliation-items/${currentItem.requiredText("itemId")}/dispositions",
             dispositionRequest(
-                batchId = created.batchId,
+                batchId = created.reconciliationBatchId.toString(),
                 itemId = currentItem.requiredText("itemId"),
                 merchantId = "M-001",
                 channelId = "C-001",
@@ -578,7 +578,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(confirmed.requiredText("batchStatus")).isEqualTo("COMPLETED")
         assertThat(confirmed["settlementBlocked"].asBoolean()).isFalse()
 
-        batch = getJson("/api/reconciliation-batches/${created.batchId}")
+        batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
         val confirmedItem = batch["runs"].arrayItem("statementRevision", "2")["items"]
             .arrayItem("differenceType", "CHANNEL_ONLY")
         assertThat(confirmedItem["resolved"].asBoolean()).isTrue()
@@ -639,8 +639,8 @@ class ReconciliationReferenceApplicationTests(
         assertThat(runCount(date, identity, "1")).isEqualTo(1L)
 
         val rerun = postJson(
-            "/api/reconciliation-batches/${scheduled.batchId}/reruns",
-            rerunRequest(scheduled.batchId, "2026-07-23T04:00:00Z"),
+            "/api/reconciliation-batches/${scheduled.reconciliationBatchId}/reruns",
+            rerunRequest(scheduled.reconciliationBatchId.toString(), "2026-07-23T04:00:00Z"),
             expectedStatus = 200,
         )
         assertThat(rerun["idempotentReplay"].asBoolean()).isTrue()
@@ -660,7 +660,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(response.batchStatus).isEqualTo("FETCH_FAILED")
         assertThat(response.blockingReason).contains("暂时不可用")
 
-        var batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        var batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         assertThat(batch.requiredText("status")).isEqualTo("FETCH_FAILED")
         assertThat(batch["settlementBlocked"].asBoolean()).isTrue()
         assertThat(batch["runs"]).isEmpty()
@@ -675,14 +675,14 @@ class ReconciliationReferenceApplicationTests(
             )
         )
         val rerun = postJson(
-            "/api/reconciliation-batches/${response.batchId}/reruns",
-            rerunRequest(response.batchId, "2026-08-18T04:00:00Z"),
+            "/api/reconciliation-batches/${response.reconciliationBatchId}/reruns",
+            rerunRequest(response.reconciliationBatchId.toString(), "2026-08-18T04:00:00Z"),
             expectedStatus = 200,
         )
         assertThat(rerun.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
         assertThat(rerun["idempotentReplay"].asBoolean()).isFalse()
 
-        batch = getJson("/api/reconciliation-batches/${response.batchId}")
+        batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
         assertThat(batch.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
         assertThat(batch["settlementBlocked"].asBoolean()).isTrue()
         assertThat(batch.requiredText("blockingReason")).contains("不完整")
@@ -796,7 +796,7 @@ class ReconciliationReferenceApplicationTests(
                             val batch = requireNotNull(
                                 entityManager.find(
                                     ReconciliationBatch::class.java,
-                                    ReconciliationBatchId.parse(created.batchId),
+                                    created.reconciliationBatchId,
                                 )
                             )
                             ready.countDown()
@@ -830,7 +830,7 @@ class ReconciliationReferenceApplicationTests(
         assertThat(mapped.statusCode.value()).isEqualTo(409)
         assertThat(mapped.body!!.code).isEqualTo("CONCURRENT_MODIFICATION")
 
-        val batch = getJson("/api/reconciliation-batches/${created.batchId}")
+        val batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
         assertThat(batch["runs"]).hasSize(2)
         assertThat(batch["runs"].elements().asSequence().count {
             it.path("statementRevision").asText() == "2"

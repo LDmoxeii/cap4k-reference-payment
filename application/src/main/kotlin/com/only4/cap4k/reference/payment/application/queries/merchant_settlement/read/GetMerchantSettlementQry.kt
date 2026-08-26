@@ -1,6 +1,11 @@
 
 package com.only4.cap4k.reference.payment.application.queries.merchant_settlement.read
 
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.query.Query
 import java.math.BigDecimal
@@ -20,14 +25,14 @@ object GetMerchantSettlementQry {
         /**
          * 结算标识
          */
-        val settlementId: String
+        val merchantSettlementId: MerchantSettlementId
     ) : Query<Response>
 
     data class Response(
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 商户标识
          */
@@ -111,11 +116,11 @@ object GetMerchantSettlementQry {
         /**
          * 前序结算标识
          */
-        val predecessorSettlementId: String?,
+        val predecessorSettlementId: MerchantSettlementId?,
         /**
          * 替代结算标识
          */
-        val replacementSettlementId: String?,
+        val replacementSettlementId: MerchantSettlementId?,
         /**
          * 确认操作人
          */
@@ -197,7 +202,7 @@ object GetMerchantSettlementQry {
             /**
              * 支付标识
              */
-            val paymentId: String?,
+            val paymentId: PaymentId?,
             /**
              * 支付尝试标识
              */
@@ -205,7 +210,7 @@ object GetMerchantSettlementQry {
             /**
              * 退款标识
              */
-            val refundId: String?,
+            val refundId: RefundId?,
             /**
              * 退款尝试标识
              */
@@ -213,7 +218,7 @@ object GetMerchantSettlementQry {
             /**
              * 对账批次标识
              */
-            val reconciliationBatchId: String?,
+            val reconciliationBatchId: ReconciliationBatchId?,
             /**
              * 对账运行标识
              */

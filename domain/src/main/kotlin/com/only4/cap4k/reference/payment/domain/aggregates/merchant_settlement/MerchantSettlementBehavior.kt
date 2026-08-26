@@ -441,14 +441,14 @@ fun MerchantSettlement.activateEffectiveOwnership() {
 
 fun MerchantSettlement.requestActivation() {
     DomainEventSupervisor.instance.attach(
-        MerchantSettlementActivationRequestedDomainEvent(id.toString()),
+        MerchantSettlementActivationRequestedDomainEvent(id),
         this,
     )
 }
 
 fun MerchantSettlement.linkReplacement(replacementId: MerchantSettlementId) {
     require(status == MerchantSettlementStatus.VOIDED) { "只有已作废的结算单可以关联替代单" }
-    replacementSettlementId = replacementId.toString()
+    replacementSettlementId = replacementId
 }
 
 fun MerchantSettlement.linkPredecessor(predecessorId: MerchantSettlementId) {
@@ -457,10 +457,10 @@ fun MerchantSettlement.linkPredecessor(predecessorId: MerchantSettlementId) {
         MerchantSettlementStatus.REVIEW_REQUIRED,
         MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED,
     )) { "只有未确认的结算单可以关联前置单" }
-    require(predecessorSettlementId == null || predecessorSettlementId == predecessorId.toString()) {
+    require(predecessorSettlementId == null || predecessorSettlementId == predecessorId) {
         "结算单 $id 的前置单不能改变"
     }
-    predecessorSettlementId = predecessorId.toString()
+    predecessorSettlementId = predecessorId
 }
 
 /**
@@ -476,7 +476,7 @@ private fun MerchantSettlement.formSettledSuccess(completedAt: LocalDateTime): B
     DomainEventSupervisor.instance.attach(
         MerchantSettlementCompletedDomainEvent(
             eventIdentity = stableIdentity("MerchantSettlementCompleted:v1", id.toString()),
-            settlementId = id.toString(),
+            merchantSettlementId = id,
             merchantId = merchantId,
             channelId = channelId,
             currency = currency,

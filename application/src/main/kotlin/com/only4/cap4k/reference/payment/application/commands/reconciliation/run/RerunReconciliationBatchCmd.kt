@@ -36,8 +36,8 @@ object RerunReconciliationBatchCmd {
         override fun handle(command: Request): Response {
             require(command.requestedBy.isNotBlank()) { "请求操作员不能为空" }
             val batch = Mediator.repositories.findOne(
-                SReconciliationBatch.predicateById(ReconciliationBatchId.parse(command.batchId))
-            ) ?: throw ReconciliationBatchNotFoundException(command.batchId)
+                SReconciliationBatch.predicateById(command.reconciliationBatchId)
+            ) ?: throw ReconciliationBatchNotFoundException(command.reconciliationBatchId)
             val statement = try {
                 Mediator.capabilities.call(
                     PullChannelStatement.Request(
@@ -50,7 +50,7 @@ object RerunReconciliationBatchCmd {
                     LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC),
                     "渠道账单或平台资金事实暂时不可用",
                 )
-                return failureResponse(batch.id.toString(), batch.status.name)
+                return failureResponse(batch.id, batch.status.name)
             }
             val facts = try {
                 Mediator.capabilities.call(
@@ -64,7 +64,7 @@ object RerunReconciliationBatchCmd {
                     LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC),
                     "渠道账单或平台资金事实暂时不可用",
                 )
-                return failureResponse(batch.id.toString(), batch.status.name)
+                return failureResponse(batch.id, batch.status.name)
             }
 
             val result = batch.appendReconciliationRun(
@@ -73,7 +73,7 @@ object RerunReconciliationBatchCmd {
                 LocalDateTime.ofInstant(command.requestedAt, ZoneOffset.UTC),
             )
             return Response(
-                batchId = batch.id.toString(),
+                reconciliationBatchId = batch.id,
                 runId = result.run.id.toString(),
                 batchStatus = batch.status.name,
                 idempotentReplay = result.idempotentReplay,
@@ -82,8 +82,8 @@ object RerunReconciliationBatchCmd {
             )
         }
 
-        private fun failureResponse(batchId: String, batchStatus: String) = Response(
-            batchId = batchId,
+        private fun failureResponse(reconciliationBatchId: ReconciliationBatchId, batchStatus: String) = Response(
+            reconciliationBatchId = reconciliationBatchId,
             runId = null,
             batchStatus = batchStatus,
             idempotentReplay = false,
@@ -98,7 +98,7 @@ object RerunReconciliationBatchCmd {
         /**
          * 批次标识
          */
-        val batchId: String,
+        val reconciliationBatchId: ReconciliationBatchId,
         /**
          * 请求操作人
          */
@@ -113,7 +113,7 @@ object RerunReconciliationBatchCmd {
         /**
          * 批次标识
          */
-        val batchId: String,
+        val reconciliationBatchId: ReconciliationBatchId,
         /**
          * 运行标识
          */

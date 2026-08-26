@@ -1,6 +1,9 @@
 
 package com.only4.cap4k.reference.payment.application.queries.refund.read
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.query.Query
 import java.math.BigDecimal
@@ -20,18 +23,18 @@ object GetRefundQry {
         /**
          * 退款标识
          */
-        val refundId: String
+        val refundId: RefundId
     ) : Query<Response>
 
     data class Response(
         /**
          * 退款标识
          */
-        val refundId: String,
+        val refundId: RefundId,
         /**
          * 支付标识
          */
-        val paymentId: String,
+        val paymentId: PaymentId,
         /**
          * 商户标识
          */

@@ -162,8 +162,8 @@ class MerchantSettlementBehaviorTest {
         assertThat(previous.voidReason).isEqualTo("RETURN_FOR_ADJUSTMENT: refresh candidate evidence")
         assertThat(previous.effectiveScopeIdentity).isNull()
         assertThat(previous.settlementLines.single().effectiveConsumptionIdentity).isNull()
-        assertThat(previous.replacementSettlementId).isEqualTo(replacement.id.toString())
-        assertThat(replacement.predecessorSettlementId).isEqualTo(previous.id.toString())
+        assertThat(previous.replacementSettlementId).isEqualTo(replacement.id)
+        assertThat(replacement.predecessorSettlementId).isEqualTo(previous.id)
         assertThat(replacement.effectiveScopeIdentity).isEqualTo(previous.scopeIdentity)
 
         val confirmed = confirmedSettlement()
@@ -210,7 +210,7 @@ class MerchantSettlementBehaviorTest {
         assertThat(prepared.settlementLines.single().effectiveConsumptionIdentity).isNull()
         val replacementId = MerchantSettlementId.parse("018f22a0-0000-7000-8000-000000000099")
         prepared.linkReplacement(replacementId)
-        assertThat(prepared.replacementSettlementId).isEqualTo(replacementId.toString())
+        assertThat(prepared.replacementSettlementId).isEqualTo(replacementId)
 
         val confirmed = confirmedSettlement()
         assertThatThrownBy { confirmed.voidBeforeExecution(OPERATOR, ROLE, "too late", NOW.plusMinutes(1)) }

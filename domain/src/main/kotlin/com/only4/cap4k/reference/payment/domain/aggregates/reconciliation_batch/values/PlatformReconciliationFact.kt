@@ -1,7 +1,9 @@
 package com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -25,7 +27,7 @@ data class PlatformReconciliationFact(
     /**
      * 支付标识
      */
-    val paymentId: String?,
+    val paymentId: PaymentId?,
     /**
      * 支付尝试标识
      */
@@ -33,7 +35,7 @@ data class PlatformReconciliationFact(
     /**
      * 退款标识
      */
-    val refundId: String?,
+    val refundId: RefundId?,
     /**
      * 退款尝试标识
      */

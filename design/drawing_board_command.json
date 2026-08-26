@@ -6,16 +6,16 @@
     "description": "Return an unconfirmed merchant settlement for adjustment and prepare a fresh effective replacement",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "reason", "type": "String" },
       { "name": "returnedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "previousSettlementId", "type": "String" },
+      { "name": "previousSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "previousStatus", "type": "String" },
-      { "name": "replacementSettlementId", "type": "String" },
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "replacementStatus", "type": "String" }
     ]
   },
@@ -26,13 +26,13 @@
     "description": "Authorize and freeze a prepared merchant settlement composition",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "confirmedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "status", "type": "String" },
       { "name": "netAmount", "type": "Big_decimal" }
     ]
@@ -44,13 +44,13 @@
     "description": "Submit a confirmed positive settlement or retry after an explicit failed attempt",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "requestedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "attemptId", "type": "String?" },
       { "name": "executionGroupIdentity", "type": "String?" },
       { "name": "requestIdentity", "type": "String?" },
@@ -66,7 +66,7 @@
     "description": "Activate the effective scope and source-consumption ownership of a replacement settlement",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" }
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" }
     ],
     "resultFields": [
       { "name": "status", "type": "String" }
@@ -85,7 +85,7 @@
       { "name": "settlementDate", "type": "java.time.LocalDate" },
       { "name": "requestedBy", "type": "String" },
       { "name": "requestedAt", "type": "java.time.Instant" },
-      { "name": "predecessorSettlementId", "type": "String?" }
+      { "name": "predecessorSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" }
     ],
     "resultFields": [
       { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome" }
@@ -100,7 +100,7 @@
     "fields": [
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "executionAttemptId", "type": "String" },
       { "name": "executionGroupIdentity", "type": "String" },
       { "name": "requestIdentity", "type": "String" },
@@ -124,7 +124,7 @@
     "description": "Append an authorized final conclusion to an unknown merchant settlement result without deleting receipt history",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "executionAttemptId", "type": "String" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
@@ -172,7 +172,7 @@
     "description": "Void a settlement before external execution and optionally create a replacement chain",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "reason", "type": "String" },
@@ -180,9 +180,9 @@
       { "name": "createReplacement", "type": "Boolean" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "status", "type": "String" },
-      { "name": "replacementSettlementId", "type": "String?" }
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" }
     ]
   },
   {
@@ -192,7 +192,7 @@
     "description": "Select an eligible merchant channel and start a durable payment attempt",
     "aggregates": ["Payment", "MerchantChannelConfiguration"],
     "fields": [
-      { "name": "paymentId", "type": "String" }
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" }
     ],
     "resultFields": [
       { "name": "paymentAttemptId", "type": "String" },
@@ -219,7 +219,7 @@
       { "name": "expiresAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "paymentId", "type": "String" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "status", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" },
       { "name": "rejectionCode", "type": "String?" },
@@ -250,7 +250,7 @@
     "fields": [
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
-      { "name": "paymentId", "type": "String" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "paymentAttemptId", "type": "String" },
       { "name": "channelTransactionId", "type": "String" },
       { "name": "amount", "type": "Big_decimal" },
@@ -270,7 +270,7 @@
     "description": "Append an authorized decision to one payment review without deleting evidence",
     "aggregates": ["Payment"],
     "fields": [
-      { "name": "paymentId", "type": "String" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "reviewId", "type": "String" },
       { "name": "decisionIdentity", "type": "String" },
       { "name": "decision", "type": "String" },
@@ -298,7 +298,7 @@
     "description": "Authorize and append a disposition, optionally forming a separate confirmation fact",
     "aggregates": ["ReconciliationBatch"],
     "fields": [
-      { "name": "batchId", "type": "String" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "itemId", "type": "String" },
       { "name": "merchantId", "type": "String?" },
       { "name": "channelId", "type": "String?" },
@@ -338,7 +338,7 @@
       { "name": "causationIdentity", "type": "String?" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "runId", "type": "String" },
       { "name": "batchStatus", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" }
@@ -351,12 +351,12 @@
     "description": "Explicitly pull and process a statement revision for an existing reconciliation batch",
     "aggregates": ["ReconciliationBatch"],
     "fields": [
-      { "name": "batchId", "type": "String" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "requestedBy", "type": "String" },
       { "name": "requestedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "runId", "type": "String?" },
       { "name": "batchStatus", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" },
@@ -376,7 +376,7 @@
       { "name": "triggeredAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "runId", "type": "String?" },
       { "name": "batchStatus", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" },
@@ -393,13 +393,13 @@
     "fields": [
       { "name": "merchantId", "type": "String" },
       { "name": "merchantRefundNumber", "type": "String" },
-      { "name": "paymentId", "type": "String" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "amount", "type": "Big_decimal" },
       { "name": "currency", "type": "String" },
       { "name": "requestedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
-      { "name": "refundId", "type": "String" },
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" },
       { "name": "refundAttemptId", "type": "String" },
       { "name": "status", "type": "String" },
       { "name": "requestIdentity", "type": "String" },
@@ -416,7 +416,7 @@
     "fields": [
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
-      { "name": "refundId", "type": "String" },
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" },
       { "name": "refundAttemptId", "type": "String" },
       { "name": "channelRefundId", "type": "String" },
       { "name": "amount", "type": "Big_decimal" },

@@ -6,7 +6,6 @@ import com.only4.cap4k.ddd.core.application.query.QueryHandler
 import com.only4.cap4k.reference.payment.application.errors.RefundNotFoundException
 import com.only4.cap4k.reference.payment.application.queries.refund.read.GetRefundQry
 import com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefund
-import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
 
@@ -23,11 +22,11 @@ class GetRefundQryHandler : QueryHandler<GetRefundQry.Request, GetRefundQry.Resp
 
     override fun handle(query: GetRefundQry.Request): GetRefundQry.Response {
         val refund = Mediator.repositories.findOne(
-            SRefund.predicateById(RefundId.parse(query.refundId))
+            SRefund.predicateById(query.refundId)
         ) ?: throw RefundNotFoundException(query.refundId)
         return GetRefundQry.Response(
-            refundId = refund.id.toString(),
-            paymentId = refund.paymentId.toString(),
+            refundId = refund.id,
+            paymentId = refund.paymentId,
             merchantId = refund.merchantId,
             merchantRefundNumber = refund.merchantRefundNumber,
             amount = refund.amount,

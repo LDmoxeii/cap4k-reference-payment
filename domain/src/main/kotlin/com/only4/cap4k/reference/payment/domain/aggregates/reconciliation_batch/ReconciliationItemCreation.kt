@@ -1,6 +1,8 @@
 package com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationDifferenceType
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -17,9 +19,9 @@ data class ReconciliationItemCreation(
     val channelOccurredAt: LocalDateTime?,
     val channelReceivedAt: LocalDateTime?,
     val platformFactIdentity: String?,
-    val paymentId: String?,
+    val paymentId: PaymentId?,
     val paymentAttemptId: String?,
-    val refundId: String?,
+    val refundId: RefundId?,
     val refundAttemptId: String?,
     val platformTransactionIdentity: String?,
     val platformAmount: BigDecimal?,

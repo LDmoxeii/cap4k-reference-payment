@@ -28,13 +28,13 @@ class MerchantSettlementCompletedDomainEventSubscriber {
         Mediator.events.enqueue(
             MerchantSettlementCompletedIntegrationEvent(
                 eventIdentity = event.eventIdentity,
-                settlementId = event.settlementId,
+                settlementId = event.merchantSettlementId.toString(),
                 merchantId = event.merchantId,
                 channelId = event.channelId,
                 currency = event.currency,
                 netAmount = event.netAmount,
                 completedAt = event.completedAt.toInstant(ZoneOffset.UTC),
-                correlationIdentity = event.settlementId,
+                correlationIdentity = event.merchantSettlementId.toString(),
                 causationIdentity = event.eventIdentity,
             )
         )

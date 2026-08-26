@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.commands.reconciliation.run
 
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
@@ -86,7 +88,7 @@ object RunDailyReconciliationCmd {
                 LocalDateTime.ofInstant(command.triggeredAt, ZoneOffset.UTC),
             )
             return Response(
-                batchId = batch.id.toString(),
+                reconciliationBatchId = batch.id,
                 runId = result.run.id.toString(),
                 batchStatus = batch.status.name,
                 idempotentReplay = result.idempotentReplay,
@@ -105,7 +107,7 @@ object RunDailyReconciliationCmd {
             log.warn("日终对账拉取账单或平台事实失败：batchId={}", batch.id, failure)
             batch.markStatementFetchFailed(failedAt, "渠道账单或平台资金事实暂时不可用")
             return Response(
-                batchId = batch.id.toString(),
+                reconciliationBatchId = batch.id,
                 runId = null,
                 batchStatus = batch.status.name,
                 idempotentReplay = existing,
@@ -134,7 +136,7 @@ object RunDailyReconciliationCmd {
         /**
          * 批次标识
          */
-        val batchId: String,
+        val reconciliationBatchId: ReconciliationBatchId,
         /**
          * 运行标识
          */

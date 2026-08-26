@@ -36,7 +36,7 @@ object AdjudicatePaymentReviewCmd {
          * 任何一步失败都由同一 UoW 回滚，不留下部分 decision、无手续费的成功或错误通知意图。
          */
         override fun handle(command: Request): Response {
-            val payment = Mediator.repositories.findOne(SPayment.predicateById(PaymentId.parse(command.paymentId)))
+            val payment = Mediator.repositories.findOne(SPayment.predicateById(command.paymentId))
                 ?: throw PaymentNotFoundException(command.paymentId)
             val decision = enumValueOrConflict<PaymentReviewDecisionType>(command.decision, "REVIEW_DECISION_NOT_ALLOWED")
             val eligibilityImpact = enumValueOrConflict<PaymentReviewEligibilityImpact>(command.eligibilityImpact, "REVIEW_DECISION_NOT_ALLOWED")
@@ -101,7 +101,7 @@ object AdjudicatePaymentReviewCmd {
         /**
          * 支付标识
          */
-        val paymentId: String,
+        val paymentId: PaymentId,
         /**
          * 复核标识
          */

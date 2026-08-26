@@ -1,9 +1,11 @@
 package com.only4.cap4k.reference.payment.application.errors
 
-class MerchantSettlementNotFoundException(settlementId: String) : PaymentApplicationException(
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
+
+class MerchantSettlementNotFoundException(merchantSettlementId: MerchantSettlementId) : PaymentApplicationException(
     code = "MERCHANT_SETTLEMENT_NOT_FOUND",
-    message = "未找到商户结算单 $settlementId",
-    details = mapOf("settlementId" to settlementId),
+    message = "未找到商户结算单 $merchantSettlementId",
+    details = mapOf("merchantSettlementId" to merchantSettlementId),
 )
 
 class MerchantSettlementConflictException(

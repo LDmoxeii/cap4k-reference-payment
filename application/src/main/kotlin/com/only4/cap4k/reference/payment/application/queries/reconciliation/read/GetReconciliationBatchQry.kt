@@ -1,6 +1,10 @@
 
 package com.only4.cap4k.reference.payment.application.queries.reconciliation.read
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.query.Query
 import java.math.BigDecimal
@@ -21,14 +25,14 @@ object GetReconciliationBatchQry {
         /**
          * 批次标识
          */
-        val batchId: String
+        val reconciliationBatchId: ReconciliationBatchId
     ) : Query<Response>
 
     data class Response(
         /**
          * 批次标识
          */
-        val batchId: String,
+        val reconciliationBatchId: ReconciliationBatchId,
         /**
          * 渠道标识
          */
@@ -200,7 +204,7 @@ object GetReconciliationBatchQry {
             /**
              * 支付标识
              */
-            val paymentId: String?,
+            val paymentId: PaymentId?,
             /**
              * 支付尝试标识
              */
@@ -208,7 +212,7 @@ object GetReconciliationBatchQry {
             /**
              * 退款标识
              */
-            val refundId: String?,
+            val refundId: RefundId?,
             /**
              * 退款尝试标识
              */
@@ -346,11 +350,11 @@ object GetReconciliationBatchQry {
             /**
              * 支付标识
              */
-            val paymentId: String?,
+            val paymentId: PaymentId?,
             /**
              * 退款标识
              */
-            val refundId: String?,
+            val refundId: RefundId?,
             /**
              * 确认时间
              */

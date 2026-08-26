@@ -25,8 +25,8 @@ object ActivateMerchantSettlementCmd {
 
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(command.settlementId)
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             settlement.activateEffectiveOwnership()
             return Response(status = settlement.status.name)
         }
@@ -36,7 +36,7 @@ object ActivateMerchantSettlementCmd {
         /**
          * 结算标识
          */
-        val settlementId: String
+        val merchantSettlementId: MerchantSettlementId
     ) : Command<Response>
 
     data class Response(

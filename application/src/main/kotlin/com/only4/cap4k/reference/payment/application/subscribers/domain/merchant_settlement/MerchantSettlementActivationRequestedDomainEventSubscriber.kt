@@ -24,6 +24,6 @@ class MerchantSettlementActivationRequestedDomainEventSubscriber {
     @EventListener(MerchantSettlementActivationRequestedDomainEvent::class)
     /** 通过独立 Command 在同一事务边界激活 replacement；失败时由 UoW 回滚 predecessor 与 replacement 组合。 */
     fun on(event: MerchantSettlementActivationRequestedDomainEvent) {
-        Mediator.commands.send(ActivateMerchantSettlementCmd.Request(event.settlementId))
+        Mediator.commands.send(ActivateMerchantSettlementCmd.Request(event.merchantSettlementId))
     }
 }

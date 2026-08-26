@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.commands.refund.create
 
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
@@ -62,7 +64,7 @@ object CreateRefundCmd {
                 }
             )
             if (existing != null) {
-                val sameRequest = existing.paymentId == PaymentId.parse(command.paymentId) &&
+                val sameRequest = existing.paymentId == command.paymentId &&
                     existing.amount.compareTo(money.amount) == 0 &&
                     existing.currency == money.currency
                 if (!sameRequest) {
@@ -74,7 +76,7 @@ object CreateRefundCmd {
                 val attempt = existing.attempts.firstOrNull()
                     ?: throw RefundConflictException("REFUND_WITHOUT_ATTEMPT", "退款单 ${existing.id} 没有退款尝试")
                 return Response(
-                    refundId = existing.id.toString(),
+                    refundId = existing.id,
                     refundAttemptId = attempt.id.toString(),
                     status = existing.status.name,
                     requestIdentity = attempt.requestIdentity,
@@ -84,7 +86,7 @@ object CreateRefundCmd {
             }
 
             val payment = Mediator.repositories.findOne(
-                SPayment.predicateById(PaymentId.parse(command.paymentId))
+                SPayment.predicateById(command.paymentId)
             ) ?: throw PaymentNotFoundException(command.paymentId)
             require(payment.merchantId == merchantId) { "支付单不属于商户 $merchantId" }
             require(payment.currency == money.currency) {
@@ -170,7 +172,7 @@ object CreateRefundCmd {
                 refund.rejectAttemptStart(attempt.id, "CHANNEL_GATEWAY_ERROR", diagnostic)
                 payment.releaseRefundReservation(refund.amount)
                 return Response(
-                    refundId = refund.id.toString(),
+                    refundId = refund.id,
                     refundAttemptId = attempt.id.toString(),
                     status = refund.status.name,
                     requestIdentity = attempt.requestIdentity,
@@ -190,7 +192,7 @@ object CreateRefundCmd {
                 )
                 payment.releaseRefundReservation(refund.amount)
                 return Response(
-                    refundId = refund.id.toString(),
+                    refundId = refund.id,
                     refundAttemptId = attempt.id.toString(),
                     status = refund.status.name,
                     requestIdentity = attempt.requestIdentity,
@@ -200,7 +202,7 @@ object CreateRefundCmd {
             }
             refund.markChannelAccepted(attempt.id, gateway.channelRefundId, requestedAt)
             return Response(
-                refundId = refund.id.toString(),
+                refundId = refund.id,
                 refundAttemptId = attempt.id.toString(),
                 status = refund.status.name,
                 requestIdentity = attempt.requestIdentity,
@@ -230,7 +232,7 @@ object CreateRefundCmd {
         /**
          * 支付标识
          */
-        val paymentId: String,
+        val paymentId: PaymentId,
         /**
          * 金额
          */
@@ -249,7 +251,7 @@ object CreateRefundCmd {
         /**
          * 退款标识
          */
-        val refundId: String,
+        val refundId: RefundId,
         /**
          * 退款尝试标识
          */

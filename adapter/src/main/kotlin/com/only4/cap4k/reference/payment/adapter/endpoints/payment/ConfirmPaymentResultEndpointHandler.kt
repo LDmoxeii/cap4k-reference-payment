@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.commands.payment.result.ConfirmPaymentResultCmd
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.ConfirmPaymentResultEndpoint
 import org.springframework.stereotype.Component
 
@@ -13,7 +14,7 @@ class ConfirmPaymentResultEndpointHandler : EndpointHandler<ConfirmPaymentResult
             ConfirmPaymentResultCmd.Request(
                 channelId = request.channelId,
                 notificationId = request.notificationId,
-                paymentId = request.paymentId,
+                paymentId = PaymentId.parse(request.paymentId),
                 paymentAttemptId = request.paymentAttemptId,
                 channelTransactionId = request.channelTransactionId,
                 amount = request.amount,

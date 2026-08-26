@@ -28,7 +28,7 @@
     "fields": [
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "executionAttemptId", "type": "String" },
       { "name": "executionGroupIdentity", "type": "String" },
       { "name": "requestIdentity", "type": "String" },
@@ -53,7 +53,7 @@
     "description": "Submit one idempotent settlement transfer request to the reference provider",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "executionAttemptId", "type": "String" },
       { "name": "merchantId", "type": "String" },
       { "name": "channelId", "type": "String" },

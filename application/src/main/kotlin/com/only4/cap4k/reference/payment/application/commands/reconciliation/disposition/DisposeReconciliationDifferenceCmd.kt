@@ -47,12 +47,12 @@ object DisposeReconciliationDifferenceCmd {
             require(command.operatorIdentity.isNotBlank()) { "操作员身份不能为空" }
             require(command.evidence.isNotBlank()) { "证据不能为空" }
             val batch = Mediator.repositories.findOne(
-                SReconciliationBatch.predicateById(ReconciliationBatchId.parse(command.batchId))
-            ) ?: throw ReconciliationBatchNotFoundException(command.batchId)
+                SReconciliationBatch.predicateById(command.reconciliationBatchId)
+            ) ?: throw ReconciliationBatchNotFoundException(command.reconciliationBatchId)
             val item = batch.reconciliationRuns.asSequence()
                 .flatMap { it.reconciliationItems.asSequence() }
                 .firstOrNull { it.id.toString() == command.itemId }
-                ?: throw IllegalArgumentException("对账批次 ${command.batchId} 中未找到差异项 ${command.itemId}")
+                ?: throw IllegalArgumentException("对账批次 ${command.reconciliationBatchId} 中未找到差异项 ${command.itemId}")
             val disposedAt = LocalDateTime.ofInstant(command.disposedAt, ZoneOffset.UTC)
             val authorized = command.operatorRole.trim().uppercase() == AUTHORIZED_OPERATOR_ROLE
             val conclusion = if (authorized) enumValue<ReconciliationDispositionConclusion>(command.conclusion, "conclusion") else null
@@ -130,7 +130,7 @@ object DisposeReconciliationDifferenceCmd {
 
             item.paymentId?.let { rawPaymentId ->
                 val payment = Mediator.repositories.findOne(
-                    SPayment.predicateById(PaymentId.parse(rawPaymentId))
+                    SPayment.predicateById(rawPaymentId)
                 ) ?: throw IllegalArgumentException("确认事实引用的支付单 $rawPaymentId 不存在")
                 merchantId = payment.merchantId
                 item.paymentAttemptId?.let { rawAttemptId ->
@@ -144,10 +144,10 @@ object DisposeReconciliationDifferenceCmd {
 
             item.refundId?.let { rawRefundId ->
                 val refund = Mediator.repositories.findOne(
-                    SRefund.predicateById(RefundId.parse(rawRefundId))
+                    SRefund.predicateById(rawRefundId)
                 ) ?: throw IllegalArgumentException("确认事实引用的退款单 $rawRefundId 不存在")
                 item.paymentId?.let { referencedPaymentId ->
-                    require(refund.paymentId.toString() == referencedPaymentId) {
+                    require(refund.paymentId == referencedPaymentId) {
                         "确认事实引用的退款单 $rawRefundId 不属于支付单 $referencedPaymentId"
                     }
                 }
@@ -198,7 +198,7 @@ object DisposeReconciliationDifferenceCmd {
         /**
          * 批次标识
          */
-        val batchId: String,
+        val reconciliationBatchId: ReconciliationBatchId,
         /**
          * 条目标识
          */

@@ -38,8 +38,8 @@ object StartMerchantSettlementExecutionCmd {
          */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(command.settlementId)
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             if (settlement.status in setOf(
                     MerchantSettlementStatus.RESULT_UNKNOWN,
                     MerchantSettlementStatus.CONFLICT_REVIEW_REQUIRED,
@@ -71,7 +71,7 @@ object StartMerchantSettlementExecutionCmd {
             )
             if (attempt.requestIdentity != requestIdentity) {
                 return Response(
-                    settlementId = settlement.id.toString(),
+                    merchantSettlementId = settlement.id,
                     attemptId = attempt.id.toString(),
                     executionGroupIdentity = attempt.executionGroupIdentity,
                     requestIdentity = attempt.requestIdentity,
@@ -83,7 +83,7 @@ object StartMerchantSettlementExecutionCmd {
             val transfer = try {
                 Mediator.capabilities.call(
                     StartSettlementTransfer.Request(
-                        settlementId = settlement.id.toString(),
+                        merchantSettlementId = settlement.id,
                         executionAttemptId = attempt.id.toString(),
                         merchantId = settlement.merchantId,
                         channelId = settlement.channelId,
@@ -120,7 +120,7 @@ object StartMerchantSettlementExecutionCmd {
             accepted: Boolean,
             diagnostic: String?,
         ): Response = Response(
-            settlementId = settlement.id.toString(),
+            merchantSettlementId = settlement.id,
             attemptId = attemptId,
             executionGroupIdentity = settlement.executionGroupIdentity,
             requestIdentity = settlement.settlementExecutionAttempts.lastOrNull()?.requestIdentity,
@@ -134,7 +134,7 @@ object StartMerchantSettlementExecutionCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 操作员身份
          */
@@ -153,7 +153,7 @@ object StartMerchantSettlementExecutionCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 尝试标识
          */

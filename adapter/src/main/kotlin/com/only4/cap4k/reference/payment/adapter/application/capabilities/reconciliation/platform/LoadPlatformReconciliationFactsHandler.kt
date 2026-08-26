@@ -50,7 +50,7 @@ class LoadPlatformReconciliationFactsHandler(
                 PlatformReconciliationFact(
                     factIdentity = "PAYMENT:${payment.id}",
                     transactionKind = ReconciliationTransactionKind.PAYMENT,
-                    paymentId = payment.id.toString(),
+                    paymentId = payment.id,
                     paymentAttemptId = attempt.id.toString(),
                     refundId = null,
                     refundAttemptId = null,
@@ -83,9 +83,9 @@ class LoadPlatformReconciliationFactsHandler(
                 PlatformReconciliationFact(
                     factIdentity = "REFUND:${refund.id}",
                     transactionKind = ReconciliationTransactionKind.REFUND,
-                    paymentId = refund.paymentId.toString(),
+                    paymentId = refund.paymentId,
                     paymentAttemptId = null,
-                    refundId = refund.id.toString(),
+                    refundId = refund.id,
                     refundAttemptId = attempt.id.toString(),
                     channelTransactionIdentity = channelIdentity,
                     amount = refund.amount,

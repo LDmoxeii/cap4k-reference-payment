@@ -6,7 +6,6 @@ import com.only4.cap4k.ddd.core.application.query.QueryHandler
 import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundException
 import com.only4.cap4k.reference.payment.application.queries.payment.read.GetPaymentQry
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
-import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.refundableAmount
 import java.time.ZoneOffset
@@ -16,11 +15,11 @@ import org.springframework.stereotype.Service
 @DesignBlockMetadata(tag = "query", name = "GetPayment", packageName = "payment.read", description = "Read a persisted payment and all payment-attempt adjudication summaries", aggregates = ["Payment"], family = "query-handler")
 class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.Response> {
     override fun handle(query: GetPaymentQry.Request): GetPaymentQry.Response {
-        val payment = Mediator.repositories.findOne(SPayment.predicateById(PaymentId.parse(query.paymentId)))
+        val payment = Mediator.repositories.findOne(SPayment.predicateById(query.paymentId))
             ?: throw PaymentNotFoundException(query.paymentId)
         val eligibility = payment.currentReviewEligibility()
         return GetPaymentQry.Response(
-            paymentId = payment.id.toString(), merchantId = payment.merchantId,
+            paymentId = payment.id, merchantId = payment.merchantId,
             merchantOrderNumber = payment.merchantOrderNumber, amount = payment.amount,
             currency = payment.currency, paymentMethod = payment.paymentMethod, status = payment.status.name,
             createdAt = requireNotNull(payment.createdAt).toInstant(ZoneOffset.UTC),

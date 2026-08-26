@@ -43,7 +43,7 @@ object StartPaymentAttemptCmd {
          */
         override fun handle(command: Request): Response {
             val payment = Mediator.repositories.findOne(
-                SPayment.predicateById(PaymentId.parse(command.paymentId))
+                SPayment.predicateById(command.paymentId)
             ) ?: throw PaymentNotFoundException(command.paymentId)
 
             val now = LocalDateTime.now(clock)
@@ -152,7 +152,7 @@ object StartPaymentAttemptCmd {
         /**
          * 支付标识
          */
-        val paymentId: String
+        val paymentId: PaymentId
     ) : Command<Response>
 
     data class Response(

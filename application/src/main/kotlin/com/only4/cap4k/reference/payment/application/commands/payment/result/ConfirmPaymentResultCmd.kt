@@ -69,7 +69,7 @@ object ConfirmPaymentResultCmd {
                 )
             )
             val payment = Mediator.repositories.findOne(
-                SPayment.predicateById(PaymentId.parse(command.paymentId))
+                SPayment.predicateById(command.paymentId)
             ) ?: throw PaymentNotFoundException(command.paymentId)
             val paymentAttemptId = PaymentAttemptId.parse(command.paymentAttemptId)
             val attempt = payment.attempts.firstOrNull { it.id == paymentAttemptId }
@@ -161,7 +161,7 @@ object ConfirmPaymentResultCmd {
         /**
          * 支付标识
          */
-        val paymentId: String,
+        val paymentId: PaymentId,
         /**
          * 支付尝试标识
          */

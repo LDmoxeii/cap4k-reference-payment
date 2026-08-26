@@ -4,6 +4,7 @@ import com.only4.cap4k.analysis.metadata.AggregateElementMetadata
 import com.only4.cap4k.ddd.core.domain.aggregate.AggregateFactory
 import com.only4.cap4k.ddd.core.domain.aggregate.AggregatePayload
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlement
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.SettlementExecutionAttempt
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.SettlementExecutionAttemptCreation
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.SettlementLine
@@ -189,8 +190,8 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
         val netAmount: BigDecimal,
         val compositionFrozen: Boolean = false,
         val executionGroupIdentity: String?,
-        val predecessorSettlementId: String?,
-        val replacementSettlementId: String?,
+        val predecessorSettlementId: MerchantSettlementId?,
+        val replacementSettlementId: MerchantSettlementId?,
         val confirmedBy: String?,
         val confirmedAt: LocalDateTime?,
         val voidedBy: String?,

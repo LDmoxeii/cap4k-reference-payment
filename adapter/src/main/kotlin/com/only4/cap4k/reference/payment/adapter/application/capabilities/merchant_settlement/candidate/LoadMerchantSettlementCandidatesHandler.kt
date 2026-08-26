@@ -6,7 +6,6 @@ import com.only4.cap4k.reference.payment.application.capabilities.merchant_settl
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.SettlementLineSourceKind
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementCandidateFact
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
-import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
@@ -16,7 +15,6 @@ import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationDifferenceType
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.Refund
-import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.enums.RefundStatus
 import jakarta.persistence.EntityManager
 import java.math.BigDecimal
@@ -112,7 +110,7 @@ class LoadMerchantSettlementCandidatesHandler(
     ): SettlementCandidateFact? = when (item.transactionKind) {
         ReconciliationTransactionKind.PAYMENT -> {
             val paymentId = item.paymentId ?: return blocked(blockers, item, "已匹配支付缺少 paymentId")
-            val payment = entityManager.find(Payment::class.java, PaymentId.parse(paymentId))
+            val payment = entityManager.find(Payment::class.java, paymentId)
                 ?: return blocked(blockers, item, "未找到支付单 $paymentId")
             val reviewEligibility = payment.currentReviewEligibility()
             if (!reviewEligibility.settlementEligible) {
@@ -128,7 +126,7 @@ class LoadMerchantSettlementCandidatesHandler(
         }
         ReconciliationTransactionKind.REFUND -> {
             val refundId = item.refundId ?: return blocked(blockers, item, "已匹配退款缺少 refundId")
-            val refund = entityManager.find(Refund::class.java, RefundId.parse(refundId))
+            val refund = entityManager.find(Refund::class.java, refundId)
                 ?: return blocked(blockers, item, "未找到退款单 $refundId")
             refundFact(request, batch, run, item, refund)
                 ?: blocked(blockers, item, "退款单 $refundId 缺少商户或渠道资格证据")
@@ -147,8 +145,8 @@ class LoadMerchantSettlementCandidatesHandler(
             confirmation.currency != request.currency.uppercase()) {
             return blocked(blockers, item, "确认事实 ${confirmation.id} 的归属与结算范围不一致")
         }
-        val payment = confirmation.paymentId?.let { entityManager.find(Payment::class.java, PaymentId.parse(it)) }
-        val refund = confirmation.refundId?.let { entityManager.find(Refund::class.java, RefundId.parse(it)) }
+        val payment = confirmation.paymentId?.let { entityManager.find(Payment::class.java, it) }
+        val refund = confirmation.refundId?.let { entityManager.find(Refund::class.java, it) }
         if (confirmation.transactionKind == ReconciliationTransactionKind.PAYMENT && payment == null) {
             return blocked(blockers, item, "支付确认事实 ${confirmation.id} 缺少冻结的支付手续费事实")
         }
@@ -190,7 +188,7 @@ class LoadMerchantSettlementCandidatesHandler(
             paymentAttemptId = item.paymentAttemptId,
             refundId = confirmation.refundId,
             refundAttemptId = item.refundAttemptId,
-            reconciliationBatchId = batch.id.toString(),
+            reconciliationBatchId = batch.id,
             reconciliationRunId = run.id.toString(),
             reconciliationItemId = item.id.toString(),
             reconciliationConfirmationFactId = confirmation.id.toString(),
@@ -241,11 +239,11 @@ class LoadMerchantSettlementCandidatesHandler(
             merchantId = payment.merchantId,
             channelId = attempt.channelId,
             currency = payment.currency,
-            paymentId = payment.id.toString(),
+            paymentId = payment.id,
             paymentAttemptId = attempt.id.toString(),
             refundId = null,
             refundAttemptId = null,
-            reconciliationBatchId = batch.id.toString(),
+            reconciliationBatchId = batch.id,
             reconciliationRunId = run.id.toString(),
             reconciliationItemId = item.id.toString(),
             reconciliationConfirmationFactId = null,
@@ -289,11 +287,11 @@ class LoadMerchantSettlementCandidatesHandler(
             merchantId = refund.merchantId,
             channelId = requireNotNull(refund.channelId),
             currency = refund.currency,
-            paymentId = refund.paymentId.toString(),
+            paymentId = refund.paymentId,
             paymentAttemptId = item.paymentAttemptId,
-            refundId = refund.id.toString(),
+            refundId = refund.id,
             refundAttemptId = attempt.id.toString(),
-            reconciliationBatchId = batch.id.toString(),
+            reconciliationBatchId = batch.id,
             reconciliationRunId = run.id.toString(),
             reconciliationItemId = item.id.toString(),
             reconciliationConfirmationFactId = null,

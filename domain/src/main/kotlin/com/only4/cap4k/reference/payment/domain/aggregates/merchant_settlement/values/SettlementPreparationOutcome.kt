@@ -1,6 +1,7 @@
 package com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.enums.MerchantSettlementStatus
 import java.math.BigDecimal
 
@@ -16,7 +17,7 @@ data class SettlementPreparationOutcome(
     /**
      * 结算标识
      */
-    val settlementId: String?,
+    val merchantSettlementId: MerchantSettlementId?,
     /**
      * 状态
      */

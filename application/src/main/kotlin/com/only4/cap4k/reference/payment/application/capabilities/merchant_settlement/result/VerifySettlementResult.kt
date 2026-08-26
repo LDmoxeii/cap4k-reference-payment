@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.capabilities.merchant_settlement.result
 
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityCall
 import java.math.BigDecimal
@@ -27,7 +29,7 @@ object VerifySettlementResult {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 执行尝试标识
          */

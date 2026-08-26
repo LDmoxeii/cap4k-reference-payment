@@ -3,15 +3,16 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.merchant_settlement
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.queries.merchant_settlement.read.GetMerchantSettlementQry
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.GetMerchantSettlementEndpoint
 import org.springframework.stereotype.Component
 
 @Component
 class GetMerchantSettlementEndpointHandler : EndpointHandler<GetMerchantSettlementEndpoint.Request, GetMerchantSettlementEndpoint.Response> {
     override fun handle(request: GetMerchantSettlementEndpoint.Request): GetMerchantSettlementEndpoint.Response {
-        val response = Mediator.queries.ask(GetMerchantSettlementQry.Request(request.settlementId))
+        val response = Mediator.queries.ask(GetMerchantSettlementQry.Request(MerchantSettlementId.parse(request.settlementId)))
         return GetMerchantSettlementEndpoint.Response(
-            settlementId = response.settlementId,
+            settlementId = response.merchantSettlementId.toString(),
             merchantId = response.merchantId,
             channelId = response.channelId,
             currency = response.currency,
@@ -32,8 +33,8 @@ class GetMerchantSettlementEndpointHandler : EndpointHandler<GetMerchantSettleme
             netAmount = response.netAmount,
             compositionFrozen = response.compositionFrozen,
             executionGroupIdentity = response.executionGroupIdentity,
-            predecessorSettlementId = response.predecessorSettlementId,
-            replacementSettlementId = response.replacementSettlementId,
+            predecessorSettlementId = response.predecessorSettlementId?.toString(),
+            replacementSettlementId = response.replacementSettlementId?.toString(),
             confirmedBy = response.confirmedBy,
             confirmedAt = response.confirmedAt,
             voidedBy = response.voidedBy,
@@ -53,11 +54,11 @@ class GetMerchantSettlementEndpointHandler : EndpointHandler<GetMerchantSettleme
                     transactionKind = line.transactionKind,
                     sourceFactIdentity = line.sourceFactIdentity,
                     feeFactIdentity = line.feeFactIdentity,
-                    paymentId = line.paymentId,
+                    paymentId = line.paymentId?.toString(),
                     paymentAttemptId = line.paymentAttemptId,
-                    refundId = line.refundId,
+                    refundId = line.refundId?.toString(),
                     refundAttemptId = line.refundAttemptId,
-                    reconciliationBatchId = line.reconciliationBatchId,
+                    reconciliationBatchId = line.reconciliationBatchId?.toString(),
                     reconciliationRunId = line.reconciliationRunId,
                     reconciliationItemId = line.reconciliationItemId,
                     reconciliationConfirmationFactId = line.reconciliationConfirmationFactId,

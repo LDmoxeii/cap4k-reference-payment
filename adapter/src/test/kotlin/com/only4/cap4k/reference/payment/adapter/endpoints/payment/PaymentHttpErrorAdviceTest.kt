@@ -1,6 +1,7 @@
 package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 
 import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundException
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import jakarta.persistence.PersistenceException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,13 +13,14 @@ class PaymentHttpErrorAdviceTest {
 
     @Test
     fun `application errors preserve stable code while exposing Chinese message and safe details`() {
-        val response = advice.notFound(PaymentNotFoundException("P-404"))
+        val paymentId = PaymentId.parse("018f22a0-0000-7000-8000-000000000404")
+        val response = advice.notFound(PaymentNotFoundException(paymentId))
         val body = requireNotNull(response.body)
 
         assertEquals(404, body.status)
         assertEquals("PAYMENT_NOT_FOUND", body.code)
         assertTrue(body.message.contains("未找到支付单"))
-        assertEquals("P-404", body.details["paymentId"])
+        assertEquals(paymentId, body.details["paymentId"])
     }
 
     @Test

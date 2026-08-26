@@ -1,12 +1,15 @@
 package com.only4.cap4k.reference.payment.application.errors
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
+
 open class PaymentApplicationException(
     val code: String,
     message: String,
     val details: Map<String, Any?> = emptyMap(),
 ) : RuntimeException(message)
 
-class PaymentNotFoundException(paymentId: String) : PaymentApplicationException(
+class PaymentNotFoundException(paymentId: PaymentId) : PaymentApplicationException(
     code = "PAYMENT_NOT_FOUND",
     message = "未找到支付单 $paymentId",
     details = mapOf("paymentId" to paymentId),
@@ -24,7 +27,7 @@ class NoEligibleChannelException(paymentIdentity: String) : PaymentApplicationEx
     details = mapOf("paymentIdentity" to paymentIdentity),
 )
 
-class RefundNotFoundException(refundId: String) : PaymentApplicationException(
+class RefundNotFoundException(refundId: RefundId) : PaymentApplicationException(
     code = "REFUND_NOT_FOUND",
     message = "未找到退款单 $refundId",
     details = mapOf("refundId" to refundId),

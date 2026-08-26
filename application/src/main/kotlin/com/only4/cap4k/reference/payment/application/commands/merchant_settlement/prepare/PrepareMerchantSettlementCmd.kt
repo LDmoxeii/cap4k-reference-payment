@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.commands.merchant_settlement.prepare
 
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
@@ -78,7 +80,7 @@ object PrepareMerchantSettlementCmd {
             if (facts.isEmpty()) {
                 return Response(
                     SettlementPreparationOutcome(
-                        settlementId = null,
+                        merchantSettlementId = null,
                         status = null,
                         created = false,
                         idempotentReplay = false,
@@ -189,11 +191,11 @@ object PrepareMerchantSettlementCmd {
                 stableIdentity("ACTIVE", fact.sourceKind.name, fact.sourceFactIdentity)
             } else null,
             feeFactIdentity = fact.feeFactIdentity,
-            paymentId = fact.paymentId?.let(PaymentId::parse),
+            paymentId = fact.paymentId,
             paymentAttemptId = fact.paymentAttemptId,
-            refundId = fact.refundId?.let(RefundId::parse),
+            refundId = fact.refundId,
             refundAttemptId = fact.refundAttemptId,
-            reconciliationBatchId = ReconciliationBatchId.parse(fact.reconciliationBatchId),
+            reconciliationBatchId = fact.reconciliationBatchId,
             reconciliationRunId = fact.reconciliationRunId,
             reconciliationItemId = fact.reconciliationItemId,
             reconciliationConfirmationFactId = fact.reconciliationConfirmationFactId,
@@ -217,7 +219,7 @@ object PrepareMerchantSettlementCmd {
         )
 
         private fun MerchantSettlement.toOutcome(created: Boolean, replay: Boolean) = SettlementPreparationOutcome(
-            settlementId = id.toString(),
+            merchantSettlementId = id,
             status = status,
             created = created,
             idempotentReplay = replay,
@@ -271,7 +273,7 @@ object PrepareMerchantSettlementCmd {
         /**
          * 前序结算标识
          */
-        val predecessorSettlementId: String?,
+        val predecessorSettlementId: MerchantSettlementId?,
     ) : Command<Response>
 
     data class Response(val outcome: SettlementPreparationOutcome)

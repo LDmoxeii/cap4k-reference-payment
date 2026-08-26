@@ -31,7 +31,7 @@ object ReturnMerchantSettlementForAdjustmentCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
         override fun handle(command: Request): Response {
-            val previous = findSettlement(command.settlementId)
+            val previous = findSettlement(command.merchantSettlementId)
             replayResponse(previous)?.let { return it }
 
             val returnedAt = command.returnedAt
@@ -53,18 +53,18 @@ object ReturnMerchantSettlementForAdjustmentCmd {
                     settlementDate = settlementDate,
                     requestedBy = command.operatorIdentity,
                     requestedAt = returnedAt,
-                    predecessorSettlementId = previous.id.toString(),
+                    predecessorSettlementId = previous.id,
                 )
             ).outcome
-            val replacementId = prepared.settlementId
+            val replacementId = prepared.merchantSettlementId
                 ?: throw MerchantSettlementConflictException(
                     code = "MERCHANT_SETTLEMENT_REPREPARE_EMPTY",
                     message = "退回结算单 ${previous.id} 后没有可生成的有效替代单",
                 )
-            require(replacementId != previous.id.toString()) { "替代结算单必须与被退回结算单不同" }
-            previous.linkReplacement(MerchantSettlementId.parse(replacementId))
+            require(replacementId != previous.id) { "替代结算单必须与被退回结算单不同" }
+            previous.linkReplacement(replacementId)
             return Response(
-                previousSettlementId = previous.id.toString(),
+                previousSettlementId = previous.id,
                 previousStatus = previous.status.name,
                 replacementSettlementId = replacementId,
                 replacementStatus = requireNotNull(prepared.status).name,
@@ -79,15 +79,15 @@ object ReturnMerchantSettlementForAdjustmentCmd {
             return response(previous, findSettlement(requireNotNull(previous.replacementSettlementId)))
         }
 
-        private fun findSettlement(settlementId: String): MerchantSettlement =
+        private fun findSettlement(merchantSettlementId: MerchantSettlementId): MerchantSettlement =
             Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(settlementId)
+                SMerchantSettlement.predicateById(merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(merchantSettlementId)
 
         private fun response(previous: MerchantSettlement, replacement: MerchantSettlement) = Response(
-            previousSettlementId = previous.id.toString(),
+            previousSettlementId = previous.id,
             previousStatus = previous.status.name,
-            replacementSettlementId = replacement.id.toString(),
+            replacementSettlementId = replacement.id,
             replacementStatus = replacement.status.name,
         )
     }
@@ -96,7 +96,7 @@ object ReturnMerchantSettlementForAdjustmentCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 操作员身份
          */
@@ -119,7 +119,7 @@ object ReturnMerchantSettlementForAdjustmentCmd {
         /**
          * 前一结算标识
          */
-        val previousSettlementId: String,
+        val previousSettlementId: MerchantSettlementId,
         /**
          * 前一状态
          */
@@ -127,7 +127,7 @@ object ReturnMerchantSettlementForAdjustmentCmd {
         /**
          * 替代结算标识
          */
-        val replacementSettlementId: String,
+        val replacementSettlementId: MerchantSettlementId,
         /**
          * 替代状态
          */

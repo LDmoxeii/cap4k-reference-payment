@@ -21,7 +21,7 @@ class PrepareMerchantSettlementEndpointHandler : EndpointHandler<PrepareMerchant
             )
         ).outcome
         return PrepareMerchantSettlementEndpoint.Response(
-            settlementId = outcome.settlementId,
+            settlementId = outcome.merchantSettlementId?.toString(),
             status = outcome.status?.name,
             created = outcome.created,
             idempotentReplay = outcome.idempotentReplay,

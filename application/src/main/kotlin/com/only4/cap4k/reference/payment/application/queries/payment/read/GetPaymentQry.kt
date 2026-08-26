@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.queries.payment.read
 
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.query.Query
 import java.math.BigDecimal
@@ -11,13 +13,13 @@ object GetPaymentQry {
         /**
          * 支付标识
          */
-        val paymentId: String
+        val paymentId: PaymentId
     ) : Query<Response>
     data class Response(
         /**
          * 支付标识
          */
-        val paymentId: String,
+        val paymentId: PaymentId,
         /**
          * 商户标识
          */

@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.refund
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.commands.refund.result.ConfirmRefundResultCmd
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.contract.endpoints.refund.api.ConfirmRefundResultEndpoint
 import org.springframework.stereotype.Component
 
@@ -13,7 +14,7 @@ class ConfirmRefundResultEndpointHandler : EndpointHandler<ConfirmRefundResultEn
             ConfirmRefundResultCmd.Request(
                 channelId = request.channelId,
                 notificationId = request.notificationId,
-                refundId = request.refundId,
+                refundId = RefundId.parse(request.refundId),
                 refundAttemptId = request.refundAttemptId,
                 channelRefundId = request.channelRefundId,
                 amount = request.amount,

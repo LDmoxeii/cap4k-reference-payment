@@ -6,10 +6,10 @@
     "description": "Read the full merchant settlement scope, lines, fee evidence, execution attempts, receipts, conflicts, and replacement trail",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String" }
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "merchantId", "type": "String" },
       { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
@@ -30,8 +30,8 @@
       { "name": "netAmount", "type": "Big_decimal" },
       { "name": "compositionFrozen", "type": "Boolean" },
       { "name": "executionGroupIdentity", "type": "String?" },
-      { "name": "predecessorSettlementId", "type": "String?" },
-      { "name": "replacementSettlementId", "type": "String?" },
+      { "name": "predecessorSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" },
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" },
       { "name": "confirmedBy", "type": "String?" },
       { "name": "confirmedAt", "type": "java.time.Instant?" },
       { "name": "voidedBy", "type": "String?" },
@@ -50,11 +50,11 @@
       { "name": "lines[].transactionKind", "type": "String" },
       { "name": "lines[].sourceFactIdentity", "type": "String" },
       { "name": "lines[].feeFactIdentity", "type": "String?" },
-      { "name": "lines[].paymentId", "type": "String?" },
+      { "name": "lines[].paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?" },
       { "name": "lines[].paymentAttemptId", "type": "String?" },
-      { "name": "lines[].refundId", "type": "String?" },
+      { "name": "lines[].refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId?" },
       { "name": "lines[].refundAttemptId", "type": "String?" },
-      { "name": "lines[].reconciliationBatchId", "type": "String?" },
+      { "name": "lines[].reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId?" },
       { "name": "lines[].reconciliationRunId", "type": "String?" },
       { "name": "lines[].reconciliationItemId", "type": "String?" },
       { "name": "lines[].reconciliationConfirmationFactId", "type": "String?" },
@@ -125,10 +125,10 @@
     "description": "Read a persisted payment and all payment-attempt adjudication summaries",
     "aggregates": ["Payment"],
     "fields": [
-      { "name": "paymentId", "type": "String" }
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" }
     ],
     "resultFields": [
-      { "name": "paymentId", "type": "String" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "merchantId", "type": "String" },
       { "name": "merchantOrderNumber", "type": "String" },
       { "name": "amount", "type": "Big_decimal" },
@@ -229,10 +229,10 @@
     "description": "Read a reconciliation batch with immutable run, item, disposition, and confirmation evidence",
     "aggregates": ["ReconciliationBatch"],
     "fields": [
-      { "name": "batchId", "type": "String" }
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
       { "name": "reconciliationDate", "type": "java.time.LocalDate" },
@@ -274,9 +274,9 @@
       { "name": "runs[].items[].channelOccurredAt", "type": "java.time.Instant?" },
       { "name": "runs[].items[].channelReceivedAt", "type": "java.time.Instant?" },
       { "name": "runs[].items[].platformFactIdentity", "type": "String?" },
-      { "name": "runs[].items[].paymentId", "type": "String?" },
+      { "name": "runs[].items[].paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?" },
       { "name": "runs[].items[].paymentAttemptId", "type": "String?" },
-      { "name": "runs[].items[].refundId", "type": "String?" },
+      { "name": "runs[].items[].refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId?" },
       { "name": "runs[].items[].refundAttemptId", "type": "String?" },
       { "name": "runs[].items[].platformTransactionIdentity", "type": "String?" },
       { "name": "runs[].items[].platformAmount", "type": "Big_decimal?" },
@@ -311,8 +311,8 @@
       { "name": "runs[].items[].confirmationFacts[].amount", "type": "Big_decimal" },
       { "name": "runs[].items[].confirmationFacts[].currency", "type": "String" },
       { "name": "runs[].items[].confirmationFacts[].externalTransactionIdentity", "type": "String" },
-      { "name": "runs[].items[].confirmationFacts[].paymentId", "type": "String?" },
-      { "name": "runs[].items[].confirmationFacts[].refundId", "type": "String?" },
+      { "name": "runs[].items[].confirmationFacts[].paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?" },
+      { "name": "runs[].items[].confirmationFacts[].refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId?" },
       { "name": "runs[].items[].confirmationFacts[].confirmedAt", "type": "java.time.Instant" }
     ]
   },
@@ -323,11 +323,11 @@
     "description": "Read a persisted refund with attempts and notification adjudication evidence",
     "aggregates": ["Refund"],
     "fields": [
-      { "name": "refundId", "type": "String" }
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" }
     ],
     "resultFields": [
-      { "name": "refundId", "type": "String" },
-      { "name": "paymentId", "type": "String" },
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "merchantId", "type": "String" },
       { "name": "merchantRefundNumber", "type": "String" },
       { "name": "amount", "type": "Big_decimal" },

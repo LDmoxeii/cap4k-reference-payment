@@ -29,8 +29,8 @@ object AdjudicateMerchantSettlementResultCmd {
         /** 授权人工裁决通过 append-only receipt 收敛 UNKNOWN，保留全部渠道历史，并与 callback 共用成功事实形成逻辑。 */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(command.settlementId)
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             return Response(
                 settlement.adjudicateUnknownResult(
                     attemptId = SettlementExecutionAttemptId.parse(command.executionAttemptId),
@@ -48,7 +48,7 @@ object AdjudicateMerchantSettlementResultCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 执行尝试标识
          */

@@ -15,7 +15,7 @@
       { "name": "expiresAt", "type": "java.time.Instant", "description": "过期时间" }
     ],
     "resultFields": [
-      { "name": "paymentId", "type": "String", "description": "支付标识" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" },
       { "name": "status", "type": "String", "description": "状态" },
       { "name": "idempotentReplay", "type": "Boolean", "description": "是否幂等重放" },
       { "name": "rejectionCode", "type": "String?", "description": "拒绝代码" },
@@ -29,7 +29,7 @@
     "description": "Select an eligible merchant channel and start a durable payment attempt",
     "aggregates": ["Payment", "MerchantChannelConfiguration"],
     "fields": [
-      { "name": "paymentId", "type": "String", "description": "支付标识" }
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" }
     ],
     "resultFields": [
       { "name": "paymentAttemptId", "type": "String", "description": "支付尝试标识" },
@@ -49,7 +49,7 @@
     "fields": [
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "notificationId", "type": "String", "description": "通知标识" },
-      { "name": "paymentId", "type": "String", "description": "支付标识" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" },
       { "name": "paymentAttemptId", "type": "String", "description": "支付尝试标识" },
       { "name": "channelTransactionId", "type": "String", "description": "渠道交易标识" },
       { "name": "amount", "type": "java.math.BigDecimal", "description": "金额" },
@@ -69,10 +69,10 @@
     "description": "Read a persisted payment and all payment-attempt adjudication summaries",
     "aggregates": ["Payment"],
     "fields": [
-      { "name": "paymentId", "type": "String", "description": "支付标识" }
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" }
     ],
     "resultFields": [
-      { "name": "paymentId", "type": "String", "description": "支付标识" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" },
       { "name": "merchantId", "type": "String", "description": "商户标识" },
       { "name": "merchantOrderNumber", "type": "String", "description": "商户订单号" },
       { "name": "amount", "type": "java.math.BigDecimal", "description": "金额" },
@@ -405,13 +405,13 @@
     "fields": [
       { "name": "merchantId", "type": "String", "description": "商户标识" },
       { "name": "merchantRefundNumber", "type": "String", "description": "商户退款单号" },
-      { "name": "paymentId", "type": "String", "description": "支付标识" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" },
       { "name": "amount", "type": "java.math.BigDecimal", "description": "金额" },
       { "name": "currency", "type": "String", "description": "币种" },
       { "name": "requestedAt", "type": "java.time.Instant", "description": "请求时间" }
     ],
     "resultFields": [
-      { "name": "refundId", "type": "String", "description": "退款标识" },
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId", "description": "退款标识" },
       { "name": "refundAttemptId", "type": "String", "description": "退款尝试标识" },
       { "name": "status", "type": "String", "description": "状态" },
       { "name": "requestIdentity", "type": "String", "description": "请求身份" },
@@ -428,7 +428,7 @@
     "fields": [
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "notificationId", "type": "String", "description": "通知标识" },
-      { "name": "refundId", "type": "String", "description": "退款标识" },
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId", "description": "退款标识" },
       { "name": "refundAttemptId", "type": "String", "description": "退款尝试标识" },
       { "name": "channelRefundId", "type": "String", "description": "渠道退款标识" },
       { "name": "amount", "type": "java.math.BigDecimal", "description": "金额" },
@@ -461,11 +461,11 @@
     "description": "Read a persisted refund with attempts and notification adjudication evidence",
     "aggregates": ["Refund"],
     "fields": [
-      { "name": "refundId", "type": "String", "description": "退款标识" }
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId", "description": "退款标识" }
     ],
     "resultFields": [
-      { "name": "refundId", "type": "String", "description": "退款标识" },
-      { "name": "paymentId", "type": "String", "description": "支付标识" },
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId", "description": "退款标识" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" },
       { "name": "merchantId", "type": "String", "description": "商户标识" },
       { "name": "merchantRefundNumber", "type": "String", "description": "商户退款单号" },
       { "name": "amount", "type": "java.math.BigDecimal", "description": "金额" },
@@ -717,7 +717,7 @@
       { "name": "triggeredAt", "type": "java.time.Instant", "description": "触发时间" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" },
       { "name": "runId", "type": "String?", "description": "运行标识" },
       { "name": "batchStatus", "type": "String", "description": "批次状态" },
       { "name": "idempotentReplay", "type": "Boolean", "description": "是否幂等重放" },
@@ -732,12 +732,12 @@
     "description": "Explicitly pull and process a statement revision for an existing reconciliation batch",
     "aggregates": ["ReconciliationBatch"],
     "fields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" },
       { "name": "requestedBy", "type": "String", "description": "请求操作人" },
       { "name": "requestedAt", "type": "java.time.Instant", "description": "请求时间" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" },
       { "name": "runId", "type": "String?", "description": "运行标识" },
       { "name": "batchStatus", "type": "String", "description": "批次状态" },
       { "name": "idempotentReplay", "type": "Boolean", "description": "是否幂等重放" },
@@ -752,7 +752,7 @@
     "description": "Authorize and append a disposition, optionally forming a separate confirmation fact",
     "aggregates": ["ReconciliationBatch"],
     "fields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" },
       { "name": "itemId", "type": "String", "description": "条目标识" },
       { "name": "merchantId", "type": "String?", "description": "商户标识" },
       { "name": "channelId", "type": "String?", "description": "渠道标识" },
@@ -781,10 +781,10 @@
     "description": "Read a reconciliation batch with immutable run, item, disposition, and confirmation evidence",
     "aggregates": ["ReconciliationBatch"],
     "fields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" }
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" },
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "currency", "type": "String", "description": "币种" },
       { "name": "reconciliationDate", "type": "java.time.LocalDate", "description": "对账日期" },
@@ -826,9 +826,9 @@
       { "name": "runs[].items[].channelOccurredAt", "type": "java.time.Instant?", "description": "运行列表条目列表渠道发生" },
       { "name": "runs[].items[].channelReceivedAt", "type": "java.time.Instant?", "description": "运行列表条目列表渠道接收" },
       { "name": "runs[].items[].platformFactIdentity", "type": "String?", "description": "运行列表条目列表平台事实身份" },
-      { "name": "runs[].items[].paymentId", "type": "String?", "description": "支付标识" },
+      { "name": "runs[].items[].paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?", "description": "支付标识" },
       { "name": "runs[].items[].paymentAttemptId", "type": "String?", "description": "支付尝试标识" },
-      { "name": "runs[].items[].refundId", "type": "String?", "description": "退款标识" },
+      { "name": "runs[].items[].refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId?", "description": "退款标识" },
       { "name": "runs[].items[].refundAttemptId", "type": "String?", "description": "退款尝试标识" },
       { "name": "runs[].items[].platformTransactionIdentity", "type": "String?", "description": "运行列表条目列表平台交易身份" },
       { "name": "runs[].items[].platformAmount", "type": "java.math.BigDecimal?", "description": "运行列表条目列表平台金额" },
@@ -861,8 +861,8 @@
       { "name": "runs[].items[].confirmationFacts[].amount", "type": "java.math.BigDecimal", "description": "金额" },
       { "name": "runs[].items[].confirmationFacts[].currency", "type": "String", "description": "币种" },
       { "name": "runs[].items[].confirmationFacts[].externalTransactionIdentity", "type": "String", "description": "外部交易身份" },
-      { "name": "runs[].items[].confirmationFacts[].paymentId", "type": "String?", "description": "支付标识" },
-      { "name": "runs[].items[].confirmationFacts[].refundId", "type": "String?", "description": "退款标识" },
+      { "name": "runs[].items[].confirmationFacts[].paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?", "description": "支付标识" },
+      { "name": "runs[].items[].confirmationFacts[].refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId?", "description": "退款标识" },
       { "name": "runs[].items[].confirmationFacts[].confirmedAt", "type": "java.time.Instant", "description": "确认时间" }
     ]
   },
@@ -1055,7 +1055,7 @@
       { "name": "settlementDate", "type": "java.time.LocalDate", "description": "结算日期" },
       { "name": "requestedBy", "type": "String", "description": "请求操作人" },
       { "name": "requestedAt", "type": "java.time.Instant", "description": "请求时间" },
-      { "name": "predecessorSettlementId", "type": "String?", "description": "前序结算标识" }
+      { "name": "predecessorSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?", "description": "前序结算标识" }
     ],
     "resultFields": [
       { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome", "description": "结果" }
@@ -1084,13 +1084,13 @@
     "description": "Authorize and freeze a prepared merchant settlement composition",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "operatorIdentity", "type": "String", "description": "操作员身份" },
       { "name": "operatorRole", "type": "String", "description": "操作员角色" },
       { "name": "confirmedAt", "type": "java.time.Instant", "description": "确认时间" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "status", "type": "String", "description": "状态" },
       { "name": "netAmount", "type": "Big_decimal", "description": "净金额" }
     ]
@@ -1102,13 +1102,13 @@
     "description": "Submit a confirmed positive settlement or retry after an explicit failed attempt",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "operatorIdentity", "type": "String", "description": "操作员身份" },
       { "name": "operatorRole", "type": "String", "description": "操作员角色" },
       { "name": "requestedAt", "type": "java.time.Instant", "description": "请求时间" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "attemptId", "type": "String?", "description": "尝试标识" },
       { "name": "executionGroupIdentity", "type": "String?", "description": "执行组身份" },
       { "name": "requestIdentity", "type": "String?", "description": "请求身份" },
@@ -1126,7 +1126,7 @@
     "fields": [
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "notificationId", "type": "String", "description": "通知标识" },
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "executionAttemptId", "type": "String", "description": "执行尝试标识" },
       { "name": "executionGroupIdentity", "type": "String", "description": "执行组身份" },
       { "name": "requestIdentity", "type": "String", "description": "请求身份" },
@@ -1150,7 +1150,7 @@
     "description": "Append an authorized final conclusion to an unknown merchant settlement result without deleting receipt history",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "executionAttemptId", "type": "String", "description": "执行尝试标识" },
       { "name": "operatorIdentity", "type": "String", "description": "操作员身份" },
       { "name": "operatorRole", "type": "String", "description": "操作员角色" },
@@ -1182,7 +1182,7 @@
     "description": "Void a settlement before external execution and optionally create a replacement chain",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "operatorIdentity", "type": "String", "description": "操作员身份" },
       { "name": "operatorRole", "type": "String", "description": "操作员角色" },
       { "name": "reason", "type": "String", "description": "原因" },
@@ -1190,9 +1190,9 @@
       { "name": "createReplacement", "type": "Boolean", "description": "是否创建替代项" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "status", "type": "String", "description": "状态" },
-      { "name": "replacementSettlementId", "type": "String?", "description": "替代结算标识" }
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?", "description": "替代结算标识" }
     ]
   },
   {
@@ -1202,16 +1202,16 @@
     "description": "Return an unconfirmed merchant settlement for adjustment and prepare a fresh effective replacement",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "operatorIdentity", "type": "String", "description": "操作员身份" },
       { "name": "operatorRole", "type": "String", "description": "操作员角色" },
       { "name": "reason", "type": "String", "description": "原因" },
       { "name": "returnedAt", "type": "java.time.Instant", "description": "返回时间" }
     ],
     "resultFields": [
-      { "name": "previousSettlementId", "type": "String", "description": "前一结算标识" },
+      { "name": "previousSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "前一结算标识" },
       { "name": "previousStatus", "type": "String", "description": "前一状态" },
-      { "name": "replacementSettlementId", "type": "String", "description": "替代结算标识" },
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "替代结算标识" },
       { "name": "replacementStatus", "type": "String", "description": "替代状态" }
     ]
   },
@@ -1222,10 +1222,10 @@
     "description": "Read the full merchant settlement scope, lines, fee evidence, execution attempts, receipts, conflicts, and replacement trail",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" }
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" }
     ],
     "resultFields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "merchantId", "type": "String", "description": "商户标识" },
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "currency", "type": "String", "description": "币种" },
@@ -1246,8 +1246,8 @@
       { "name": "netAmount", "type": "Big_decimal", "description": "净金额" },
       { "name": "compositionFrozen", "type": "Boolean", "description": "是否冻结组合" },
       { "name": "executionGroupIdentity", "type": "String?", "description": "执行组身份" },
-      { "name": "predecessorSettlementId", "type": "String?", "description": "前序结算标识" },
-      { "name": "replacementSettlementId", "type": "String?", "description": "替代结算标识" },
+      { "name": "predecessorSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?", "description": "前序结算标识" },
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?", "description": "替代结算标识" },
       { "name": "confirmedBy", "type": "String?", "description": "确认操作人" },
       { "name": "confirmedAt", "type": "java.time.Instant?", "description": "确认时间" },
       { "name": "voidedBy", "type": "String?", "description": "作废操作人" },
@@ -1266,11 +1266,11 @@
       { "name": "lines[].transactionKind", "type": "String", "description": "交易类型" },
       { "name": "lines[].sourceFactIdentity", "type": "String", "description": "来源事实身份" },
       { "name": "lines[].feeFactIdentity", "type": "String?", "description": "费用事实身份" },
-      { "name": "lines[].paymentId", "type": "String?", "description": "支付标识" },
+      { "name": "lines[].paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?", "description": "支付标识" },
       { "name": "lines[].paymentAttemptId", "type": "String?", "description": "支付尝试标识" },
-      { "name": "lines[].refundId", "type": "String?", "description": "退款标识" },
+      { "name": "lines[].refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId?", "description": "退款标识" },
       { "name": "lines[].refundAttemptId", "type": "String?", "description": "退款尝试标识" },
-      { "name": "lines[].reconciliationBatchId", "type": "String?", "description": "对账批次标识" },
+      { "name": "lines[].reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId?", "description": "对账批次标识" },
       { "name": "lines[].reconciliationRunId", "type": "String?", "description": "对账运行标识" },
       { "name": "lines[].reconciliationItemId", "type": "String?", "description": "对账条目标识" },
       { "name": "lines[].reconciliationConfirmationFactId", "type": "String?", "description": "对账确认事实标识" },
@@ -1361,7 +1361,7 @@
     "description": "Submit one idempotent settlement transfer request to the reference provider",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "executionAttemptId", "type": "String", "description": "执行尝试标识" },
       { "name": "merchantId", "type": "String", "description": "商户标识" },
       { "name": "channelId", "type": "String", "description": "渠道标识" },
@@ -1386,7 +1386,7 @@
     "fields": [
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "notificationId", "type": "String", "description": "通知标识" },
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "executionAttemptId", "type": "String", "description": "执行尝试标识" },
       { "name": "executionGroupIdentity", "type": "String", "description": "执行组身份" },
       { "name": "requestIdentity", "type": "String", "description": "请求身份" },
@@ -1660,7 +1660,7 @@
     "aggregates": ["MerchantSettlement"],
     "persist": false,
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" }
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" }
     ]
   },
   {
@@ -1670,7 +1670,7 @@
     "description": "Activate the effective scope and source-consumption ownership of a replacement settlement",
     "aggregates": ["MerchantSettlement"],
     "fields": [
-      { "name": "settlementId", "type": "String", "description": "结算标识" }
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" }
     ],
     "resultFields": [
       { "name": "status", "type": "String", "description": "状态" }
@@ -1742,7 +1742,7 @@
       { "name": "causationIdentity", "type": "String?", "description": "因果身份" }
     ],
     "resultFields": [
-      { "name": "batchId", "type": "String", "description": "批次标识" },
+      { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId", "description": "批次标识" },
       { "name": "runId", "type": "String", "description": "运行标识" },
       { "name": "batchStatus", "type": "String", "description": "批次状态" },
       { "name": "idempotentReplay", "type": "Boolean", "description": "是否幂等重放" }
@@ -1757,7 +1757,7 @@
     "persist": false,
     "fields": [
       { "name": "eventIdentity", "type": "String", "description": "身份" },
-      { "name": "settlementId", "type": "String", "description": "结算标识" },
+      { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId", "description": "结算标识" },
       { "name": "merchantId", "type": "String", "description": "商户标识" },
       { "name": "channelId", "type": "String", "description": "渠道标识" },
       { "name": "currency", "type": "String", "description": "币种" },
@@ -1787,7 +1787,7 @@
     "description": "Append an authorized decision to one payment review without deleting evidence",
     "aggregates": ["Payment"],
     "fields": [
-      { "name": "paymentId", "type": "String", "description": "支付标识" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId", "description": "支付标识" },
       { "name": "reviewId", "type": "String", "description": "复核标识" },
       { "name": "decisionIdentity", "type": "String", "description": "决策身份" },
       { "name": "decision", "type": "String", "description": "决策" },

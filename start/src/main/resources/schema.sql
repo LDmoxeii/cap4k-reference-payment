@@ -357,9 +357,9 @@ comment on column reconciliation_item.channel_raw_status is '渠道原始状态'
 comment on column reconciliation_item.channel_occurred_at is '渠道事实发生时间';
 comment on column reconciliation_item.channel_received_at is '渠道事实接收时间';
 comment on column reconciliation_item.platform_fact_identity is '平台事实身份';
-comment on column reconciliation_item.payment_id is '关联支付标识';
+comment on column reconciliation_item.payment_id is '关联支付标识 @RefAggregate=Payment;';
 comment on column reconciliation_item.payment_attempt_id is '关联支付尝试标识';
-comment on column reconciliation_item.refund_id is '关联退款标识';
+comment on column reconciliation_item.refund_id is '关联退款标识 @RefAggregate=Refund;';
 comment on column reconciliation_item.refund_attempt_id is '关联退款尝试标识';
 comment on column reconciliation_item.platform_transaction_identity is '平台交易身份';
 comment on column reconciliation_item.platform_amount is '平台事实金额';
@@ -406,8 +406,8 @@ comment on column reconciliation_confirmation_fact.transaction_kind is '交易�
 comment on column reconciliation_confirmation_fact.amount is '本次业务金额';
 comment on column reconciliation_confirmation_fact.currency is '业务币种';
 comment on column reconciliation_confirmation_fact.external_transaction_identity is '外部交易身份';
-comment on column reconciliation_confirmation_fact.payment_id is '关联支付标识';
-comment on column reconciliation_confirmation_fact.refund_id is '关联退款标识';
+comment on column reconciliation_confirmation_fact.payment_id is '关联支付标识 @RefAggregate=Payment;';
+comment on column reconciliation_confirmation_fact.refund_id is '关联退款标识 @RefAggregate=Refund;';
 comment on column reconciliation_confirmation_fact.confirmed_at is '确认时间';
 comment on column reconciliation_confirmation_fact.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
 comment on column reconciliation_confirmation_fact.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
@@ -435,8 +435,8 @@ comment on column merchant_settlement.adjustment_total_amount is '调整金额�
 comment on column merchant_settlement.net_amount is '结算净额';
 comment on column merchant_settlement.composition_frozen is '结算构成是否冻结';
 comment on column merchant_settlement.execution_group_identity is '执行批次身份';
-comment on column merchant_settlement.predecessor_settlement_id is '前序结算单标识';
-comment on column merchant_settlement.replacement_settlement_id is '替代结算单标识';
+comment on column merchant_settlement.predecessor_settlement_id is '前序结算单标识 @RefAggregate=MerchantSettlement;';
+comment on column merchant_settlement.replacement_settlement_id is '替代结算单标识 @RefAggregate=MerchantSettlement;';
 comment on column merchant_settlement.confirmed_by is '确认操作人';
 comment on column merchant_settlement.confirmed_at is '确认时间';
 comment on column merchant_settlement.voided_by is '作废操作人';

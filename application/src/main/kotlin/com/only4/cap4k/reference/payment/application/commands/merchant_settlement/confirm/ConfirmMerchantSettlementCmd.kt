@@ -28,14 +28,14 @@ object ConfirmMerchantSettlementCmd {
         /** 授权确认只调用聚合冻结既有 composition；确认后任何候选、手续费或对账变化都不能原位改写该结算单。 */
         override fun handle(command: Request): Response {
             val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(MerchantSettlementId.parse(command.settlementId))
-            ) ?: throw MerchantSettlementNotFoundException(command.settlementId)
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             settlement.confirmComposition(
                 operatorIdentity = command.operatorIdentity,
                 operatorRole = command.operatorRole,
                 confirmedAt = LocalDateTime.ofInstant(command.confirmedAt, ZoneOffset.UTC),
             )
-            return Response(settlement.id.toString(), settlement.status.name, settlement.netAmount)
+            return Response(settlement.id, settlement.status.name, settlement.netAmount)
         }
     }
 
@@ -43,7 +43,7 @@ object ConfirmMerchantSettlementCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 操作员身份
          */
@@ -62,7 +62,7 @@ object ConfirmMerchantSettlementCmd {
         /**
          * 结算标识
          */
-        val settlementId: String,
+        val merchantSettlementId: MerchantSettlementId,
         /**
          * 状态
          */

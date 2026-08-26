@@ -3,15 +3,16 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.reconciliation
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.queries.reconciliation.read.GetReconciliationBatchQry
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.GetReconciliationBatchEndpoint
 import org.springframework.stereotype.Component
 
 @Component
 class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationBatchEndpoint.Request, GetReconciliationBatchEndpoint.Response> {
     override fun handle(request: GetReconciliationBatchEndpoint.Request): GetReconciliationBatchEndpoint.Response {
-        val response = Mediator.queries.ask(GetReconciliationBatchQry.Request(request.batchId))
+        val response = Mediator.queries.ask(GetReconciliationBatchQry.Request(ReconciliationBatchId.parse(request.batchId)))
         return GetReconciliationBatchEndpoint.Response(
-            batchId = response.batchId,
+            batchId = response.reconciliationBatchId.toString(),
             channelId = response.channelId,
             currency = response.currency,
             reconciliationDate = response.reconciliationDate,
@@ -55,9 +56,9 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                             channelOccurredAt = item.channelOccurredAt,
                             channelReceivedAt = item.channelReceivedAt,
                             platformFactIdentity = item.platformFactIdentity,
-                            paymentId = item.paymentId,
+                            paymentId = item.paymentId?.toString(),
                             paymentAttemptId = item.paymentAttemptId,
-                            refundId = item.refundId,
+                            refundId = item.refundId?.toString(),
                             refundAttemptId = item.refundAttemptId,
                             platformTransactionIdentity = item.platformTransactionIdentity,
                             platformAmount = item.platformAmount,
@@ -96,8 +97,8 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                                     amount = confirmation.amount,
                                     currency = confirmation.currency,
                                     externalTransactionIdentity = confirmation.externalTransactionIdentity,
-                                    paymentId = confirmation.paymentId,
-                                    refundId = confirmation.refundId,
+                                    paymentId = confirmation.paymentId?.toString(),
+                                    refundId = confirmation.refundId?.toString(),
                                     confirmedAt = confirmation.confirmedAt,
                                 )
                             },

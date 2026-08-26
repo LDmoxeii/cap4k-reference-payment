@@ -2,6 +2,7 @@ package com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.domain.event.annotation.DomainEvent
+import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -19,7 +20,7 @@ import java.time.LocalDateTime
 )
 class MerchantSettlementCompletedDomainEvent(
     val eventIdentity: String,
-    val settlementId: String,
+    val merchantSettlementId: MerchantSettlementId,
     val merchantId: String,
     val channelId: String,
     val currency: String,

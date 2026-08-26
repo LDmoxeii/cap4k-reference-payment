@@ -1,5 +1,7 @@
 package com.only4.cap4k.reference.payment.application.commands.reconciliation.integration
 
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
+
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
@@ -60,7 +62,7 @@ object ProcessAvailableChannelStatementCmd {
                 }
                 ?.let { run ->
                     return Response(
-                        batchId = existing.id.toString(),
+                        reconciliationBatchId = existing.id,
                         runId = run.id.toString(),
                         batchStatus = existing.status.name,
                         idempotentReplay = true,
@@ -106,7 +108,7 @@ object ProcessAvailableChannelStatementCmd {
                 startedAt = LocalDateTime.ofInstant(command.publishedAt, ZoneOffset.UTC),
             )
             return Response(
-                batchId = batch.id.toString(),
+                reconciliationBatchId = batch.id,
                 runId = result.run.id.toString(),
                 batchStatus = batch.status.name,
                 idempotentReplay = result.idempotentReplay,
@@ -157,7 +159,7 @@ object ProcessAvailableChannelStatementCmd {
         /**
          * 批次标识
          */
-        val batchId: String,
+        val reconciliationBatchId: ReconciliationBatchId,
         /**
          * 运行标识
          */
