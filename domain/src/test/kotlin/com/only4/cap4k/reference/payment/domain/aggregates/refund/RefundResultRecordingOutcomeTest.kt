@@ -6,10 +6,12 @@ import com.only4.cap4k.reference.payment.domain.aggregates.refund.enums.RefundSt
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.values.RefundResultRecordingOutcome
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class RefundResultRecordingOutcomeTest {
     @Test
+    @DisplayName("PAY-AC-020/029 — 退款成功预算转换与不可回退")
     fun `accepted success outcome exposes a coherent conversion`() {
         val outcome = RefundResultRecordingOutcome(
             refundStatus = RefundStatus.SUCCEEDED,
@@ -28,6 +30,7 @@ class RefundResultRecordingOutcomeTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-025/029 — 退款结果证据不变量与冲突")
     fun `outcome rejects contradictory or incomplete evidence`() {
         assertThatIllegalArgumentException().isThrownBy {
             RefundResultRecordingOutcome(

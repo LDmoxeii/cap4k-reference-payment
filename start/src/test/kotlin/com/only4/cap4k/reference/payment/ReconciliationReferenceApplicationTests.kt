@@ -30,6 +30,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -66,7 +67,9 @@ class ReconciliationReferenceApplicationTests(
     private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
     @Test
+    @DisplayName("PAY-AC-040 — 日终对账主链与 effective run")
     fun `daily reconciliation matches payment and refund facts and exposes one effective run`() {
+        // Arrange：先准备平台支付/退款事实，再注入同一业务日的渠道账单；event 只表示“账单可获取”。
         val payment = createSucceededPayment(
             prefix = "B3-MATCH-PAYMENT",
             amount = "150.00",
@@ -105,6 +108,7 @@ class ReconciliationReferenceApplicationTests(
             )
         )
 
+        // When：通过真实 RunDailyReconciliation Command 读取权威账单并生成一次 run。
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
                 channelId = "C-001",
@@ -112,6 +116,7 @@ class ReconciliationReferenceApplicationTests(
                 triggeredAt = Instant.parse("2026-08-20T04:00:00Z"),
             )
         )
+        // Then：先检查 run 状态和差异计数，再通过 GET 回读 batch/run/item 及双方事实快照。
         assertThat(response.idempotentReplay).isFalse()
         assertThat(response.batchStatus).isEqualTo("COMPLETED")
         assertThat(response.unresolvedDifferenceCount).isZero()
@@ -149,6 +154,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-041/046 — review blocker 持久化回读")
     fun `matched payment with blocking review stays unresolved and snapshots review evidence`() {
         val date = LocalDate.parse("2026-05-31")
         val payment = createSucceededPayment(
@@ -202,6 +208,7 @@ class ReconciliationReferenceApplicationTests(
             )
         )
 
+        // When：通过真实 RunDailyReconciliation Command 读取权威账单并生成一次 run。
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
                 channelId = "C-001",
@@ -224,6 +231,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-042 — 渠道单边与授权确认")
     fun `unknown refund and successful channel statement form confirmation without rewriting original refund`() {
         val payment = createSucceededPayment(
             prefix = "B3-STATUS-PAYMENT",
@@ -256,6 +264,7 @@ class ReconciliationReferenceApplicationTests(
             )
         )
 
+        // When：通过真实 RunDailyReconciliation Command 读取权威账单并生成一次 run。
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
                 channelId = "C-001",
@@ -319,6 +328,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-043 — 金额差异双方快照")
     fun `authorized amount mismatch disposition preserves both amounts and appends an independent conclusion`() {
         val payment = createSucceededPayment(
             prefix = "B3-AMOUNT-MISMATCH",
@@ -344,6 +354,7 @@ class ReconciliationReferenceApplicationTests(
             )
         )
 
+        // When：通过真实 RunDailyReconciliation Command 读取权威账单并生成一次 run。
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
                 channelId = "C-001",
@@ -392,6 +403,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-085 — Asia/Shanghai 业务日边界")
     fun `Asia Shanghai business day boundary separates 2359 and 0001 while preserving instants`() {
         val beforeMidnight = createSucceededPayment(
             prefix = "B3-TZ-BEFORE",
@@ -463,6 +475,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-044/047/082 — revision 与 append-only 证据")
     fun `statement replay revision history and disposition preserve immutable evidence`() {
         val reconciliationDate = LocalDate.parse("2026-08-18")
         statements.publish(
@@ -595,6 +608,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-045/087 — Push/Pull/revision 收敛")
     fun `inbound statement event replays once and a newer revision becomes effective without late rollback`() {
         val date = LocalDate.parse("2026-07-20")
         val identity = "statement-b5-inbound-revision"
@@ -617,6 +631,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-045/087 — provider recovery 收敛")
     fun `inbound statement event retries after provider recovery and converges with scheduler and rerun`() {
         val date = LocalDate.parse("2026-07-21")
         val identity = "statement-b5-provider-recovery"
@@ -648,7 +663,9 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-046 — provider/账单不完整缺口可查询")
     fun `暂时不可用 and incomplete statements remain queryable and can不完整`() {
+        // When：通过真实 RunDailyReconciliation Command 读取权威账单并生成一次 run。
         val response = Mediator.commands.send(
             RunDailyReconciliationCmd.Request(
                 channelId = "C-001",
@@ -692,6 +709,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-045/087 — scheduler 并发幂等")
     fun `concurrent scheduler commands keep one batch and one initial statement revision`() {
         val reconciliationDate = LocalDate.parse("2026-08-13")
         statements.publish(
@@ -760,6 +778,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-044/045 — revision 唯一约束")
     fun `two real transactions cannot append the same statement revision twice`() {
         val reconciliationDate = LocalDate.parse("2026-08-12")
         statements.publish(
@@ -840,6 +859,7 @@ class ReconciliationReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-047/082 — 对账 owned graph 回滚")
     fun `owned reconciliation graph rolls back when one child cannot be persisted`() {
         val reconciliationDate = LocalDate.parse("2026-08-11")
         statements.publish(

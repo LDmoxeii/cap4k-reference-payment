@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -71,7 +72,9 @@ class MerchantSettlementReferenceApplicationTests(
     private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
     @Test
+    @DisplayName("PAY-AC-060/063/065 — 结算主链、净额恒等式与冲突")
     fun `merchant settlement lifecycle produces net 127 and preserves callback evidence`() {
+        // Arrange：用真实 Payment/Refund/对账结果构成 150 - 20 - 3 = 127 的结算候选。
         val date = LocalDate.parse("2026-06-11")
         val payment100 = createSucceededPayment("B4-LIFECYCLE-100", "100.00", "2026-06-11T02:00:00Z")
         val payment50 = createSucceededPayment("B4-LIFECYCLE-50", "50.00", "2026-06-11T03:00:00Z")
@@ -89,6 +92,7 @@ class MerchantSettlementReferenceApplicationTests(
             refunds = listOf(refund20 to "20.00"),
         )
 
+        // Act：通过 prepare → confirm → execute → callback 的真实 HTTP/Application 路径推进结算。
         val prepared = prepare(date, "b4-lifecycle")
         assertThat(prepared.requiredText("status")).isEqualTo("PREPARED")
         assertThat(prepared["created"].asBoolean()).isTrue()
@@ -151,6 +155,7 @@ class MerchantSettlementReferenceApplicationTests(
             receivedAt = "2026-06-12T03:05:30Z",
         )
         val success = postJson("/api/channel/settlement-results", successPayload, expectedStatus = 200)
+        // Assert：净额/line/source identity、attempt/receipt、settled fact、completion event 与重复回放一起验证。
         assertThat(success.requiredText("settlementStatus")).isEqualTo("SUCCEEDED")
         assertThat(success.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
         assertThat(success["settledFactFormedNow"].asBoolean()).isTrue()
@@ -197,7 +202,9 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-083 — 跨聚合持久化组合轨迹")
     fun `payment refund reconciliation and settlement preserve one durable composition trail`() {
+        // Given：只复用既有业务入口，在同一 H2 数据库轨迹准备 Payment、partial Refund 和权威账单。
         val date = LocalDate.parse("2026-06-29")
         val payment = createSucceededPayment("ISSUE8-COMPOSITION", "100.00", "2026-06-29T02:00:00Z")
         val refund = createSucceededRefund(
@@ -213,6 +220,7 @@ class MerchantSettlementReferenceApplicationTests(
             payments = listOf(payment to "100.00"),
             refunds = listOf(refund to "20.00"),
         )
+        // When：先经 reconciliation，再进入 settlement prepare/confirm/execute/callback；不自造跨聚合摘要。
         val runId = requireNotNull(reconciliation.runId)
 
         val batch = getJson("/api/reconciliation-batches/${reconciliation.reconciliationBatchId}")
@@ -293,6 +301,7 @@ class MerchantSettlementReferenceApplicationTests(
             ),
             expectedStatus = 200,
         )
+        // Then：结算 line 的 Payment/Refund/Reconciliation identity 必须能回溯，且只形成一个 completion event identity。
         assertThat(eventResult.requiredText("settlementStatus")).isEqualTo("SUCCEEDED")
         assertThat(eventResult.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
         assertThat(eventResult["settledFactFormedNow"].asBoolean()).isTrue()
@@ -314,6 +323,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-064/086 — UNKNOWN 复核与授权裁决")
     fun `unknown result blocks retry until review and manual adjudication`() {
         val date = LocalDate.parse("2026-06-12")
         val payment = createSucceededPayment("B4-UNKNOWN", "100.00", "2026-06-12T02:00:00Z")
@@ -384,6 +394,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-088 — completion 与 reliable record 同 UoW 回滚")
     fun `settlement success and outbound event record roll back together when the completion subscriber fails`() {
         val date = LocalDate.parse("2026-06-28")
         val payment = createSucceededPayment("B5-OUTBOX-ROLLBACK", "100.00", "2026-06-28T02:00:00Z")
@@ -426,6 +437,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-088 — HTTP 失败重试稳定身份")
     fun `outbound HTTP event keeps one identity across failed handoff and durable retry`() {
         val receivedBodies = CopyOnWriteArrayList<String>()
         val responseStatus = AtomicInteger(503)
@@ -490,6 +502,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-088 — response timeout 后同身份恢复")
     fun `outbound HTTP event remains retryable after response timeout and recovers with the same identity`() {
         val receivedBodies = CopyOnWriteArrayList<String>()
         val delayFirstResponse = AtomicBoolean(true)
@@ -573,6 +586,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-068 — replacement/effective ownership")
     fun `void replacement keeps a single effective settlement and preserves source evidence`() {
         val date = LocalDate.parse("2026-06-13")
         val payment = createSucceededPayment("B4-VOID", "100.00", "2026-06-13T02:00:00Z")
@@ -612,6 +626,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-067/068 — composition freeze 与调整边界")
     fun `unconfirmed settlement can return for adjustment and confirmed settlement cannot`() {
         val date = LocalDate.parse("2026-06-14")
         val payment = createSucceededPayment("B4-ADJUSTMENT", "100.00", "2026-06-14T02:00:00Z")
@@ -658,6 +673,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-014/067 — fee snapshot 与结算 line 冻结")
     fun `configuration changes do not rewrite frozen payment fees or settlement lines`() {
         val date = LocalDate.parse("2026-06-18")
         val payment = createSucceededPayment("B4-FEE-SNAPSHOT", "100.00", "2026-06-18T02:00:00Z")
@@ -699,6 +715,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-061 — transaction-level eligibility")
     fun `one unresolved reconciliation item is excluded while another matched payment settles`() {
         val date = LocalDate.parse("2026-06-19")
         val matched = createSucceededPayment("B4-PARTIAL-MATCHED", "100.00", "2026-06-19T02:00:00Z")
@@ -741,6 +758,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-061/015 — review eligibility 重新计算")
     fun `payment review opened after reconciliation excludes the candidate despite a stale false boolean`() {
         val date = LocalDate.parse("2026-05-30")
         val payment = createSucceededPayment("B4-LATE-REVIEW-BLOCK", "73.00", "2026-05-30T02:00:00Z")
@@ -790,6 +808,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-066 — 零/负净额不划拨")
     fun `negative and zero net settlements never invoke the transfer provider`() {
         val negativeDate = LocalDate.parse("2026-06-20")
         val negativePayment = createSucceededPayment("B4-NEGATIVE", "100.00", "2026-06-20T02:00:00Z")
@@ -854,6 +873,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-068 — replacement 原子回滚")
     fun `replacement activation failure rolls back predecessor release and replacement creation`() {
         val date = LocalDate.parse("2026-06-22")
         val payment = createSucceededPayment("B4-ACTIVATION-ROLLBACK", "100.00", "2026-06-22T02:00:00Z")
@@ -900,6 +920,7 @@ class MerchantSettlementReferenceApplicationTests(
         ).isEqualTo(1L)
     }
     @Test
+    @DisplayName("PAY-AC-062 — prepare 并发收敛")
     fun `concurrent HTTP prepare converges on one effective settlement`() {
         val date = LocalDate.parse("2026-06-15")
         val payment = createSucceededPayment("B4-PREPARE-CONCURRENT", "100.00", "2026-06-15T02:00:00Z")
@@ -953,6 +974,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-063/088 — execution 并发与稳定冲突")
     fun `concurrent execution HTTP requests create one attempt and return stable conflict`() {
         val date = LocalDate.parse("2026-06-16")
         val payment = createSucceededPayment("B4-EXECUTION-CONCURRENT", "100.00", "2026-06-16T02:00:00Z")
@@ -1011,6 +1033,7 @@ class MerchantSettlementReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-088 — settlement owned graph 回滚")
     fun `settlement execution database failure rolls back root and owned attempt together`() {
         val date = LocalDate.parse("2026-06-17")
         val payment = createSucceededPayment("B4-UOW-ROLLBACK", "100.00", "2026-06-17T02:00:00Z")

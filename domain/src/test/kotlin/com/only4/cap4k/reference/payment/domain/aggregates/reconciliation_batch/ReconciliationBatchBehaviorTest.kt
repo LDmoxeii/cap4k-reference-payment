@@ -11,33 +11,38 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class ReconciliationBatchBehaviorTest {
     @Test
+    @DisplayName("PAY-AC-040/043 — 对账分类与双方事实快照")
     fun `classifies matched payment and every required difference without overwriting either snapshot`() {
+        // Given：平台事实与渠道账单同时包含匹配、单边、金额/币种/状态/类型差异和重复记录。
         val facts = listOf(
-            fact("matched", "tx-matched"),
-            fact("platform-only", "tx-platform-only"),
-            fact("amount", "tx-amount"),
-            fact("currency", "tx-currency"),
-            fact("status", "tx-status"),
-            fact("kind", "tx-kind"),
+            givenPlatformFact("matched", "tx-matched"),
+            givenPlatformFact("platform-only", "tx-platform-only"),
+            givenPlatformFact("amount", "tx-amount"),
+            givenPlatformFact("currency", "tx-currency"),
+            givenPlatformFact("status", "tx-status"),
+            givenPlatformFact("kind", "tx-kind"),
         )
         val records = listOf(
-            record("matched", "tx-matched"),
-            record("channel-only", "tx-channel-only"),
-            record("amount", "tx-amount", amount = "99.00"),
-            record("currency", "tx-currency", currency = "USD"),
-            record("status", "tx-status", status = "FAILED"),
-            record("kind", "tx-kind", kind = ReconciliationTransactionKind.REFUND),
-            record("duplicate", "tx-duplicate"),
-            record("duplicate-2", "tx-duplicate"),
+            givenStatementRecord("matched", "tx-matched"),
+            givenStatementRecord("channel-only", "tx-channel-only"),
+            givenStatementRecord("amount", "tx-amount", amount = "99.00"),
+            givenStatementRecord("currency", "tx-currency", currency = "USD"),
+            givenStatementRecord("status", "tx-status", status = "FAILED"),
+            givenStatementRecord("kind", "tx-kind", kind = ReconciliationTransactionKind.REFUND),
+            givenStatementRecord("duplicate", "tx-duplicate"),
+            givenStatementRecord("duplicate-2", "tx-duplicate"),
         )
 
-        val result = batch().appendTestRun(statement(records = records), facts, NOW)
+        // When：追加一次真实对账 run，由聚合根据外部 identity 和业务字段分类差异。
+        val result = givenPendingBatch().appendTestRun(givenCompleteStatement(records = records), facts, NOW)
         val items = result.run.reconciliationItems.toList()
 
+        // Then：断言同时覆盖 difference 分类、双方快照、matched/unresolved 计数，避免只看最终状态。
         assertThat(items.map { it.differenceType }).containsExactlyInAnyOrder(
             ReconciliationDifferenceType.MATCHED,
             ReconciliationDifferenceType.PLATFORM_ONLY,
@@ -59,16 +64,17 @@ class ReconciliationBatchBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-041/046 — review blocker 保持未决")
     fun `matched payment with blocking review remains unresolved and preserves the run snapshot`() {
-        val blockedFact = fact("matched-review", "tx-matched-review").copy(
+        val blockedFact = givenPlatformFact("matched-review", "tx-matched-review").copy(
             paymentReviewIdentitySnapshot = "payment-review:one,payment-review:two",
             paymentReviewSummary = "late success requires authorized review",
             settlementEligible = false,
         )
 
-        val batch = batch()
+        val batch = givenPendingBatch()
         val result = batch.appendTestRun(
-            statement(records = listOf(record("matched-review", "tx-matched-review"))),
+            givenCompleteStatement(records = listOf(givenStatementRecord("matched-review", "tx-matched-review"))),
             listOf(blockedFact),
             NOW,
         )
@@ -85,12 +91,13 @@ class ReconciliationBatchBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-044/045/082 — revision 幂等、effective run 与追加历史")
     fun `same statement identity and revision is idempotent while a new revision supersedes and retains history`() {
-        val batch = batch()
-        val first = batch.appendTestRun(statement(revision = "2"), listOf(fact("matched", "tx-matched")), NOW)
-        val replay = batch.appendTestRun(statement(revision = "2"), listOf(fact("different", "tx-other")), NOW.plusMinutes(1))
-        val revised = batch.appendTestRun(statement(revision = "3"), listOf(fact("matched", "tx-matched")), NOW.plusMinutes(2))
-        val lateOlder = batch.appendTestRun(statement(revision = "1"), listOf(fact("older", "tx-older")), NOW.plusMinutes(3))
+        val batch = givenPendingBatch()
+        val first = batch.appendTestRun(givenCompleteStatement(revision = "2"), listOf(givenPlatformFact("matched", "tx-matched")), NOW)
+        val replay = batch.appendTestRun(givenCompleteStatement(revision = "2"), listOf(givenPlatformFact("different", "tx-other")), NOW.plusMinutes(1))
+        val revised = batch.appendTestRun(givenCompleteStatement(revision = "3"), listOf(givenPlatformFact("matched", "tx-matched")), NOW.plusMinutes(2))
+        val lateOlder = batch.appendTestRun(givenCompleteStatement(revision = "1"), listOf(givenPlatformFact("older", "tx-older")), NOW.plusMinutes(3))
 
         assertThat(replay.idempotentReplay).isTrue()
         assertThat(replay.run).isSameAs(first.run)
@@ -105,30 +112,32 @@ class ReconciliationBatchBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-046 — 不完整账单与未决差异阻断完成")
     fun `incomplete statement and unresolved differences block completion`() {
-        val incomplete = batch()
+        val incomplete = givenPendingBatch()
         incomplete.appendTestRun(
-            statement(completeness = StatementCompleteness.INCOMPLETE),
-            listOf(fact("matched", "tx-matched")), NOW,
+            givenCompleteStatement(completeness = StatementCompleteness.INCOMPLETE),
+            listOf(givenPlatformFact("matched", "tx-matched")), NOW,
         )
         assertThat(incomplete.status).isEqualTo(ReconciliationBatchStatus.REVIEW_REQUIRED)
         assertThat(incomplete.settlementBlocked).isTrue()
         assertThat(incomplete.blockingReason).isEqualTo("渠道账单不完整")
 
-        val unresolved = batch()
-        unresolved.appendTestRun(statement(records = emptyList()), listOf(fact("platform-only", "tx-only")), NOW)
+        val unresolved = givenPendingBatch()
+        unresolved.appendTestRun(givenCompleteStatement(records = emptyList()), listOf(givenPlatformFact("platform-only", "tx-only")), NOW)
         assertThat(unresolved.status).isEqualTo(ReconciliationBatchStatus.AWAITING_DISPOSITION)
         assertThat(unresolved.completedAt).isNull()
         assertThat(unresolved.unresolvedDifferenceCount).isEqualTo(1)
     }
 
     @Test
+    @DisplayName("PAY-AC-047/082 — 被拒处置留痕但不改写事实")
     fun `denied disposition is retained but does not resolve the difference`() {
-        val batch = batch()
-        val run = batch.appendTestRun(statement(records = emptyList()), listOf(fact("only", "tx-only")), NOW).run
+        val batch = givenPendingBatch()
+        val run = batch.appendTestRun(givenCompleteStatement(records = emptyList()), listOf(givenPlatformFact("only", "tx-only")), NOW).run
         val item = run.reconciliationItems.single()
 
-        batch.appendDisposition(item.differenceIdentity, disposition(DispositionAuthorization.DENIED, ReconciliationDispositionStatus.REJECTED))
+        batch.appendDisposition(item.differenceIdentity, givenDisposition(DispositionAuthorization.DENIED, ReconciliationDispositionStatus.REJECTED))
 
         assertThat(item.reconciliationDispositions).hasSize(1)
         assertThat(item.reconciliationDispositions.single().authorizationResult).isEqualTo(DispositionAuthorization.DENIED)
@@ -138,10 +147,11 @@ class ReconciliationBatchBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-042/047/082 — 授权处置追加确认事实")
     fun `authorized disposition resolves difference and appends a confirmation fact`() {
-        val batch = batch()
+        val batch = givenPendingBatch()
         val run = batch.appendTestRun(
-            statement(records = listOf(record("channel-only", "tx-confirm"))), emptyList(), NOW,
+            givenCompleteStatement(records = listOf(givenStatementRecord("channel-only", "tx-confirm"))), emptyList(), NOW,
         ).run
         val item = run.reconciliationItems.single()
         val confirmation = ReconciliationConfirmationFactCreation(
@@ -159,7 +169,7 @@ class ReconciliationBatchBehaviorTest {
 
         batch.appendDisposition(
             item.differenceIdentity,
-            disposition(
+            givenDisposition(
                 authorization = DispositionAuthorization.AUTHORIZED,
                 status = ReconciliationDispositionStatus.APPLIED,
                 conclusion = ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT,
@@ -178,10 +188,11 @@ class ReconciliationBatchBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-042/047 — 授权处置的结论与确认一致性")
     fun `authorized disposition requires an explicit conclusion and confirmation consistency`() {
-        val batch = batch()
+        val batch = givenPendingBatch()
         val item = batch.appendTestRun(
-            statement(records = listOf(record("channel-only", "tx-confirm"))),
+            givenCompleteStatement(records = listOf(givenStatementRecord("channel-only", "tx-confirm"))),
             emptyList(),
             NOW,
         ).run.reconciliationItems.single()
@@ -189,7 +200,7 @@ class ReconciliationBatchBehaviorTest {
         org.assertj.core.api.Assertions.assertThatThrownBy {
             batch.appendDisposition(
                 item.differenceIdentity,
-                disposition(
+                givenDisposition(
                     authorization = DispositionAuthorization.AUTHORIZED,
                     status = ReconciliationDispositionStatus.APPLIED,
                 ).copy(conclusion = null),
@@ -200,7 +211,7 @@ class ReconciliationBatchBehaviorTest {
         org.assertj.core.api.Assertions.assertThatThrownBy {
             batch.appendDisposition(
                 item.differenceIdentity,
-                disposition(
+                givenDisposition(
                     authorization = DispositionAuthorization.AUTHORIZED,
                     status = ReconciliationDispositionStatus.APPLIED,
                     conclusion = ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT,
@@ -225,7 +236,7 @@ class ReconciliationBatchBehaviorTest {
         )
     }
 
-    private fun batch() = ReconciliationBatchFactory().create(
+    private fun givenPendingBatch() = ReconciliationBatchFactory().create(
         ReconciliationBatchFactory.Payload(
             channelId = "C-001", currency = "CNY", reconciliationDate = DATE,
             businessTimezone = "Asia/Shanghai", status = ReconciliationBatchStatus.PENDING,
@@ -234,18 +245,18 @@ class ReconciliationBatchBehaviorTest {
         )
     )
 
-    private fun statement(
+    private fun givenCompleteStatement(
         revision: String = "1",
         completeness: StatementCompleteness = StatementCompleteness.COMPLETE,
-        records: List<ChannelStatementRecord> = listOf(record("matched", "tx-matched")),
+        records: List<ChannelStatementRecord> = listOf(givenStatementRecord("matched", "tx-matched")),
     ) = ChannelStatement("C-001", "CNY", DATE, "Asia/Shanghai", "statement-1", revision, completeness, INSTANT, records)
 
-    private fun record(
+    private fun givenStatementRecord(
         id: String, tx: String, amount: String = "100.00", currency: String = "CNY",
         status: String = "SUCCESS", kind: ReconciliationTransactionKind = ReconciliationTransactionKind.PAYMENT,
     ) = ChannelStatementRecord(id, kind, tx, BigDecimal(amount), currency, status, INSTANT, INSTANT.plusSeconds(1))
 
-    private fun fact(
+    private fun givenPlatformFact(
         id: String, tx: String, amount: String = "100.00", currency: String = "CNY",
         status: String = "SUCCESS", kind: ReconciliationTransactionKind = ReconciliationTransactionKind.PAYMENT,
     ) = PlatformReconciliationFact(
@@ -253,7 +264,7 @@ class ReconciliationBatchBehaviorTest {
         tx, BigDecimal(amount), currency, status, INSTANT, INSTANT.plusSeconds(2),
     )
 
-    private fun disposition(
+    private fun givenDisposition(
         authorization: DispositionAuthorization,
         status: ReconciliationDispositionStatus,
         conclusion: ReconciliationDispositionConclusion = ReconciliationDispositionConclusion.NO_SETTLEMENT_IMPACT,

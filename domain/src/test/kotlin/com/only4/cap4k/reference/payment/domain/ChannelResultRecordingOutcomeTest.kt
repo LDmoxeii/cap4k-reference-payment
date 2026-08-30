@@ -6,10 +6,12 @@ import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class ChannelResultRecordingOutcomeTest {
     @Test
+    @DisplayName("PAY-AC-004/005 — 结果对象派生语义与成功事实")
     fun `accepted success exposes derived domain semantics`() {
         val outcome = successfulOutcome()
 
@@ -21,6 +23,7 @@ class ChannelResultRecordingOutcomeTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-006/017 — 找不到尝试时不伪造状态")
     fun `attempt not found is a rejected outcome without a fabricated attempt status`() {
         val outcome = ChannelResultRecordingOutcome(
             paymentStatus = PaymentStatus.PROCESSING,
@@ -37,6 +40,7 @@ class ChannelResultRecordingOutcomeTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-004/005/006/015 — 结果对象不变量守卫")
     fun `invalid outcome combinations are rejected`() {
         assertThatIllegalArgumentException().isThrownBy {
             successfulOutcome().copy(notificationReceiveCount = 0)

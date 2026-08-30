@@ -2,7 +2,7 @@
 
 每个场景只描述可观察的业务前提、动作和结果。示例金额均为人民币，除非场景另有说明。
 
-> **如何验收**：本文件是业务断言真源；执行顺序、环境、Design、聚合、Command/Capability、HTTP/Time/Event 入口、Flow、精确测试方法和观察点请查看 [Payment Reference 人工验收指南](payment-acceptance-guide.md)。场景状态以 [traceability.yaml](../traceability.yaml) 为机器真源：`verified` 表示已有可复核证据，`planned/not-built` 表示只评审需求与缺口。当前 `PAY-AC-080/081/084/086` 仍为 planned，不应寻找或宣称完整实现。
+> **如何验收**：本文件是业务断言真源；执行顺序、环境、Design、聚合、Command/Capability、HTTP/Time/Event 入口、Flow、精确测试方法和观察点请查看 [Payment Reference 人工验收指南](payment-acceptance-guide.md)。开始人工验收前，先阅读[自动化测试证据目录](payment-test-evidence-catalog.md)，用测试理解每个 PAY-AC 的主证据与边界。场景状态以 [traceability.yaml](../traceability.yaml) 为机器真源：`verified` 表示已有可复核证据，`planned/not-built` 表示只评审需求与缺口。当前 `PAY-AC-080/081/084/086` 仍为 planned，不应寻找或宣称完整实现。
 
 ## 1. 支付创建与处理
 

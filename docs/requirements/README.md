@@ -98,6 +98,9 @@
 - [业务规则与不变量](business/payment-rules.md)
 - [验收场景（业务断言）](acceptance/payment-scenarios.md)
 - [人工验收指南（执行、架构、测试与观察点）](acceptance/payment-acceptance-guide.md)
+- [自动化测试证据目录（本次前置整理）](acceptance/payment-test-evidence-catalog.md)
+- [教学上下文（后续阅读式教学启动入口）](acceptance/payment-teaching-context.md)
+- [教学大纲（按业务模块组织）](acceptance/payment-teaching-syllabus.md)
 
 ## 6. 关键待确认假设
 

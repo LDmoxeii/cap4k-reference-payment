@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -65,15 +66,19 @@ class PaymentReferenceApplicationTests(
     private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
     @Test
+    @DisplayName("PAY-AC-001..006/013/016 — 支付主链、幂等与 HTTP/JPA 回读")
     fun `create attempt confirm duplicate conflict and query form one durable payment chain`() {
+        // Arrange：准备一个明确的 merchant order、idempotency key、金额和 CNY 渠道前提。
         val createRequest = paymentRequest(
             merchantOrderNumber = "O-001",
             idempotencyKey = "K-001",
             amount = "100.00",
         )
 
+        // Act：所有动作都经真实 HTTP binding → Command/UoW → H2 持久化入口完成。
         val created = postJson("/api/payments", createRequest, expectedStatus = 201)
         val paymentId = created.requiredText("paymentId")
+        // Assert：先看 API 状态/幂等语义，再通过 GET 和数据库回读确认 durable facts。
         assertThat(created.requiredText("status")).isEqualTo("PENDING")
         assertThat(created["idempotentReplay"].asBoolean()).isFalse()
 
@@ -249,6 +254,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-007 — 到期关闭与 scheduler 幂等")
     fun `payment expiry closes without pending attempts and repeated scans stay idempotent`() {
         val created = postJson(
             "/api/payments",
@@ -277,6 +283,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-008 — UNKNOWN 复核到可信结果收敛")
     fun `expired processing payment enters one stable review and trustworthy success resolves it`() {
         val created = postJson(
             "/api/payments",
@@ -323,6 +330,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-008/015 — scheduler/callback 并发收敛")
     fun `scheduler and callback race converges without losing success evidence`() {
         val created = postJson(
             "/api/payments",
@@ -429,6 +437,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-009 — 迟到成功与人工复核")
     fun `late success after closed payment preserves terminal evidence until authorized review`() {
         val created = postJson(
             "/api/payments",
@@ -525,6 +534,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-015 — 复核裁决与迟到冲突证据")
     fun `review and callback race preserves the authorized decision and later conflict evidence`() {
         val created = postJson(
             "/api/payments",
@@ -680,6 +690,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-010 — 双尝试成功的一次性成功事实")
     fun `second attempt success preserves both successes while revenue and intent remain once only`() {
         val created = postJson(
             "/api/payments",
@@ -739,6 +750,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-011 — 同订单并发成功竞争")
     fun `concurrent payments for one merchant order retain loser evidence and only one accepted success claim`() {
         val firstPaymentId = postJson(
             "/api/payments",
@@ -810,6 +822,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-012 — 输入拒绝不占幂等键")
     fun `invalid amount precision and unsupported currency never reserve an idempotency key`() {
         val base = paymentRequest(
             merchantOrderNumber = "O-INVALID",
@@ -837,6 +850,7 @@ class PaymentReferenceApplicationTests(
 
 
     @Test
+    @DisplayName("PAY-AC-017 — 不匹配输入可查询且不推进状态")
     fun `attempt identity and currency mismatches remain queryable without advancing payment`() {
         val created = postJson(
             "/api/payments",
@@ -1087,6 +1101,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-020 — 全额退款主链")
     fun `a successful payment can be refunded in full`() {
         val paymentId = createSucceededPayment("REFUND-FULL", "100.00")
         val refund = createRefund(paymentId, "R-FULL", "100.00", "2026-08-17T11:00:00Z")
@@ -1106,6 +1121,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-026/029 — 退款幂等与成功后冲突")
     fun `merchant refund number replay rejects changed critical content without a second refund`() {
         val paymentId = createSucceededPayment("REFUND-IDEMPOTENCY", "80.00")
         val original = createRefund(paymentId, "R-IDEMPOTENT", "20.00", "2026-08-17T11:00:00Z")
@@ -1132,6 +1148,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-027/028 — 退款资格与期限拒绝")
     fun `refund application rejects merchant currency and channel eligibility mismatches without reservation`() {
         val merchantMismatchPayment = createSucceededPayment("REFUND-MERCHANT-MISMATCH", "40.00")
         val merchantMismatch = postJson(
@@ -1188,6 +1205,7 @@ class PaymentReferenceApplicationTests(
         ).isEqualTo(0L)
     }
     @Test
+    @DisplayName("PAY-AC-021 — 部分退款预算")
     fun `multiple partial refunds remain independently queryable and update payment budget`() {
         val paymentId = createSucceededPayment("REFUND-PARTIAL", "100.00")
         val first = createRefund(paymentId, "R-PARTIAL-1", "30.00", "2026-08-17T11:00:00Z")
@@ -1206,6 +1224,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-022 — 超额退款拒绝")
     fun `refund beyond the exact remaining amount is rejected without a channel request`() {
         val paymentId = createSucceededPayment("REFUND-OVER", "100.00")
         val successful = createRefund(paymentId, "R-OVER-SUCCESS", "60.00", "2026-08-17T11:00:00Z")
@@ -1231,6 +1250,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-024 — 失败释放预占")
     fun `trusted failed refund result releases its payment reservation`() {
         val paymentId = createSucceededPayment("REFUND-FAILURE", "100.00")
         val refund = createRefund(paymentId, "R-FAILURE", "40.00", "2026-08-17T11:00:00Z")
@@ -1251,6 +1271,7 @@ class PaymentReferenceApplicationTests(
         assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("100.00")
     }
     @Test
+    @DisplayName("PAY-AC-025 — 退款 UNKNOWN 保留预占并进入复核")
     fun `unknown refund result remains reserved and scheduled review marks it`() {
         val paymentId = createSucceededPayment("REFUND-UNKNOWN", "60.00")
         val refund = createRefund(paymentId, "R-UNKNOWN", "20.00", "2026-08-17T11:00:00Z")
@@ -1268,6 +1289,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-027/028 — 非成功支付与逾期退款拒绝")
     fun `refund rejects non-success payments and requests after the refund window`() {
         mapOf(
             "PENDING" to 0,
@@ -1311,6 +1333,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-023 — 退款 HTTP 并发幂等")
     fun `two concurrent refund HTTP applications persist one refund and return stable conflict`() {
         val paymentId = createSucceededPayment("REFUND-HTTP-CONCURRENT", "60.00")
         val ready = CountDownLatch(2)
@@ -1370,6 +1393,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-024 — 跨聚合事务回滚")
     fun `refund creation database failure rolls back payment reservation and refund aggregate together`() {
         val paymentId = createSucceededPayment("REFUND-UOW-ROLLBACK", "50.00")
         val overlongRefundNumber = "R-UOW-" + "X".repeat(3_000)
@@ -1408,6 +1432,7 @@ class PaymentReferenceApplicationTests(
         ).isEqualTo(0L)
     }
     @Test
+    @DisplayName("PAY-AC-023 — 双事务预占防超退")
     fun `two real transactions cannot over-reserve one payment refund budget`() {
         val paymentId = createSucceededPayment("REFUND-CONCURRENT", "60.00")
         val ready = CountDownLatch(2)
@@ -1447,6 +1472,7 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
+    @DisplayName("PAY-AC-024 — 网关异常后的释放")
     fun `refund gateway exception fails attempt and releases payment budget`() {
         val paymentId = createSucceededPayment("REFUND-GATEWAY", "50.00")
         jdbcTemplate.update("update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?", "C-THROW", "M-001", "C-001")

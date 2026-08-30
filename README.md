@@ -36,6 +36,7 @@ B5 只验证两条最小 HTTP Integration Event 路径：入站账单可用信�
 - `docs/requirements/business/`：框架无关业务规则；
 - `docs/requirements/acceptance/payment-scenarios.md`：稳定的业务验收断言；
 - `docs/requirements/acceptance/payment-acceptance-guide.md`：面向人工验收的执行顺序、架构导航、精确测试方法与观察点；
+- `docs/requirements/acceptance/payment-test-evidence-catalog.md`：自动化测试到 PAY-AC/PAY-BR 的证据目录（本次前置整理，不替代人工教学）；
 - `docs/requirements/projection/cap4k-current.md`：业务需求到当前 cap4k 能力的 current-only 投影；
 - `docs/requirements/traceability.yaml`：需求、投影、实现切片与证据的机器可读追踪关系。
 

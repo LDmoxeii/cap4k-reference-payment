@@ -4,6 +4,7 @@ import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundExcep
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import jakarta.persistence.PersistenceException
 import kotlin.test.Test
+import org.junit.jupiter.api.DisplayName
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -12,6 +13,7 @@ class PaymentHttpErrorAdviceTest {
     private val advice = PaymentHttpErrorAdvice()
 
     @Test
+    @DisplayName("PAY-AC-003/006/012/017 — HTTP code/status 稳定且 message 安全")
     fun `application errors preserve stable code while exposing Chinese message and safe details`() {
         val paymentId = PaymentId.parse("018f22a0-0000-7000-8000-000000000404")
         val response = advice.notFound(PaymentNotFoundException(paymentId))
@@ -24,6 +26,7 @@ class PaymentHttpErrorAdviceTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-003/006/017 — 原始英文诊断不泄漏到 HTTP")
     fun `uncontrolled argument and state messages never expose raw English diagnostics`() {
         val badRequest = requireNotNull(advice.badRequest(IllegalArgumentException("raw provider failure")).body)
         val conflict = requireNotNull(advice.stateConflict(IllegalStateException("internal state dump")).body)
@@ -37,6 +40,7 @@ class PaymentHttpErrorAdviceTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-024/088 — 持久化与未知异常返回固定安全消息")
     fun `persistence and unknown failures return fixed Chinese messages without internal details`() {
         val persistence = requireNotNull(
             advice.concurrentModification(PersistenceException("SQLState 23505 unique constraint payment_order")).body

@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class MerchantSettlementBehaviorTest {
@@ -32,8 +33,11 @@ class MerchantSettlementBehaviorTest {
         DomainEventSupervisorSupport.release(domainEvents)
     }
     @Test
+    @DisplayName("PAY-AC-060/066/067 — 结算构成冻结、零/负净额边界")
     fun `confirmation freezes positive composition while zero completes without transfer and negative remains review-only`() {
+        // Given：同一结算周期分别准备正、零、负三种净额，观察候选资格与划拨副作用。
         val positive = settlement("127.00")
+        // When：确认正净额、确认零净额、确认负净额；只有正净额允许后续执行划拨。
         assertThat(positive.confirmComposition(OPERATOR, ROLE, NOW)).isEqualTo(MerchantSettlementStatus.CONFIRMED)
         assertThat(positive.compositionFrozen).isTrue()
         assertThat(positive.confirmedBy).isEqualTo(OPERATOR)
@@ -49,6 +53,7 @@ class MerchantSettlementBehaviorTest {
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("没有可划拨的正净额")
 
+        // Then：结算状态、compositionFrozen、settled fact、execution attempt 与 Domain Event 数量共同构成证据。
         val negative = settlement("-30.00")
         assertThat(negative.confirmComposition(OPERATOR, ROLE, NOW)).isEqualTo(MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED)
         assertThat(negative.settlementLines).hasSize(1)
@@ -58,6 +63,7 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-063 — 结算成功事实与重复回放幂等")
     fun `first verified success forms one settled fact and exact replay only increments receipt counters`() {
         val settlement = confirmedSettlement()
         val attempt = settlement.startAcceptedAttempt()
@@ -78,6 +84,7 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-065/088 — 结算冲突证据与成功不可回退")
     fun `same notification with another payload and late opposite final result are conflicts without success rollback`() {
         val settlement = confirmedSettlement()
         val attempt = settlement.startAcceptedAttempt()
@@ -109,6 +116,7 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-064/086 — 未知结果复核与授权裁决")
     fun `unknown result blocks retry until frozen threshold and authorized adjudication appends final evidence`() {
         val settlement = confirmedSettlement()
         val attempt = settlement.startAcceptedAttempt()
@@ -148,6 +156,7 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-067/068 — 未确认结算的追加式调整链")
     fun `unconfirmed settlement can return for adjustment and link a fresh predecessor chain`() {
         val previous = settlement("127.00")
         val replacement = settlement("127.00").also {
@@ -174,6 +183,7 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-062/068 — effective ownership 幂等")
     fun `replacement activation claims canonical effective ownership idempotently`() {
         val replacement = settlement("127.00")
         replacement.effectiveScopeIdentity = null
@@ -198,6 +208,7 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-086 — 最小领域操作员权限守卫（非完整 RBAC）")
     fun `only authorized operators may confirm adjudicate or void`() {
         val prepared = settlement("10.00")
         assertThatThrownBy { prepared.confirmComposition(OPERATOR, "VIEWER", NOW) }

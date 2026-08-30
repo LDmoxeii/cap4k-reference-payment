@@ -1,6 +1,6 @@
 # Payment Reference 人工验收指南
 
-本指南是 `cap4k-reference-payment` 的**人工验收主入口**。业务预期仍以 [payment-scenarios.md](payment-scenarios.md) 的 Given/When/Then 为准；场景状态、projection 与 evidence 的机器真源仍是 [traceability.yaml](../traceability.yaml)。
+本指南是 `cap4k-reference-payment` 的**人工验收主入口**。自动化证据整理完成后，后续阅读式教学请先阅读[教学上下文](payment-teaching-context.md)和[教学大纲](payment-teaching-syllabus.md)，再回到[自动化测试证据目录](payment-test-evidence-catalog.md)。正式人工验收开始前仍需以本指南为执行入口。业务预期仍以 [payment-scenarios.md](payment-scenarios.md) 的 Given/When/Then 为准；场景状态、projection 与 evidence 的机器真源仍是 [traceability.yaml](../traceability.yaml)。
 
 ## 1. 当前验收范围
 

@@ -22,10 +22,12 @@ import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class PaymentBehaviorTest {
     @Test
+    @DisplayName("PAY-AC-012 — 金额、精度与币种输入边界")
     fun `money keeps exact cents and rejects invalid payment amounts`() {
         val money = Money.of(BigDecimal("100"), "cny")
 
@@ -38,8 +40,10 @@ class PaymentBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-004/005/015 — 首次成功、重复通知与成功后失败不回退")
     fun `accepted channel result forms success once and later failure cannot roll it back`() {
-        val payment = payment()
+        // Given：Payment 尚未成功，且先建立一个处理中尝试；费用规则作为成功时快照输入。
+        val payment = givenPendingPayment()
         val attempt = payment.startAttempt(
             channelId = "C-001",
             channelConfigurationId = "018f22a0-0000-7000-8000-000000000001",
@@ -49,6 +53,7 @@ class PaymentBehaviorTest {
         )
         attempt.id = PaymentAttemptId.parse("018f22a0-0000-7000-8000-000000000011")
 
+        // When：首次可信 SUCCESS 形成成功事实；随后用同身份重放，再发送不同身份的 FAILED。
         val success = payment.recordChannelResult(
             paymentAttemptId = attempt.id,
             channelId = "C-001",
@@ -61,7 +66,7 @@ class PaymentBehaviorTest {
             receivedAt = LocalDateTime.parse("2026-08-17T08:01:01"),
             verified = true,
             verificationSummary = "verified",
-            settlementFeeRule = feeRule(),
+            settlementFeeRule = givenSettlementFeeRule(),
         )
         val duplicate = payment.recordChannelResult(
             paymentAttemptId = attempt.id,
@@ -90,6 +95,7 @@ class PaymentBehaviorTest {
             verificationSummary = "verified",
         )
 
+        // Then：按“支付状态 / 尝试状态 / 成功事实 / 通知意图 / 结算资格 / 持久化回执”分组读取结果。
         assertThat(success.accepted).isTrue()
         assertThat(success.successFactFormedNow).isTrue()
         assertThat(duplicate.duplicate).isTrue()
@@ -122,8 +128,9 @@ class PaymentBehaviorTest {
 
 
     @Test
+    @DisplayName("PAY-AC-006 — 未验证或渠道不匹配通知保留拒绝证据")
     fun `verified channel mismatch is rejected and retained as a notification receipt`() {
-        val payment = payment()
+        val payment = givenPendingPayment()
         val attempt = payment.startAttempt(
             channelId = "C-001",
             channelConfigurationId = "018f22a0-0000-7000-8000-000000000001",
@@ -157,8 +164,9 @@ class PaymentBehaviorTest {
 
 
     @Test
+    @DisplayName("PAY-AC-007 — 到期关闭与重复扫描幂等")
     fun `expired payment without pending attempt closes idempotently and cannot start`() {
-        val payment = payment(LocalDateTime.parse("2026-08-17T08:00:00"))
+        val payment = givenPendingPayment(LocalDateTime.parse("2026-08-17T08:00:00"))
         val first = payment.expire(LocalDateTime.parse("2026-08-17T08:00:01"))
         val replay = payment.expire(LocalDateTime.parse("2026-08-17T08:01:00"))
 
@@ -172,8 +180,9 @@ class PaymentBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-008 — 到期未知结果与稳定复核")
     fun `expired payment with processing attempt becomes result unknown with one stable review`() {
-        val payment = payment(LocalDateTime.parse("2026-08-17T08:00:00"))
+        val payment = givenPendingPayment(LocalDateTime.parse("2026-08-17T08:00:00"))
         val attempt = payment.startAttempt("C-001", "cfg", "snapshot", "request", LocalDateTime.parse("2026-08-17T07:59:00"))
         attempt.id = PaymentAttemptId.parse("018f22a0-0000-7000-8000-000000000021")
 
@@ -190,8 +199,9 @@ class PaymentBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-009 — 终态后的迟到成功进入复核")
     fun `late success after closed terminal preserves terminal state and opens held review`() {
-        val payment = payment().also { it.status = PaymentStatus.CLOSED }
+        val payment = givenPendingPayment().also { it.status = PaymentStatus.CLOSED }
         val attempt = PaymentAttempt(
             channelId = "C-001", channelConfigurationId = "cfg", channelConfigurationSnapshot = "snapshot",
             requestIdentity = "request", status = PaymentAttemptStatus.FAILED,
@@ -216,22 +226,23 @@ class PaymentBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-010 — 多尝试成功但成功事实/费用/通知意图只形成一次")
     fun `two trustworthy attempt successes form revenue fee and notification intent only once`() {
-        val payment = payment().also { it.status = PaymentStatus.PROCESSING }
-        val first = attempt("018f22a0-0000-7000-8000-000000000023", "request-1")
-        val second = attempt("018f22a0-0000-7000-8000-000000000024", "request-2")
+        val payment = givenPendingPayment().also { it.status = PaymentStatus.PROCESSING }
+        val first = givenProcessingAttempt("018f22a0-0000-7000-8000-000000000023", "request-1")
+        val second = givenProcessingAttempt("018f22a0-0000-7000-8000-000000000024", "request-2")
         payment.attempts.add(first)
         payment.attempts.add(second)
 
         payment.recordChannelResult(
             first.id, "C-001", "N-FIRST", "CT-FIRST", BigDecimal("100.00"), "CNY", "SUCCESS",
             LocalDateTime.parse("2026-08-17T08:01:00"), LocalDateTime.parse("2026-08-17T08:01:01"),
-            true, "verified", feeRule(),
+            true, "verified", givenSettlementFeeRule(),
         )
         val conflict = payment.recordChannelResult(
             second.id, "C-001", "N-SECOND", "CT-SECOND", BigDecimal("100.00"), "CNY", "SUCCESS",
             LocalDateTime.parse("2026-08-17T08:02:00"), LocalDateTime.parse("2026-08-17T08:02:01"),
-            true, "verified", feeRule(),
+            true, "verified", givenSettlementFeeRule(),
         )
 
         assertThat(conflict.conflicting).isTrue()
@@ -244,14 +255,15 @@ class PaymentBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-005/015 — 同通知身份载荷冲突追加证据")
     fun `notification identity reuse with another payload appends evidence without overwriting first receipt`() {
-        val payment = payment()
+        val payment = givenPendingPayment()
         val attempt = payment.startAttempt("C-001", "cfg", "snapshot", "request", LocalDateTime.parse("2026-08-17T08:00:00"))
         attempt.id = PaymentAttemptId.parse("018f22a0-0000-7000-8000-000000000025")
         payment.recordChannelResult(
             attempt.id, "C-001", "N-REUSED", "CT-1", BigDecimal("100.00"), "CNY", "SUCCESS",
             LocalDateTime.parse("2026-08-17T08:01:00"), LocalDateTime.parse("2026-08-17T08:01:01"),
-            true, "verified", feeRule(),
+            true, "verified", givenSettlementFeeRule(),
         )
         val originalPayload = attempt.paymentNotificationReceipts.single().payloadIdentity
         payment.recordChannelResult(
@@ -267,13 +279,13 @@ class PaymentBehaviorTest {
         assertThat(payment.reviewCases).anyMatch { it.type == PaymentReviewType.NOTIFICATION_PAYLOAD_CONFLICT }
     }
 
-    private fun attempt(id: String, request: String) = PaymentAttempt(
+    private fun givenProcessingAttempt(id: String, request: String) = PaymentAttempt(
         channelId = "C-001", channelConfigurationId = "cfg", channelConfigurationSnapshot = "snapshot",
         requestIdentity = request, status = PaymentAttemptStatus.PROCESSING,
         initiatedAt = LocalDateTime.parse("2026-08-17T08:00:00"),
     ).also { it.id = PaymentAttemptId.parse(id) }
 
-    private fun feeRule(): SettlementFeeRule = SettlementFeeRule(
+    private fun givenSettlementFeeRule(): SettlementFeeRule = SettlementFeeRule(
         configurationId = "018f22a0-0000-7000-8000-000000000001",
         basisPoints = 200,
         fixedFeeAmount = BigDecimal.ZERO,
@@ -281,7 +293,7 @@ class PaymentBehaviorTest {
         currencyPrecision = 2,
     )
 
-    private fun payment(expiresAt: LocalDateTime = LocalDateTime.parse("2030-01-01T00:00:00")): Payment = Payment(
+    private fun givenPendingPayment(expiresAt: LocalDateTime = LocalDateTime.parse("2030-01-01T00:00:00")): Payment = Payment(
         merchantId = "M-001",
         merchantOrderNumber = "O-001",
         idempotencyKey = "K-001",
