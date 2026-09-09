@@ -20,3 +20,6 @@ Thumbs.db
 /.comet/*
 !/.comet/config.yaml
 # <<< Comet managed project state <<<
+
+# Comet project-local Codex hook contains machine-specific paths.
+/.codex/hooks.json
