@@ -2,7 +2,6 @@ package com.only4.cap4k.reference.payment.application.commands.payment.result
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.Mediator
-import com.only4.cap4k.ddd.core.application.capability.CapabilitySupervisor
 import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.ddd.domain.repo.schema.and
@@ -14,18 +13,18 @@ import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfigurationId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
-import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.SettlementFeeRule
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.recordChannelResult
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome
 import com.only4.cap4k.reference.payment.domain.values.Money
+import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
-import org.springframework.stereotype.Service
 
 @DesignBlockMetadata(
     tag = "command",
@@ -39,7 +38,6 @@ object ConfirmPaymentResultCmd {
 
     @Service
     class Handler(
-        private val capabilities: CapabilitySupervisor,
         private val clock: Clock,
     ) : CommandHandler<Request, Response> {
 
@@ -60,7 +58,7 @@ object ConfirmPaymentResultCmd {
                 command.result,
                 command.occurredAt.toString(),
             ).joinToString("|")
-            val verification = capabilities.call(
+            val verification = Mediator.capabilities.call(
                 VerifyPaymentResult.Request(
                     channelId = command.channelId,
                     notificationId = command.notificationId,
@@ -75,7 +73,7 @@ object ConfirmPaymentResultCmd {
             val attempt = payment.attempts.firstOrNull { it.id == paymentAttemptId }
             val trustworthySuccess = command.result.trim().equals("SUCCESS", ignoreCase = true) && verification.verified
             if (trustworthySuccess) {
-                capabilities.call(SerializeMerchantOrderSuccess.Request(payment.merchantId))
+                Mediator.capabilities.call(SerializeMerchantOrderSuccess.Request(payment.merchantId))
             }
             val merchantOrderSuccessAvailable = if (trustworthySuccess) {
                 val successfulOrderPayment = Mediator.repositories.findOne(

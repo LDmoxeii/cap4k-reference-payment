@@ -27,6 +27,7 @@ Payment → Refund → Reconciliation → Merchant Settlement
 - 规则、生命周期和术语真源：[docs/requirements/business/](../business/)。
 - 当前 projection、Command、Capability、Endpoint 和聚合设计：[design/](../../../design/)。
 - 状态和 evidence 的机器真源：[traceability.yaml](../traceability.yaml)。
+- 阅读式教学文章总索引：[payment-teaching-index.md](/c:/Users/LD_moxeii/Documents/code/only-workspace/cap4k-reference-payment/docs/requirements/acceptance/payment-teaching-index.md)。
 - 主测试与辅助测试的证据索引：[payment-test-evidence-catalog.md](payment-test-evidence-catalog.md)。
 - 业务入口、Flow、环境边界和人工观察点：[payment-acceptance-guide.md](payment-acceptance-guide.md)。
 
@@ -36,9 +37,10 @@ Payment → Refund → Reconciliation → Merchant Settlement
 
 1. 本文件，了解教学目标、边界和 SOP。
 2. [payment-teaching-syllabus.md](payment-teaching-syllabus.md)，了解模块顺序和每课阅读路线。
-3. [payment-test-evidence-catalog.md](payment-test-evidence-catalog.md)，定位 PAY-AC、PAY-BR、主测试和辅助测试。
-4. 根据当前模块，再读取 `payment-scenarios.md`、对应的 business 文档、design 文件和测试源码。
-5. 只有在需要解释 HTTP、Scheduler、Integration Event 或 Analyzer 时，才进入对应入口和 Flow 文件。
+3. [payment-teaching-index.md](/c:/Users/LD_moxeii/Documents/code/only-workspace/cap4k-reference-payment/docs/requirements/acceptance/payment-teaching-index.md)，选择当前模块的独立文章。
+4. [payment-test-evidence-catalog.md](payment-test-evidence-catalog.md)，定位 PAY-AC、PAY-BR、主测试和辅助测试。
+5. 根据当前模块，再读取 `payment-scenarios.md`、对应的 business 文档、design 文件和测试源码。
+6. 只有在需要解释 HTTP、Scheduler、Integration Event 或 Analyzer 时，才进入对应入口和 Flow 文件。
 
 ## 4. 最简教学 SOP
 
