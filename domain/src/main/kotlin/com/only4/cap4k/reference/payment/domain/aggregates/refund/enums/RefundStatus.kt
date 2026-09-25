@@ -16,6 +16,8 @@ enum class RefundStatus(
     val description: String
 ) {
 
+    REQUESTED(5, "退款申请已受理并占用预算，尚未创建渠道尝试"),
+
     PROCESSING(0, "退款预算已占用，渠道退款请求正在处理中"),
 
     SUCCEEDED(1, "已验证的渠道结果确认退款成功"),

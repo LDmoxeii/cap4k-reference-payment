@@ -2,7 +2,9 @@ package com.only4.cap4k.reference.payment.contract.endpoints.payment.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
+import com.only4.cap4k.reference.payment.contract.common.ChannelResultDisposition
+import com.only4.cap4k.reference.payment.contract.common.Money
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import java.time.Instant
 
 /**
@@ -44,11 +46,7 @@ object ConfirmPaymentResultEndpoint {
         /**
          * 金额
          */
-        val amount: BigDecimal,
-        /**
-         * 币种
-         */
-        val currency: String,
+        val money: Money,
         /**
          * 结果
          */
@@ -57,10 +55,8 @@ object ConfirmPaymentResultEndpoint {
          * 发生时间
          */
         val occurredAt: Instant,
-        /**
-         * 核验材料
-         */
-        val verificationMaterial: String
+        /** callback 的 canonical raw payload。验真结论只由服务端 reference verifier 形成。 */
+        val rawPayload: String? = null,
     ) : EndpointRequest<Response>
 
     data class Response(
@@ -79,7 +75,7 @@ object ConfirmPaymentResultEndpoint {
         /**
          * 处置结果
          */
-        val disposition: String,
+        val disposition: ChannelResultDisposition,
         /**
          * 是否重复
          */
@@ -119,7 +115,9 @@ object ConfirmPaymentResultEndpoint {
         /**
          * 通知意图状态
          */
-        val notificationIntentState: String?
+        val notificationIntentState: String?,
+        /** Stable command acceptance record for this callback payload. */
+        val receipt: OperationReceipt,
     )
 
 }

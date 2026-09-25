@@ -33,7 +33,7 @@ insert into merchant_channel_configuration (
     1000000.00,
     180,
     30,
-    200,
+    60,
     0.0000,
     'HALF_UP',
     30,

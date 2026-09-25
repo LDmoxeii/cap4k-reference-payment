@@ -14,14 +14,16 @@ class RefundEndpointHandlerStructureTest {
     @Test
     fun `each refund endpoint handler is one class in its own file and uses static mediator dispatch`() {
         val expectations = mapOf(
-            "CreateRefundEndpointHandler.kt" to "Mediator.commands.send(",
-            "ConfirmRefundResultEndpointHandler.kt" to "Mediator.commands.send(",
-            "GetRefundEndpointHandler.kt" to "Mediator.queries.ask(",
+            "CreateRefundEndpointHandler.kt" to ("RequestRefundEndpointHandler" to "Mediator.commands.send("),
+            "CreateRefundAttemptEndpointHandler.kt" to ("CreateRefundAttemptEndpointHandler" to "Mediator.commands.send("),
+            "SubmitRefundAttemptEndpointHandler.kt" to ("SubmitRefundAttemptEndpointHandler" to "Mediator.commands.send("),
+            "ConfirmRefundResultEndpointHandler.kt" to ("ConfirmRefundResultEndpointHandler" to "Mediator.commands.send("),
+            "GetRefundEndpointHandler.kt" to ("GetRefundEndpointHandler" to "Mediator.queries.ask("),
         )
 
-        expectations.forEach { (fileName, dispatch) ->
+        expectations.forEach { (fileName, expectation) ->
             val source = read(fileName)
-            val handlerName = fileName.removeSuffix(".kt")
+            val (handlerName, dispatch) = expectation
             val declaredClasses = Regex("(?m)^class\\s+([A-Za-z0-9_]+)")
                 .findAll(source)
                 .map { it.groupValues[1] }
@@ -37,10 +39,11 @@ class RefundEndpointHandlerStructureTest {
     fun `refund result handler explicitly projects every domain outcome field`() {
         val source = read("ConfirmRefundResultEndpointHandler.kt")
         val mappings = listOf(
-            "refundStatus = outcome.refundStatus.name",
-            "attemptStatus = outcome.attemptStatus?.name",
+            "refundStatus = ReferenceContractStatusMapper.refundStatus(outcome.refundStatus)",
+            "finality = ReferenceContractStatusMapper.refundFinality(",
+            "attemptStatus = outcome.attemptStatus?.let(ReferenceContractStatusMapper::refundAttemptStatus)",
             "notificationReceiveCount = outcome.notificationReceiveCount",
-            "disposition = outcome.disposition.name",
+            "disposition = ReferenceContractStatusMapper.refundDisposition(outcome.disposition)",
             "duplicate = outcome.duplicate",
             "accepted = outcome.accepted",
             "rejected = outcome.rejected",
@@ -50,10 +53,11 @@ class RefundEndpointHandlerStructureTest {
             "reviewRequiredNow = outcome.reviewRequiredNow",
             "rejectionSummary = outcome.rejectionSummary",
             "conflictSummary = outcome.conflictSummary",
+            "receipt = commandResponse.receipt",
         )
 
-        assertContains(source, "Mediator.commands.send(")
-        assertContains(source, ").outcome")
+        assertContains(source, "val commandResponse = Mediator.commands.send(")
+        assertContains(source, "val outcome = commandResponse.outcome")
         mappings.forEach { mapping -> assertContains(source, mapping) }
     }
 

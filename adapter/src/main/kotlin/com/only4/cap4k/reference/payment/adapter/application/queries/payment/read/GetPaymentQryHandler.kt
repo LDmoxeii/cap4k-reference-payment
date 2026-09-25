@@ -27,6 +27,18 @@ class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.R
             succeededAt = payment.succeededAt?.toInstant(ZoneOffset.UTC),
             closedAt = payment.closedAt?.toInstant(ZoneOffset.UTC), closeReason = payment.closeReason,
             channelTransactionId = payment.channelTransactionId,
+            feeSnapshot = payment.settlementFeeFactIdentity?.let {
+                GetPaymentQry.Response.FeeSnapshot(
+                    feeRate = requireNotNull(payment.settlementFeeRate),
+                    basisPoints = requireNotNull(payment.settlementFeeBasisPoints),
+                    fixedFeeAmount = requireNotNull(payment.settlementFixedFeeAmount),
+                    roundingMode = requireNotNull(payment.settlementFeeRoundingMode),
+                    currencyPrecision = requireNotNull(payment.settlementFeeCurrencyPrecision),
+                    calculationAmount = requireNotNull(payment.settlementFeeCalculationAmount),
+                    feeAmount = requireNotNull(payment.settlementFeeAmount),
+                    formedAt = requireNotNull(payment.settlementFeeFormedAt).toInstant(ZoneOffset.UTC),
+                )
+            },
             reservedRefundAmount = payment.reservedRefundAmount,
             successfulRefundAmount = payment.successfulRefundAmount, refundableAmount = payment.refundableAmount,
             attemptCount = payment.attemptCount, notificationReceiveCount = payment.notificationReceiveCount,
@@ -41,12 +53,19 @@ class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.R
             merchantSuccessNotificationIntentIdentity = payment.merchantSuccessNotificationIntentIdentity,
             merchantSuccessNotificationIntentState = payment.merchantSuccessNotificationIntentState?.name,
             reviewCount = payment.reviewCases.size, blockingReviewCount = eligibility.blockingReviewIdentities.size,
-            settlementEligible = eligibility.settlementEligible, settlementBlocked = payment.settlementBlocked,
+            settlementEligible = payment.status.name == "SUCCEEDED" && eligibility.settlementEligible,
+            settlementBlocked = payment.settlementBlocked,
             attempts = payment.attempts.map { attempt ->
                 GetPaymentQry.Response.PaymentAttemptSummary(
                     paymentAttemptId = attempt.id.toString(), channelId = attempt.channelId,
                     status = attempt.status.name, requestIdentity = attempt.requestIdentity,
                     initiatedAt = attempt.initiatedAt.toInstant(ZoneOffset.UTC),
+                    submissionIdentity = attempt.submissionIdentity,
+                    submittedAt = attempt.submittedAt?.toInstant(ZoneOffset.UTC),
+                    acceptedAt = attempt.acceptedAt?.toInstant(ZoneOffset.UTC),
+                    completedAt = attempt.completedAt?.toInstant(ZoneOffset.UTC),
+                    interactionInformation = attempt.interactionInformation,
+                    riskReason = attempt.riskReason,
                     channelTransactionId = attempt.channelTransactionId, finalResult = attempt.finalResult?.name,
                     resultOccurredAt = attempt.resultOccurredAt?.toInstant(ZoneOffset.UTC),
                     notificationReceiveCount = attempt.notificationReceiveCount,
@@ -57,6 +76,17 @@ class GetPaymentQryHandler : QueryHandler<GetPaymentQry.Request, GetPaymentQry.R
                     conflictingNotificationCount = attempt.conflictingNotificationCount,
                     verdictSummary = attempt.verdictSummary, rejectionSummary = attempt.rejectionSummary,
                     conflictSummary = attempt.conflictSummary,
+                    submissionReceipts = attempt.paymentSubmissionReceipts.map { receipt ->
+                        GetPaymentQry.Response.SubmissionReceiptSummary(
+                            submissionIdentity = receipt.submissionIdentity,
+                            requestIdentity = receipt.requestIdentity,
+                            channelId = receipt.channelId,
+                            submittedAt = receipt.submittedAt.toInstant(ZoneOffset.UTC),
+                            outcome = receipt.outcome,
+                            channelReference = receipt.channelReference,
+                            diagnosticSummary = receipt.diagnosticSummary,
+                        )
+                    },
                     notificationReceipts = attempt.paymentNotificationReceipts.map { receipt ->
                         GetPaymentQry.Response.NotificationReceiptSummary(
                             notificationIdentity = receipt.notificationIdentity, payloadIdentity = receipt.payloadIdentity,

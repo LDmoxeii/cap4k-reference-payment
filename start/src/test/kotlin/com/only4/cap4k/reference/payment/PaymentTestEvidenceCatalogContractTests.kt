@@ -10,15 +10,15 @@ import org.yaml.snakeyaml.constructor.SafeConstructor
 
 /**
  * 这不是业务行为测试，而是证据目录的“可执行目录索引”：
- * 目录一旦漏掉 PAY-AC、引用不存在的测试方法，或把 planned 场景写成已验证，构建就会失败。
+ * 目录一旦漏掉 PAY-AC、引用不存在的测试方法，或缺少真实 HTTP 证据边界，构建就会失败。
  */
 class PaymentTestEvidenceCatalogContractTests {
     @Test
-    fun `catalog enumerates every acceptance scenario exactly once and keeps planned boundaries`() {
+    fun `catalog enumerates all unified acceptance scenarios exactly once as verified`() {
         val root = repositoryRoot()
         val catalog = Files.readString(root.resolve(CATALOG))
-        val scenarios = Files.readString(root.resolve("docs/requirements/acceptance/payment-scenarios.md"))
-        val expectedIds = acceptanceIds(scenarios)
+        val registry = Files.readString(root.resolve("start/src/test/resources/reference-http/pay-ac-scenarios.json"))
+        val expectedIds = acceptanceIds(registry)
         val catalogRows = Regex("(?m)^\\| (PAY-AC-[0-9]{3}) \\| ([^|]+) \\|")
             .findAll(catalog)
             .map { it.groupValues[1] to it.groupValues[2].trim() }
@@ -26,26 +26,25 @@ class PaymentTestEvidenceCatalogContractTests {
         val catalogIds = catalogRows.map { it.first }
         val acceptanceStatuses = traceabilityAcceptanceStatuses(root)
 
-        assertThat(expectedIds).hasSize(53)
-        assertThat(catalogIds).hasSize(53)
+        assertThat(expectedIds).hasSize(67)
+        assertThat(catalogIds).hasSize(67)
         assertThat(catalogIds.toSet()).containsExactlyInAnyOrderElementsOf(expectedIds)
         assertThat(catalogIds).doesNotHaveDuplicates()
         catalogRows.forEach { (id, catalogStatus) ->
-            val expectedStatus = if (catalogStatus == "planned/not-built") "planned" else catalogStatus
-            assertThat(acceptanceStatuses[id]).describedAs(id + " catalog status").isEqualTo(expectedStatus)
+            assertThat(catalogStatus).describedAs(id + " catalog status").isEqualTo("verified")
+            assertThat(acceptanceStatuses[id]).describedAs(id + " traceability status").isEqualTo("verified")
         }
         assertThat(catalog).contains("Given / Arrange").contains("When / Act").contains("Then / Assert")
         listOf("支付状态", "尝试状态", "成功事实", "复核", "通知意图", "结算资格", "持久化结果")
             .forEach { dimension -> assertThat(catalog).contains(dimension) }
 
-        val planned = listOf("PAY-AC-080", "PAY-AC-081", "PAY-AC-084", "PAY-AC-086")
-        planned.forEach { id ->
-            val row = catalog.lineSequence().first { it.startsWith("| $id ") }
-            assertThat(row).contains("planned/not-built")
-            assertThat(row).contains("不能证明")
-        }
-        assertThat(catalog).contains("PAY-EV-010/025/026")
-        assertThat(catalog).contains("不宣称生产能力")
+        assertThat(catalog)
+            .contains("-EvidenceRoot")
+            .contains("build/reference-http-evidence/<runId>/")
+            .contains("独立 JVM + 进程外 client")
+            .contains("PAY-AC-102.json` + `clean-loop-1/2.json")
+            .contains("不声称 WOW 通过")
+            .contains("不宣称生产能力")
     }
 
     @Test
@@ -77,8 +76,80 @@ class PaymentTestEvidenceCatalogContractTests {
         assertThat(catalog).contains("focused test 不能替代")
     }
 
+    @Test
+    fun `PAY-AC-080 HTTP scenario enforces merchant filtering and cross-merchant rejection`() {
+        val block = scenarioBlock("PAY-AC-080")
+        assertThat(block)
+            .contains("'/api/payments/search'")
+            .contains("merchant filter returns only requested merchant")
+            .contains("merchant A list excludes merchant B payment")
+            .contains("cross-merchant refund is rejected")
+            .contains("cross-merchant rejection has no budget side effect")
+    }
+
+    @Test
+    fun `PAY-AC-084 HTTP scenario rejects retired routing and preserves history`() {
+        val block = scenarioBlock("PAY-AC-084")
+        assertThat(block)
+            .contains("status='RETIRED'")
+            .contains("NO_ELIGIBLE_CHANNEL")
+            .contains("historical attempt retains channel identity")
+            .contains("historical fee snapshot remains unchanged")
+    }
+
+    @Test
+    fun `PAY-AC-093 HTTP scenario covers five authoritative keyset lists`() {
+        val block = scenarioBlock("PAY-AC-093")
+        listOf(
+            "'/api/payments/search'",
+            "'/api/refunds/search'",
+            "'/api/reconciliation-runs/search'",
+            "'/api/merchant-settlements/search'",
+            "'/api/manual-reviews/search'",
+        ).forEach { endpoint -> assertThat(block).contains(endpoint) }
+        assertThat(block)
+            .contains("list supports small-page cursor traversal")
+            .contains("cursor pages do not duplicate items")
+            .contains("Get-AcForgedCursor")
+            .contains("newer payment does not backfill an existing cursor")
+    }
+
+    @Test
+    fun `PAY-AC-102 harness requires one complete loop and two clean repeats`() {
+        val scenario = scenarioBlock("PAY-AC-102")
+        val runner = Files.readString(repositoryRoot().resolve("scripts/acceptance/run-pay-ac-http.ps1"))
+        assertThat(scenario)
+            .contains("Invoke-PayAcCleanLoop")
+            .contains("sandbox loop completes payment")
+            .contains("sandbox loop completes refund")
+            .contains("sandbox loop completes reconciliation")
+            .contains("sandbox loop completes settlement")
+        assertThat(runner)
+            .contains("1..2 | ForEach-Object")
+            .contains("cleanLoopsRepeatable = ${'$'}cleanRepeatable")
+            .contains("-and -not ${'$'}cleanRepeatable")
+    }
+
+    @Test
+    fun `PASSED evidence requires at least one recorded assertion`() {
+        val suite = Files.readString(repositoryRoot().resolve("scripts/acceptance/PayAcHttpSuite.psm1"))
+        assertThat(suite)
+            .contains("${'$'}Status -eq 'PASSED' -and ${'$'}assertionCount -eq 0")
+            .contains("cannot be PASSED without at least one recorded assertion")
+            .contains("assertionCount = ${'$'}assertionCount")
+    }
+
     private fun acceptanceIds(text: String): Set<String> =
         Regex("PAY-AC-[0-9]{3}").findAll(text).map { it.value }.toSet()
+
+    private fun scenarioBlock(id: String): String {
+        val source = Files.readString(repositoryRoot().resolve("scripts/acceptance/PayAcScenarios.psm1"))
+        val startMarker = "'$id' {"
+        val start = source.indexOf(startMarker)
+        require(start >= 0) { "missing HTTP scenario $id" }
+        val next = source.indexOf("\n        'PAY-AC-", start + startMarker.length)
+        return source.substring(start, if (next >= 0) next else source.length)
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun traceabilityAcceptanceStatuses(root: Path): Map<String, String> {

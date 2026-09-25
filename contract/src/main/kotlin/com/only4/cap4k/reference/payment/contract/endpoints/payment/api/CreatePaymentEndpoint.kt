@@ -2,8 +2,8 @@ package com.only4.cap4k.reference.payment.contract.endpoints.payment.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
-import java.time.Instant
+import com.only4.cap4k.reference.payment.contract.common.Money
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 
 /**
  * POST /api/payments
@@ -36,19 +36,11 @@ object CreatePaymentEndpoint {
         /**
          * 金额
          */
-        val amount: BigDecimal,
-        /**
-         * 币种
-         */
-        val currency: String,
+        val money: Money,
         /**
          * 支付方式
          */
         val paymentMethod: String,
-        /**
-         * 过期时间
-         */
-        val expiresAt: Instant
     ) : EndpointRequest<Response>
 
     data class Response(
@@ -71,7 +63,9 @@ object CreatePaymentEndpoint {
         /**
          * 拒绝摘要
          */
-        val rejectionSummary: String?
+        val rejectionSummary: String?,
+        /** Unified command acceptance receipt. */
+        val receipt: OperationReceipt,
     )
 
 }

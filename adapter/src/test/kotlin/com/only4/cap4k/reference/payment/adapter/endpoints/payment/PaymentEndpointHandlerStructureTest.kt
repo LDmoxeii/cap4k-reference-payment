@@ -14,7 +14,8 @@ class PaymentEndpointHandlerStructureTest {
     fun `each endpoint handler is one class in its own file and uses static mediator dispatch`() {
         val expectations = mapOf(
             "CreatePaymentEndpointHandler.kt" to "Mediator.commands.send(",
-            "StartPaymentAttemptEndpointHandler.kt" to "Mediator.commands.send(",
+            "CreatePaymentAttemptEndpointHandler.kt" to "Mediator.commands.send(",
+            "SubmitPaymentAttemptEndpointHandler.kt" to "Mediator.commands.send(",
             "ConfirmPaymentResultEndpointHandler.kt" to "Mediator.commands.send(",
             "AdjudicatePaymentReviewEndpointHandler.kt" to "Mediator.commands.send(",
             "GetPaymentEndpointHandler.kt" to "Mediator.queries.ask(",
@@ -35,10 +36,10 @@ class PaymentEndpointHandlerStructureTest {
     fun `confirm result handler maps every domain outcome field at the contract boundary`() {
         val source = read("ConfirmPaymentResultEndpointHandler.kt")
         val mappings = listOf(
-            "paymentStatus = outcome.paymentStatus.name",
+            "paymentStatus = publicPaymentStatus(outcome.paymentStatus.name)",
             "attemptStatus = outcome.attemptStatus?.name",
             "notificationReceiveCount = outcome.notificationReceiveCount",
-            "disposition = outcome.disposition.name",
+            "disposition = ReferenceContractStatusMapper.paymentDisposition(outcome.disposition)",
             "duplicate = outcome.duplicate",
             "accepted = outcome.accepted",
             "rejected = outcome.rejected",
@@ -49,10 +50,11 @@ class PaymentEndpointHandlerStructureTest {
             "reviewIdentity = outcome.reviewIdentity",
             "settlementEligible = outcome.settlementEligible",
             "notificationIntentState = outcome.notificationIntentState?.name",
+            "receipt = commandResponse.receipt",
         )
 
-        assertContains(source, "Mediator.commands.send(")
-        assertContains(source, ").outcome")
+        assertContains(source, "val commandResponse = Mediator.commands.send(")
+        assertContains(source, "val outcome = commandResponse.outcome")
         mappings.forEach { mapping -> assertContains(source, mapping) }
     }
 

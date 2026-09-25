@@ -1,0 +1,5 @@
+flowchart TD
+  N1["CreateRefundAttemptCmd.Request"]
+  N2["refund.attempt.create [POST /api/refunds/{refundId}/attempts]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

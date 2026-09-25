@@ -1,0 +1,5 @@
+flowchart TD
+  N1["RetryMerchantNotificationCmd.Request"]
+  N2["merchant-notification.retry [POST /api/merchant-notifications/{notificationId}/retries]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

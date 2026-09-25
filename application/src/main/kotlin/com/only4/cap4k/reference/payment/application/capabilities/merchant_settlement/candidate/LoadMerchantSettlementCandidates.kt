@@ -21,10 +21,6 @@ object LoadMerchantSettlementCandidates {
          */
         val merchantId: String,
         /**
-         * 渠道标识
-         */
-        val channelId: String,
-        /**
          * 币种
          */
         val currency: String,
@@ -39,7 +35,9 @@ object LoadMerchantSettlementCandidates {
         /**
          * 业务时区
          */
-        val businessTimezone: String
+        val businessTimezone: String,
+        /** 正在同一 UoW 中释放有效消费身份的 predecessor；仅 replacement 准备使用。 */
+        val predecessorSettlementId: String? = null,
     ) : CapabilityCall<Response>
 
     data class Response(
@@ -47,6 +45,7 @@ object LoadMerchantSettlementCandidates {
          * 符合事实列表
          */
         val eligibleFacts: List<SettlementCandidateFact>,
+        val excludedFacts: List<SettlementCandidateFact>,
         /**
          * 排除数量
          */

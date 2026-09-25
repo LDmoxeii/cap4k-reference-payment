@@ -13,6 +13,8 @@ data class SettlementLineCreation(
     val sourceKind: SettlementLineSourceKind,
     val transactionKind: ReconciliationTransactionKind,
     val sourceFactIdentity: String,
+    val decision: String = "INCLUDED",
+    val reasonCode: String = "ELIGIBLE",
     val effectiveConsumptionIdentity: String?,
     val feeFactIdentity: String?,
     val paymentId: PaymentId?,

@@ -5,6 +5,9 @@ import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementNotFoundException
+import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementConflictException
+import com.only4.cap4k.reference.payment.application.operations.OperationSupport
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement.SMerchantSettlement
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlement
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId
@@ -15,6 +18,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.l
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.requestActivation
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.voidBeforeExecution
 import java.time.Instant
+import java.time.Clock
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
@@ -29,28 +33,72 @@ import org.springframework.stereotype.Service
 )
 object VoidMerchantSettlementCmd {
     @Service
-    class Handler : CommandHandler<Request, Response> {
+    class Handler(
+        private val operationSupport: OperationSupport,
+        private val clock: Clock,
+    ) : CommandHandler<Request, Response> {
         /** 仅作废未开始外部执行的结算单；replacement 通过 predecessor 链和延迟 ownership 激活保持历史与唯一消费。 */
         override fun handle(command: Request): Response {
+            val key = command.idempotencyKey.trim()
+            val reason = command.reason.trim()
+            val evidence = command.evidence.trim()
+            require(key.isNotBlank()) { "幂等键不能为空" }
+            require(reason.isNotBlank()) { "作废原因不能为空" }
+            require(evidence.isNotBlank()) { "作废证据不能为空" }
+            require(command.operatorIdentity.isNotBlank() && command.operatorRole.trim().uppercase() == "SETTLEMENT_OPERATOR") {
+                "当前操作员角色无权处理商户结算"
+            }
             val settlement = Mediator.repositories.findOne(
                 SMerchantSettlement.predicateById(command.merchantSettlementId)
             ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
+            if (settlement.status in setOf(
+                    MerchantSettlementStatus.RESULT_UNKNOWN,
+                    MerchantSettlementStatus.CONFLICT_REVIEW_REQUIRED,
+                )
+            ) {
+                throw MerchantSettlementConflictException(
+                    code = "RESULT_UNKNOWN_REEXECUTION_FORBIDDEN",
+                    message = "商户结算单 ${settlement.id} 的执行结果尚未解决，不能作废或创建替代单",
+                )
+            }
+            val hash = operationSupport.canonicalHash(
+                settlement.id.toString(), reason, evidence, command.createReplacement.toString(), command.operatorIdentity.trim(),
+            )
+            operationSupport.replayOrNull(settlement.merchantId, COMMAND_TYPE, key, hash)?.let { operation ->
+                check(operation.resourceId == settlement.id.toString()) { "operation resource does not match settlement" }
+                return Response(
+                    settlement.id, "VOIDED", settlement.replacementSettlementId,
+                    operationSupport.receipt(operation, replay = true),
+                    requireNotNull(settlement.voidedAt).toInstant(ZoneOffset.UTC),
+                    requireNotNull(settlement.voidReason), requireNotNull(settlement.voidEvidence),
+                    requireNotNull(settlement.voidedBy),
+                )
+            }
             settlement.voidBeforeExecution(
                 operatorIdentity = command.operatorIdentity,
                 operatorRole = command.operatorRole,
-                reason = command.reason,
-                voidedAt = LocalDateTime.ofInstant(command.voidedAt, ZoneOffset.UTC),
+                reason = reason,
+                evidence = evidence,
+                voidedAt = LocalDateTime.now(clock),
             )
             val replacement = if (command.createReplacement) createReplacement(settlement) else null
             if (replacement != null) settlement.linkReplacement(replacement.id)
-            return Response(settlement.id, settlement.status.name, replacement?.id)
+            val receipt = operationSupport.accept(
+                settlement.merchantId, COMMAND_TYPE, key, hash,
+                "MerchantSettlement", settlement.id.toString(), "/api/merchant-settlements/${settlement.id}",
+            )
+            return Response(
+                settlement.id, settlement.status.name, replacement?.id, receipt,
+                requireNotNull(settlement.voidedAt).toInstant(ZoneOffset.UTC),
+                reason, evidence, requireNotNull(settlement.voidedBy),
+            )
         }
 
         private fun createReplacement(previous: MerchantSettlement): MerchantSettlement {
             val replacement = Mediator.factories.create<MerchantSettlementFactory.Payload, MerchantSettlement>(
                 MerchantSettlementFactory.Payload(
                     merchantId = previous.merchantId,
-                    channelId = previous.channelId,
+                    executionChannelId = null,
                     currency = previous.currency,
                     periodType = previous.periodType,
                     periodStart = previous.periodStart,
@@ -145,6 +193,8 @@ object VoidMerchantSettlementCmd {
          * 原因
          */
         val reason: String,
+        val evidence: String,
+        val idempotencyKey: String,
         /**
          * 作废时间
          */
@@ -167,6 +217,12 @@ object VoidMerchantSettlementCmd {
         /**
          * 替代结算标识
          */
-        val replacementSettlementId: MerchantSettlementId?
+        val replacementSettlementId: MerchantSettlementId?,
+        val receipt: OperationReceipt,
+        val voidedAt: Instant,
+        val reason: String,
+        val evidence: String,
+        val actorId: String,
     )
+    private const val COMMAND_TYPE = "VoidMerchantSettlement"
 }

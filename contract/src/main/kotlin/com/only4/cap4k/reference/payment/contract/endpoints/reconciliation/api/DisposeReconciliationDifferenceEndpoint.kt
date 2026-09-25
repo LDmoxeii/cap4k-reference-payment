@@ -2,7 +2,7 @@ package com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.time.Instant
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 
 /**
  * POST /api/reconciliation-items/{itemId}/dispositions
@@ -37,14 +37,6 @@ object DisposeReconciliationDifferenceEndpoint {
          */
         val channelId: String?,
         /**
-         * 操作员身份
-         */
-        val operatorIdentity: String,
-        /**
-         * 操作员角色
-         */
-        val operatorRole: String,
-        /**
          * 结论
          */
         val conclusion: String,
@@ -60,10 +52,9 @@ object DisposeReconciliationDifferenceEndpoint {
          * 后续动作
          */
         val followUp: String?,
-        /**
-         * 处置时间
-         */
-        val disposedAt: Instant
+        /** 人工处置原因。 */
+        val reason: String,
+        val idempotencyKey: String,
     ) : EndpointRequest<Response>
 
     data class Response(
@@ -94,7 +85,10 @@ object DisposeReconciliationDifferenceEndpoint {
         /**
          * 原因
          */
-        val blockingReason: String?
+        val blockingReason: String?,
+        /** 由可信 reference actor context 解析并持久化的责任人。 */
+        val actorId: String,
+        val receipt: OperationReceipt,
     )
 
 }

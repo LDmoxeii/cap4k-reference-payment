@@ -29,12 +29,23 @@ data class Money private constructor(
             require(normalizedCurrency in SUPPORTED_FRACTION_DIGITS) {
                 "unsupported payment currency: $normalizedCurrency"
             }
+            return of(amount, normalizedCurrency, fractionDigits(normalizedCurrency))
+        }
+
+        /**
+         * The reference-policy boundary supplies the effective precision.  Aggregate state still
+         * stores an exact Money value; this overload does not introduce mutable global currency
+         * configuration into the domain model.
+         */
+        fun of(amount: BigDecimal, currency: String, currencyPrecision: Int): Money {
+            val normalizedCurrency = currency.trim().uppercase()
+            require(currencyPrecision >= 0) { "currency precision must not be negative" }
             require(amount > BigDecimal.ZERO) { "支付金额必须大于零" }
-            require(amount.scale() <= fractionDigits(normalizedCurrency)) {
+            require(amount.scale() <= currencyPrecision) {
                 "payment amount exceeds the supported precision for $normalizedCurrency"
             }
             return Money(
-                amount = amount.setScale(fractionDigits(normalizedCurrency), RoundingMode.UNNECESSARY),
+                amount = amount.setScale(currencyPrecision, RoundingMode.UNNECESSARY),
                 currency = normalizedCurrency,
             )
         }

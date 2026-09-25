@@ -2,9 +2,9 @@ package com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
+import com.only4.cap4k.reference.payment.contract.common.Money
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import java.time.Instant
-import java.time.LocalDate
 
 /**
  * POST /api/merchant-settlements
@@ -27,26 +27,24 @@ object PrepareMerchantSettlementEndpoint {
          */
         val merchantId: String,
         /**
-         * 渠道标识
-         */
-        val channelId: String,
-        /**
          * 币种
          */
         val currency: String,
         /**
-         * 结算日期
+         * 结算周期。scope 仅由 merchantId + currency + 此 period 定义。
          */
-        val settlementDate: LocalDate,
-        /**
-         * 请求操作人
-         */
-        val requestedBy: String,
-        /**
-         * 请求时间
-         */
-        val requestedAt: Instant
-    ) : EndpointRequest<Response>
+        val settlementPeriod: SettlementPeriod,
+        val idempotencyKey: String,
+    ) : EndpointRequest<Response> {
+        data class SettlementPeriod(
+            /** 包含的 RFC3339 instant。 */
+            val start: Instant,
+            /** 不包含的 RFC3339 instant。 */
+            val end: Instant,
+            /** 业务日边界时区；reference 默认 Asia/Shanghai。 */
+            val timezone: String = "Asia/Shanghai",
+        )
+    }
 
     data class Response(
         /**
@@ -84,23 +82,24 @@ object PrepareMerchantSettlementEndpoint {
         /**
          * 支付毛金额
          */
-        val paymentGrossAmount: BigDecimal,
+        val grossMoney: Money,
         /**
          * 退款毛金额
          */
-        val refundGrossAmount: BigDecimal,
+        val refundMoney: Money,
         /**
          * 费用总额
          */
-        val feeTotalAmount: BigDecimal,
+        val feeMoney: Money,
         /**
          * 调整总额
          */
-        val adjustmentTotalAmount: BigDecimal,
+        val adjustmentMoney: Money,
         /**
          * 净金额
          */
-        val netAmount: BigDecimal
+        val netMoney: Money,
+        val receipt: OperationReceipt,
     )
 
 }

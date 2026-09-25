@@ -44,6 +44,10 @@ object GetRefundQry {
          */
         val merchantRefundNumber: String,
         /**
+         * 退款申请幂等键
+         */
+        val idempotencyKey: String,
+        /**
          * 金额
          */
         val amount: BigDecimal,
@@ -51,6 +55,10 @@ object GetRefundQry {
          * 币种
          */
         val currency: String,
+        /**
+         * 退款申请原因
+         */
+        val reason: String,
         /**
          * 支付方式
          */
@@ -82,19 +90,19 @@ object GetRefundQry {
         /**
          * 渠道标识
          */
-        val channelId: String,
+        val channelId: String?,
         /**
          * 渠道配置标识
          */
-        val channelConfigurationId: String,
+        val channelConfigurationId: String?,
         /**
          * 渠道
          */
-        val channelConfigurationSnapshot: String,
+        val channelConfigurationSnapshot: String?,
         /**
          * 请求身份
          */
-        val requestIdentity: String,
+        val requestIdentity: String?,
         /**
          * 渠道退款标识
          */

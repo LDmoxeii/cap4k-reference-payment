@@ -298,6 +298,10 @@ object GetReconciliationBatchQry {
              */
             val settlementImpact: String,
             /**
+             * 处置原因
+             */
+            val reason: String,
+            /**
              * 证据
              */
             val evidence: String,

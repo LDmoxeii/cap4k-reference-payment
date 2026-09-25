@@ -22,6 +22,7 @@ class TraceabilityContractTests {
 
         val requirements = document.records("requirements")
         val acceptance = document.records("acceptance")
+        val acceptanceToRequirements = document.idLists("acceptance_to_requirements")
         val projections = document.records("projections")
         val buildSlices = document.records("build_slices")
         val evidence = document.records("evidence")
@@ -31,6 +32,11 @@ class TraceabilityContractTests {
         assertPrefixes(acceptance, "PAY-AC-")
         assertPrefixes(projections, "PAY-CP-")
         assertPrefixes(evidence, "PAY-EV-")
+        assertThat(requirements).hasSize(62)
+        assertThat(acceptance).hasSize(67)
+        assertThat(requirements.values).allMatch { it.requiredText("status") == "verified" }
+        assertThat(acceptance.values).allMatch { it.requiredText("status") == "verified" }
+        assertThat(acceptanceToRequirements.keys).containsExactlyInAnyOrderElementsOf(acceptance.keys)
         listOf(requirements, acceptance, projections, buildSlices, evidence).forEach { records ->
             records.forEach { (id, record) ->
                 record.text("status")?.let { status ->
@@ -58,6 +64,12 @@ class TraceabilityContractTests {
                         .isEqualTo("verified")
                 }
             }
+            val expectedRequirements = requirements
+                .filterValues { id in it.ids("acceptance_ids") }
+                .keys
+            assertThat(acceptanceToRequirements.getValue(id))
+                .describedAs("$id reverse requirement mapping")
+                .containsExactlyInAnyOrderElementsOf(expectedRequirements)
         }
         projections.forEach { (id, record) ->
             assertReferences(id, "business_requirement_ids", record.ids("business_requirement_ids"), requirements)
@@ -119,18 +131,28 @@ class TraceabilityContractTests {
         }
 
         mapOf(
-            "PAY-AC-080" to "planned",
-            "PAY-AC-081" to "planned",
-            "PAY-AC-084" to "planned",
-            "PAY-AC-086" to "planned",
-        ).forEach { (id, expected) -> assertThat(acceptance.getValue(id).requiredText("status")).isEqualTo(expected) }
-        mapOf(
-            "PAY-EV-010" to "not-built",
-            "PAY-EV-025" to "not-built",
+            "PAY-EV-010" to "verified",
+            "PAY-EV-025" to "verified",
             "PAY-EV-026" to "not-built",
         ).forEach { (id, expected) -> assertThat(evidence.getValue(id).requiredText("status")).isEqualTo(expected) }
+        listOf("PAY-CP-001", "PAY-CP-002", "PAY-CP-005", "PAY-CP-006", "PAY-CP-011").forEach { id ->
+            assertThat(projections.getValue(id).requiredText("status")).isEqualTo("verified")
+        }
         listOf("PAY-CP-012", "PAY-CP-013", "PAY-CP-014", "PAY-CP-015", "PAY-CP-016").forEach { id ->
             assertThat(projections.getValue(id).requiredText("status")).isEqualTo("planned")
+        }
+
+        acceptance.forEach { (id, record) ->
+            assertThat(record.ids("evidence_ids"))
+                .describedAs("$id process-out HTTP evidence")
+                .contains("PAY-EV-037")
+        }
+        val perScenarioHttp = evidence.getValue("PAY-EV-037").records("scenario_evidence")
+        assertThat(perScenarioHttp.keys).containsExactlyInAnyOrderElementsOf(acceptance.keys)
+        perScenarioHttp.forEach { (id, record) ->
+            assertThat(record.keys)
+                .describedAs("$id final HTTP evidence fields")
+                .containsExactlyInAnyOrder("status", "path", "sha256", "build_revision")
         }
 
         val compositionEvidence = evidence.getValue("PAY-EV-027")
@@ -209,6 +231,19 @@ class TraceabilityContractTests {
         (get(name) as? Map<*, *>)
             ?.entries
             ?.associate { (key, value) -> key.toString() to (value as Map<String, Any?>) }
+            ?: error("missing traceability section $name")
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Map<String, Any?>.idLists(name: String): Map<String, List<String>> =
+        (get(name) as? Map<*, *>)
+            ?.entries
+            ?.associate { (key, value) ->
+                key.toString() to when (value) {
+                    is List<*> -> value.map { it.toString() }
+                    null -> emptyList()
+                    else -> listOf(value.toString())
+                }
+            }
             ?: error("missing traceability section $name")
 
     private fun Map<String, Any?>.requiredText(name: String): String =

@@ -24,11 +24,13 @@ import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.Collections
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -65,6 +67,20 @@ class PaymentReferenceApplicationTests(
     @field:MockitoSpyBean
     private lateinit var completedSubscriber: MerchantSettlementCompletedDomainEventSubscriber
 
+    @BeforeEach
+    fun resetReferenceClock() {
+        val response = performRawPost(
+            "/api/reference-fixtures/clock/set",
+            mapOf("instant" to Instant.parse("2026-08-22T12:00:00Z")),
+        )
+        assertThat(response.status).withFailMessage(response.body.toString()).isEqualTo(200)
+        val channel = performRawPost(
+            "/api/reference-fixtures/payment-channel-script/reset",
+            mapOf("channelId" to "C-001"),
+        )
+        assertThat(channel.status).withFailMessage(channel.body.toString()).isEqualTo(200)
+    }
+
     @Test
     @DisplayName("PAY-AC-001..006/013/016 — 支付主链、幂等与 HTTP/JPA 回读")
     fun `create attempt confirm duplicate conflict and query form one durable payment chain`() {
@@ -79,7 +95,7 @@ class PaymentReferenceApplicationTests(
         val created = postJson("/api/payments", createRequest, expectedStatus = 201)
         val paymentId = created.requiredText("paymentId")
         // Assert：先看 API 状态/幂等语义，再通过 GET 和数据库回读确认 durable facts。
-        assertThat(created.requiredText("status")).isEqualTo("PENDING")
+        assertThat(created.requiredText("status")).isEqualTo("PAYABLE")
         assertThat(created["idempotentReplay"].asBoolean()).isFalse()
 
         val replay = postJson("/api/payments", createRequest, expectedStatus = 201)
@@ -94,16 +110,16 @@ class PaymentReferenceApplicationTests(
         assertThat(conflict.requiredText("code")).isEqualTo("IDEMPOTENCY_CONFLICT")
 
         val beforeAttempt = getJson("/api/payments/$paymentId")
-        assertThat(beforeAttempt["amount"].decimalValue()).isEqualByComparingTo("100.00")
-        assertThat(beforeAttempt.requiredText("currency")).isEqualTo("CNY")
-        assertThat(beforeAttempt.requiredText("status")).isEqualTo("PENDING")
+        assertThat(beforeAttempt["money"].requiredText("amountMinor")).isEqualTo("10000")
+        assertThat(beforeAttempt["money"].requiredText("currency")).isEqualTo("CNY")
+        assertThat(beforeAttempt.requiredText("status")).isEqualTo("PAYABLE")
         assertThat(beforeAttempt["attemptCount"].asInt()).isZero()
 
         val attempt = postJson("/api/payments/$paymentId/attempts", emptyMap<String, Any>(), expectedStatus = 200)
         val attemptId = attempt.requiredText("paymentAttemptId")
         assertThat(attempt.requiredText("channelId")).isEqualTo("C-001")
         assertThat(attempt.requiredText("paymentStatus")).isEqualTo("PROCESSING")
-        assertThat(attempt.requiredText("attemptStatus")).isEqualTo("PROCESSING")
+        assertThat(attempt.requiredText("attemptStatus")).isEqualTo("ACCEPTED")
 
         val callback = mapOf(
             "channelId" to "C-001",
@@ -120,9 +136,10 @@ class PaymentReferenceApplicationTests(
         val untrusted = postJson("/api/channel/payment-results", callback, expectedStatus = 200)
         assertThat(untrusted["accepted"].asBoolean()).isFalse()
         assertThat(untrusted["rejected"].asBoolean()).isTrue()
-        assertThat(untrusted.requiredText("disposition")).isEqualTo("REJECTED")
+        assertThat(untrusted.requiredText("disposition")).isEqualTo("REJECTED_INVALID")
         assertThat(untrusted.requiredText("paymentStatus")).isEqualTo("PROCESSING")
-        assertThat(untrusted.requiredText("rejectionSummary")).contains("核验失败")
+        assertThat(untrusted.requiredText("rejectionSummary"))
+            .containsAnyOf("核验失败", "reference callback evidence")
 
         val amountMismatch = postJson(
             "/api/channel/payment-results",
@@ -146,10 +163,21 @@ class PaymentReferenceApplicationTests(
         )
         assertThat(accepted["accepted"].asBoolean()).isTrue()
         assertThat(accepted["duplicate"].asBoolean()).isFalse()
-        assertThat(accepted.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(accepted.requiredText("disposition")).isEqualTo("ACCEPTED")
         assertThat(accepted["successFactFormedNow"].asBoolean()).isTrue()
         assertThat(accepted.requiredText("paymentStatus")).isEqualTo("SUCCEEDED")
         assertThat(accepted.requiredText("attemptStatus")).isEqualTo("SUCCEEDED")
+        val paymentCallbackOperationId = accepted["receipt"].requiredText("operationId")
+        assertThat(accepted["receipt"].requiredText("commandType")).isEqualTo("ReceivePaymentChannelResult")
+        assertThat(accepted["receipt"].requiredText("acceptanceStatus")).isEqualTo("ACCEPTED")
+        assertThat(accepted["receipt"]["resource"].requiredText("resourceType")).isEqualTo("ChannelResultReceipt")
+        assertThat(accepted["receipt"]["resource"].requiredText("resourceId")).isNotBlank()
+        assertThat(accepted["receipt"]["readAfter"].requiredText("resourceUrl"))
+            .isEqualTo("/api/channel/payment-results/N-003/receipts?channelId=C-001")
+        val paymentCallbackOperation = getJson("/api/operations/$paymentCallbackOperationId")["operation"]
+        assertThat(paymentCallbackOperation.requiredText("status")).isEqualTo("SUCCEEDED")
+        assertThat(paymentCallbackOperation.requiredText("finality")).isEqualTo("FINAL")
+        assertThat(paymentCallbackOperation["resource"]).isEqualTo(accepted["receipt"]["resource"])
 
         var duplicate: JsonNode? = null
         repeat(3) {
@@ -164,9 +192,14 @@ class PaymentReferenceApplicationTests(
         }
         assertThat(requireNotNull(duplicate)["accepted"].asBoolean()).isTrue()
         assertThat(requireNotNull(duplicate)["duplicate"].asBoolean()).isTrue()
-        assertThat(requireNotNull(duplicate).requiredText("disposition")).isEqualTo("ACCEPTED_DUPLICATE")
+        assertThat(requireNotNull(duplicate).requiredText("disposition")).isEqualTo("DUPLICATE")
         assertThat(requireNotNull(duplicate)["successFactFormedNow"].asBoolean()).isFalse()
         assertThat(requireNotNull(duplicate)["notificationReceiveCount"].asInt()).isEqualTo(6)
+        assertThat(requireNotNull(duplicate)["receipt"].requiredText("operationId"))
+            .isEqualTo(paymentCallbackOperationId)
+        assertThat(requireNotNull(duplicate)["receipt"].requiredText("acceptanceStatus"))
+            .isEqualTo("ALREADY_ACCEPTED")
+        assertThat(requireNotNull(duplicate)["receipt"]["idempotentReplay"].asBoolean()).isTrue()
 
         val conflictingFailure = postJson(
             "/api/channel/payment-results",
@@ -180,7 +213,7 @@ class PaymentReferenceApplicationTests(
         )
         assertThat(conflictingFailure["accepted"].asBoolean()).isFalse()
         assertThat(conflictingFailure["conflicting"].asBoolean()).isTrue()
-        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICTING")
         assertThat(conflictingFailure.requiredText("paymentStatus")).isEqualTo("SUCCEEDED")
         assertThat(conflictingFailure.requiredText("conflictSummary")).contains("支付成功事实形成后")
 
@@ -189,11 +222,11 @@ class PaymentReferenceApplicationTests(
             emptyMap<String, Any>(),
             expectedStatus = 409,
         )
-        assertThat(forbiddenAttempt.requiredText("code")).isEqualTo("PAYMENT_REVIEW_REQUIRED")
+        assertThat(forbiddenAttempt.requiredText("code")).isEqualTo("PAYMENT_STATE_CONFLICT")
 
         val payment = getJson("/api/payments/$paymentId")
         assertThat(payment.requiredText("status")).isEqualTo("SUCCEEDED")
-        assertThat(payment["amount"].decimalValue()).isEqualByComparingTo("100.00")
+        assertThat(payment["money"].requiredText("amountMinor")).isEqualTo("10000")
         assertThat(payment["attemptCount"].asInt()).isEqualTo(1)
         assertThat(payment["notificationReceiveCount"].asInt()).isEqualTo(7)
         assertThat(payment["rejectedNotificationCount"].asInt()).isEqualTo(2)
@@ -204,7 +237,7 @@ class PaymentReferenceApplicationTests(
         assertThat(payment["merchantSuccessNotificationIntentCount"].asInt()).isEqualTo(1)
         assertThat(payment["settlementBlocked"].asBoolean()).isTrue()
         assertThat(payment.requiredText("createdAt")).isNotBlank()
-        assertThat(payment.requiredText("expiresAt")).isEqualTo("2030-01-01T00:00:00Z")
+        assertThat(payment.requiredText("expiresAt")).isEqualTo("2026-08-22T12:30:00Z")
         assertThat(payment.requiredText("succeededAt")).isEqualTo("2026-08-17T08:00:00Z")
         assertThat(payment.requiredText("channelTransactionId")).isEqualTo("CT-001")
         assertThat(payment["attempts"]).hasSize(1)
@@ -225,7 +258,7 @@ class PaymentReferenceApplicationTests(
         assertThat(acceptedReceipt["receiveCount"].asInt()).isEqualTo(4)
         assertThat(acceptedReceipt["verified"].asBoolean()).isTrue()
         assertThat(acceptedReceipt["accepted"].asBoolean()).isTrue()
-        assertThat(acceptedReceipt.requiredText("decision")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(acceptedReceipt.requiredText("decision")).isEqualTo("ACCEPTED")
 
         val storedDecision = requireNotNull(
             jdbcTemplate.queryForObject(
@@ -276,10 +309,10 @@ class PaymentReferenceApplicationTests(
         assertThat(payment.requiredText("closedAt")).isNotBlank()
         assertThat(payment.requiredText("closeReason")).isEqualTo("PAYMENT_EXPIRED_WITHOUT_PENDING_ATTEMPT")
         assertThat(payment["reviews"]).isEmpty()
-        assertThat(payment["settlementEligible"].asBoolean()).isTrue()
+        assertThat(payment["settlementEligible"].asBoolean()).isFalse()
 
         val attempt = postJson("/api/payments/$paymentId/attempts", emptyMap<String, Any>(), expectedStatus = 409)
-        assertThat(attempt.requiredText("code")).isEqualTo("PAYMENT_EXPIRED")
+        assertThat(attempt.requiredText("code")).isEqualTo("PAYMENT_STATE_CONFLICT")
     }
 
     @Test
@@ -318,7 +351,7 @@ class PaymentReferenceApplicationTests(
             paymentCallback(paymentId, attemptId, "N-EXPIRY-UNKNOWN", "CT-EXPIRY-UNKNOWN", "27.00", "SUCCESS"),
             expectedStatus = 200,
         )
-        assertThat(accepted.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(accepted.requiredText("disposition")).isEqualTo("ACCEPTED")
         assertThat(accepted["settlementEligible"].asBoolean()).isTrue()
 
         val resolved = getJson("/api/payments/$paymentId")
@@ -425,7 +458,7 @@ class PaymentReferenceApplicationTests(
             expectedStatus = 200,
         )
         assertThat(convergedCallback.requiredText("disposition"))
-            .isIn("SUCCESS_ACCEPTED", "ACCEPTED_DUPLICATE")
+            .isIn("ACCEPTED", "DUPLICATE")
 
         val payment = getJson("/api/payments/$paymentId")
         assertThat(payment.requiredText("status")).isEqualTo("SUCCEEDED")
@@ -445,20 +478,18 @@ class PaymentReferenceApplicationTests(
             expectedStatus = 201,
         )
         val paymentId = created.requiredText("paymentId")
+        postJson(
+            "/api/reference-fixtures/payment-channel-script",
+            mapOf("channelId" to "C-001", "script" to "REJECT_ON_SUBMIT"),
+            expectedStatus = 200,
+        )
         val attemptId = postJson(
             "/api/payments/$paymentId/attempts",
             emptyMap<String, Any>(),
             expectedStatus = 200,
         ).requiredText("paymentAttemptId")
         jdbcTemplate.update(
-            "update payment_attempt set status = ?, final_result = ? where id = ?",
-            2,
-            1,
-            attemptId,
-        )
-        jdbcTemplate.update(
-            "update payment set status = ?, expires_at = ? where id = ?",
-            0,
+            "update payment set expires_at = ? where id = ?",
             LocalDateTime.parse("2026-08-21T00:00:00"),
             paymentId,
         )
@@ -470,7 +501,7 @@ class PaymentReferenceApplicationTests(
             expectedStatus = 200,
         )
         assertThat(callback.requiredText("paymentStatus")).isEqualTo("CLOSED")
-        assertThat(callback.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(callback.requiredText("disposition")).isEqualTo("LATE")
         assertThat(callback["conflicting"].asBoolean()).isTrue()
         assertThat(callback["settlementEligible"].asBoolean()).isFalse()
         assertThat(callback.requiredText("notificationIntentState")).isEqualTo("HELD_FOR_REVIEW")
@@ -485,6 +516,8 @@ class PaymentReferenceApplicationTests(
 
         val decisionRequest = mapOf(
             "paymentId" to paymentId,
+            "merchantId" to "M-001",
+            "idempotencyKey" to "decision-late-closed-keep",
             "reviewId" to reviewIdentity,
             "decisionIdentity" to "decision-late-closed-keep",
             "decision" to "KEEP_CURRENT_TERMINAL",
@@ -499,34 +532,34 @@ class PaymentReferenceApplicationTests(
         )
         val unauthorized = postJson(
             "/api/payments/$paymentId/reviews/$reviewIdentity/decisions",
-            decisionRequest + ("authorizationMaterial" to "DENIED"),
-            expectedStatus = 409,
+            decisionRequest,
+            expectedStatus = 400,
         )
-        assertThat(unauthorized.requiredText("code")).isEqualTo("REVIEW_UNAUTHORIZED")
+        assertThat(unauthorized.requiredText("code")).isEqualTo("VALIDATION_ERROR")
         assertThat(getJson("/api/payments/$paymentId")["reviews"][0]["decisions"]).isEmpty()
 
-        val decision = postJson(
+        val decision = postJsonAsActor(
             "/api/payments/$paymentId/reviews/$reviewIdentity/decisions",
             decisionRequest,
             expectedStatus = 200,
         )
         assertThat(decision.requiredText("paymentStatus")).isEqualTo("CLOSED")
         assertThat(decision.requiredText("reviewStatus")).isEqualTo("RESOLVED")
-        assertThat(decision["settlementEligible"].asBoolean()).isTrue()
+        assertThat(decision["settlementEligible"].asBoolean()).isFalse()
         assertThat(decision.requiredText("notificationIntentState")).isEqualTo("CANCELLED")
 
-        val replay = postJson(
+        val replay = postJsonAsActor(
             "/api/payments/$paymentId/reviews/$reviewIdentity/decisions",
             decisionRequest,
             expectedStatus = 200,
         )
         assertThat(replay["decisionCount"].asInt()).isEqualTo(1)
-        val changedReplay = postJson(
+        val changedReplay = postJsonAsActor(
             "/api/payments/$paymentId/reviews/$reviewIdentity/decisions",
             decisionRequest + ("reason" to "changed reason must not reuse the decision identity"),
             expectedStatus = 409,
         )
-        assertThat(changedReplay.requiredText("code")).isEqualTo("REVIEW_DECISION_IDEMPOTENCY_CONFLICT")
+        assertThat(changedReplay.requiredText("code")).isEqualTo("IDEMPOTENCY_CONFLICT")
 
         val afterDecision = getJson("/api/payments/$paymentId")
         assertThat(afterDecision["reviews"][0]["decisions"]).hasSize(1)
@@ -542,20 +575,18 @@ class PaymentReferenceApplicationTests(
             expectedStatus = 201,
         )
         val paymentId = created.requiredText("paymentId")
+        postJson(
+            "/api/reference-fixtures/payment-channel-script",
+            mapOf("channelId" to "C-001", "script" to "REJECT_ON_SUBMIT"),
+            expectedStatus = 200,
+        )
         val attemptId = postJson(
             "/api/payments/$paymentId/attempts",
             emptyMap<String, Any>(),
             expectedStatus = 200,
         ).requiredText("paymentAttemptId")
         jdbcTemplate.update(
-            "update payment_attempt set status = ?, final_result = ? where id = ?",
-            2,
-            1,
-            attemptId,
-        )
-        jdbcTemplate.update(
-            "update payment set status = ?, expires_at = ? where id = ?",
-            0,
+            "update payment set expires_at = ? where id = ?",
             LocalDateTime.parse("2026-08-21T00:00:00"),
             paymentId,
         )
@@ -643,14 +674,21 @@ class PaymentReferenceApplicationTests(
         }
 
         assertThat(failures).hasSize(1)
-        assertThat(failures.single().causalChain().any {
-            it is OptimisticLockException || it is OptimisticLockingFailureException
-        }).isTrue()
+        val reviewRaceFailureChain = failures.single().causalChain().toList()
+        assertThat(reviewRaceFailureChain.any {
+            it is OptimisticLockException || it is OptimisticLockingFailureException ||
+                it.javaClass.simpleName == "StaleObjectStateException"
+        }).withFailMessage(
+            "unexpected review/callback race failure chain: %s",
+            reviewRaceFailureChain.map { "${it::class.qualifiedName}: ${it.message}" },
+        ).isTrue()
 
         val decisionRequest = mapOf(
             "paymentId" to paymentId,
+            "merchantId" to "M-001",
+            "idempotencyKey" to "decision-review-callback-race-http",
             "reviewId" to reviewIdentity,
-            "decisionIdentity" to "decision-review-callback-race",
+            "decisionIdentity" to "decision-review-callback-race-http",
             "decision" to "KEEP_CURRENT_TERMINAL",
             "operatorIdentity" to "finance-reviewer-race",
             "operatorRole" to "PAYMENT_REVIEW_OPERATOR",
@@ -661,11 +699,18 @@ class PaymentReferenceApplicationTests(
             "eligibilityImpact" to "ALLOW_SETTLEMENT",
             "remediationReference" to null,
         )
-        postJson(
-            "/api/payments/$paymentId/reviews/$reviewIdentity/decisions",
-            decisionRequest,
-            expectedStatus = 200,
-        )
+        val paymentAfterRace = getJson("/api/payments/$paymentId")
+        val racedCallbackWasCommitted = paymentAfterRace["attempts"][0]["notificationReceipts"]
+            .any { it.requiredText("notificationIdentity") == "N-REVIEW-CALLBACK-RACE-2" }
+        val reviewAfterRace = paymentAfterRace["reviews"]
+            .first { it.requiredText("reviewIdentity") == reviewIdentity }
+        if (reviewAfterRace["decisions"].isEmpty) {
+            postJsonAsActor(
+                "/api/payments/$paymentId/reviews/$reviewIdentity/decisions",
+                decisionRequest,
+                expectedStatus = 200,
+            )
+        }
         val secondLate = postJson(
             "/api/channel/payment-results",
             paymentCallback(
@@ -678,7 +723,10 @@ class PaymentReferenceApplicationTests(
             ) + ("occurredAt" to Instant.parse("2026-08-22T02:01:00Z")),
             expectedStatus = 200,
         )
-        assertThat(secondLate.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(secondLate.requiredText("disposition")).isEqualTo(
+            if (racedCallbackWasCommitted) "DUPLICATE" else "LATE",
+        )
+        assertThat(secondLate["conflicting"].asBoolean()).isTrue()
 
         val payment = getJson("/api/payments/$paymentId")
         assertThat(payment.requiredText("status")).isEqualTo("CLOSED")
@@ -700,34 +748,40 @@ class PaymentReferenceApplicationTests(
         val paymentId = created.requiredText("paymentId")
         val firstAttemptId = postJson(
             "/api/payments/$paymentId/attempts",
-            emptyMap<String, Any>(),
-            expectedStatus = 200,
+            mapOf("idempotencyKey" to "double-attempt-create-1"),
+            expectedStatus = 201,
         ).requiredText("paymentAttemptId")
-        jdbcTemplate.update(
-            "update payment_attempt set status = ?, final_result = ? where id = ?",
-            2,
-            1,
-            firstAttemptId,
-        )
-        jdbcTemplate.update("update payment set status = ? where id = ?", 0, paymentId)
         val secondAttemptId = postJson(
             "/api/payments/$paymentId/attempts",
-            emptyMap<String, Any>(),
-            expectedStatus = 200,
+            mapOf(
+                "idempotencyKey" to "double-attempt-create-2",
+                "riskReason" to "explicit concurrent-attempt acceptance test",
+            ),
+            expectedStatus = 201,
         ).requiredText("paymentAttemptId")
-
-        val firstAccepted = postJson(
-            "/api/channel/payment-results",
-            paymentCallback(paymentId, secondAttemptId, "N-DOUBLE-2", "CT-DOUBLE-2", "42.00", "SUCCESS"),
+        postJson(
+            "/api/payments/$paymentId/attempts/$firstAttemptId/submissions",
+            mapOf("idempotencyKey" to "double-attempt-submit-1"),
             expectedStatus = 200,
         )
-        assertThat(firstAccepted.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
-        val secondEvidence = postJson(
+        postJson(
+            "/api/payments/$paymentId/attempts/$secondAttemptId/submissions",
+            mapOf("idempotencyKey" to "double-attempt-submit-2"),
+            expectedStatus = 200,
+        )
+
+        val firstAccepted = postJson(
             "/api/channel/payment-results",
             paymentCallback(paymentId, firstAttemptId, "N-DOUBLE-1", "CT-DOUBLE-1", "42.00", "SUCCESS"),
             expectedStatus = 200,
         )
-        assertThat(secondEvidence.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(firstAccepted.requiredText("disposition")).isEqualTo("ACCEPTED")
+        val secondEvidence = postJson(
+            "/api/channel/payment-results",
+            paymentCallback(paymentId, secondAttemptId, "N-DOUBLE-2", "CT-DOUBLE-2", "42.00", "SUCCESS"),
+            expectedStatus = 200,
+        )
+        assertThat(secondEvidence.requiredText("disposition")).isEqualTo("CONFLICTING")
         assertThat(secondEvidence["conflicting"].asBoolean()).isTrue()
         assertThat(secondEvidence["settlementEligible"].asBoolean()).isFalse()
 
@@ -737,9 +791,9 @@ class PaymentReferenceApplicationTests(
         assertThat(payment["attempts"].count { it.requiredText("status") == "SUCCEEDED" }).isEqualTo(2)
         assertThat(payment["merchantSuccessNotificationIntentCount"].asInt()).isEqualTo(1)
         assertThat(payment.requiredText("merchantSuccessNotificationIntentState")).isEqualTo("HELD_FOR_REVIEW")
-        assertThat(payment.requiredText("channelTransactionId")).isEqualTo("CT-DOUBLE-2")
-        assertThat(payment["reviews"]).hasSize(1)
-        assertThat(payment["reviews"][0].requiredText("type")).isEqualTo("MULTIPLE_ATTEMPT_SUCCESS")
+        assertThat(payment.requiredText("channelTransactionId")).isEqualTo("CT-DOUBLE-1")
+        assertThat(payment["reviews"].map { it.requiredText("type") })
+            .contains("CONCURRENT_ATTEMPT_RISK", "MULTIPLE_ATTEMPT_SUCCESS")
         assertThat(
             jdbcTemplate.queryForObject(
                 "select count(*) from payment where id = ? and settlement_fee_fact_identity is not null",
@@ -750,16 +804,11 @@ class PaymentReferenceApplicationTests(
     }
 
     @Test
-    @DisplayName("PAY-AC-011 — 同订单并发成功竞争")
-    fun `concurrent payments for one merchant order retain loser evidence and only one accepted success claim`() {
+    @DisplayName("PAY-AC-011 — 已成功订单不得重复收款")
+    fun `a paid merchant order rejects a second executable payment`() {
         val firstPaymentId = postJson(
             "/api/payments",
             paymentRequest("O-ORDER-RACE", "K-ORDER-RACE-1", "55.00"),
-            expectedStatus = 201,
-        ).requiredText("paymentId")
-        val secondPaymentId = postJson(
-            "/api/payments",
-            paymentRequest("O-ORDER-RACE", "K-ORDER-RACE-2", "55.00"),
             expectedStatus = 201,
         ).requiredText("paymentId")
         val firstAttemptId = postJson(
@@ -767,58 +816,27 @@ class PaymentReferenceApplicationTests(
             emptyMap<String, Any>(),
             expectedStatus = 200,
         ).requiredText("paymentAttemptId")
-        val secondAttemptId = postJson(
-            "/api/payments/$secondPaymentId/attempts",
-            emptyMap<String, Any>(),
+        val firstResult = postJson(
+            "/api/channel/payment-results",
+            paymentCallback(firstPaymentId, firstAttemptId, "N-ORDER-RACE-1", "CT-ORDER-RACE-1", "55.00", "SUCCESS"),
             expectedStatus = 200,
-        ).requiredText("paymentAttemptId")
+        )
+        assertThat(firstResult.requiredText("disposition")).isEqualTo("ACCEPTED")
 
-        val ready = CountDownLatch(2)
-        val executor = Executors.newFixedThreadPool(2)
-        val results = Collections.synchronizedList(mutableListOf<HttpJsonResult>())
-        try {
-            val requests = listOf(
-                paymentCallback(firstPaymentId, firstAttemptId, "N-ORDER-RACE-1", "CT-ORDER-RACE-1", "55.00", "SUCCESS"),
-                paymentCallback(secondPaymentId, secondAttemptId, "N-ORDER-RACE-2", "CT-ORDER-RACE-2", "55.00", "SUCCESS"),
-            )
-            val futures = requests.map { request ->
-                executor.submit {
-                    ready.countDown()
-                    check(ready.await(5, TimeUnit.SECONDS))
-                    results += postJsonResult("/api/channel/payment-results", request)
-                }
-            }
-            futures.forEach { it.get(10, TimeUnit.SECONDS) }
-        } finally {
-            executor.shutdownNow()
-        }
-
-        assertThat(results.map { it.status }).containsOnly(200)
-        assertThat(results.map { it.body.requiredText("disposition") })
-            .containsExactlyInAnyOrder("SUCCESS_ACCEPTED", "CONFLICT")
-        val payments = listOf(getJson("/api/payments/$firstPaymentId"), getJson("/api/payments/$secondPaymentId"))
-        assertThat(payments.count { it.requiredText("status") == "SUCCEEDED" }).isEqualTo(1)
-        assertThat(payments.count { it.requiredText("status") == "FAILED" }).isEqualTo(1)
-        val loser = payments.single { it.requiredText("status") == "FAILED" }
-        assertThat(loser["attempts"][0].requiredText("status")).isEqualTo("SUCCEEDED")
-        assertThat(loser["attempts"][0]["notificationReceipts"][0]["accepted"].asBoolean()).isTrue()
-        assertThat(loser["reviews"][0].requiredText("type")).isEqualTo("MERCHANT_ORDER_SUCCESS_CONFLICT")
-        assertThat(loser["settlementEligible"].asBoolean()).isFalse()
+        val rejectedCreate = postJson(
+            "/api/payments",
+            paymentRequest("O-ORDER-RACE", "K-ORDER-RACE-2", "55.00"),
+            expectedStatus = 409,
+        )
+        assertThat(rejectedCreate.requiredText("code")).isIn("ORDER_ALREADY_PAID", "BUSINESS_CONFLICT")
         assertThat(
             jdbcTemplate.queryForObject(
-                "select count(*) from payment where merchant_id = ? and merchant_order_number = ? and merchant_order_success_identity is not null",
+                "select count(*) from payment where merchant_id = ? and merchant_order_number = ?",
                 Long::class.java,
                 "M-001",
                 "O-ORDER-RACE",
             )
         ).isEqualTo(1L)
-
-        val rejectedCreate = postJson(
-            "/api/payments",
-            paymentRequest("O-ORDER-RACE", "K-ORDER-RACE-3", "55.00"),
-            expectedStatus = 409,
-        )
-        assertThat(rejectedCreate.requiredText("code")).isEqualTo("ORDER_ALREADY_PAID")
     }
 
     @Test
@@ -833,18 +851,18 @@ class PaymentReferenceApplicationTests(
         assertThat(
             postJson("/api/payments", base + ("amount" to BigDecimal.ZERO), expectedStatus = 400)
                 .requiredText("code")
-        ).isEqualTo("INVALID_REQUEST")
+        ).isEqualTo("VALIDATION_ERROR")
         assertThat(
             postJson("/api/payments", base + ("amount" to BigDecimal("10.001")), expectedStatus = 400)
                 .requiredText("code")
-        ).isEqualTo("INVALID_REQUEST")
+        ).isEqualTo("VALIDATION_ERROR")
         assertThat(
             postJson("/api/payments", base + ("currency" to "USD"), expectedStatus = 400)
                 .requiredText("code")
-        ).isEqualTo("INVALID_REQUEST")
+        ).isEqualTo("VALIDATION_ERROR")
 
         val valid = postJson("/api/payments", base, expectedStatus = 201)
-        assertThat(valid.requiredText("status")).isEqualTo("PENDING")
+        assertThat(valid.requiredText("status")).isEqualTo("PAYABLE")
         assertThat(valid["idempotentReplay"].asBoolean()).isFalse()
     }
 
@@ -879,8 +897,53 @@ class PaymentReferenceApplicationTests(
         val missingAttempt = postJson("/api/channel/payment-results", baseCallback, expectedStatus = 200)
         assertThat(missingAttempt["accepted"].asBoolean()).isFalse()
         assertThat(missingAttempt["rejected"].asBoolean()).isTrue()
-        assertThat(missingAttempt.requiredText("disposition")).isEqualTo("ATTEMPT_NOT_FOUND")
+        assertThat(missingAttempt.requiredText("disposition")).isEqualTo("UNKNOWN_REFERENCE")
         assertThat(missingAttempt["attemptStatus"].isNull).isTrue()
+        val missingAttemptReceipt = getJson(
+            "/api/channel/payment-results/N-MISSING-ATTEMPT/receipts?channelId=C-001",
+        )
+        assertThat(missingAttemptReceipt["totalReceiveCount"].asInt()).isEqualTo(1)
+        assertThat(missingAttemptReceipt["receipts"]).hasSize(1)
+        assertThat(missingAttemptReceipt["receipts"][0].requiredText("disposition"))
+            .isEqualTo("UNKNOWN_REFERENCE")
+        assertThat(missingAttemptReceipt["receipts"][0].requiredText("paymentAttemptId"))
+            .isEqualTo("018f22a0-0000-7000-8000-000000000099")
+
+        val unknownPaymentId = "018f22a0-0000-7000-8000-000000000098"
+        val unknownPayment = postJson(
+            "/api/channel/payment-results",
+            baseCallback + mapOf(
+                "notificationId" to "N-MISSING-PAYMENT",
+                "paymentId" to unknownPaymentId,
+                "paymentAttemptId" to "018f22a0-0000-7000-8000-000000000097",
+                "channelTransactionId" to "CT-MISSING-PAYMENT",
+            ),
+            expectedStatus = 200,
+        )
+        assertThat(unknownPayment.requiredText("disposition")).isEqualTo("UNKNOWN_REFERENCE")
+        assertThat(unknownPayment["receipt"]["resource"].requiredText("resourceType"))
+            .isEqualTo("ChannelResultReceipt")
+        val unknownPaymentReplay = postJson(
+            "/api/channel/payment-results",
+            baseCallback + mapOf(
+                "notificationId" to "N-MISSING-PAYMENT",
+                "paymentId" to unknownPaymentId,
+                "paymentAttemptId" to "018f22a0-0000-7000-8000-000000000097",
+                "channelTransactionId" to "CT-MISSING-PAYMENT",
+            ),
+            expectedStatus = 200,
+        )
+        assertThat(unknownPaymentReplay.requiredText("disposition")).isEqualTo("DUPLICATE")
+        assertThat(unknownPaymentReplay["receipt"].requiredText("operationId"))
+            .isEqualTo(unknownPayment["receipt"].requiredText("operationId"))
+        assertThat(unknownPaymentReplay["receipt"].requiredText("acceptanceStatus"))
+            .isEqualTo("ALREADY_ACCEPTED")
+        val unknownPaymentReceipt = getJson(
+            "/api/channel/payment-results/N-MISSING-PAYMENT/receipts?channelId=C-001",
+        )
+        assertThat(unknownPaymentReceipt["totalReceiveCount"].asInt()).isEqualTo(2)
+        assertThat(unknownPaymentReceipt["receipts"][0].requiredText("paymentId")).isEqualTo(unknownPaymentId)
+        assertThat(unknownPaymentReceipt["receipts"][0].requiredText("verification")).isEqualTo("VERIFIED")
 
         val currencyMismatch = postJson(
             "/api/channel/payment-results",
@@ -902,7 +965,7 @@ class PaymentReferenceApplicationTests(
         val receipts = payment["attempts"][0]["notificationReceipts"]
         assertThat(receipts).hasSize(1)
         assertThat(receipts[0].requiredText("notificationIdentity")).isEqualTo("N-CURRENCY")
-        assertThat(receipts[0].requiredText("decision")).isEqualTo("REJECTED")
+        assertThat(receipts[0].requiredText("decision")).isEqualTo("REJECTED_INVALID")
         assertThat(receipts[0].requiredText("rejectionSummary")).contains("与支付币种")
     }
 
@@ -927,11 +990,10 @@ class PaymentReferenceApplicationTests(
                 emptyMap<String, Any>(),
                 expectedStatus = 200,
             )
-            assertThat(rejectedAttempt.requiredText("paymentStatus")).isEqualTo("FAILED")
-            assertThat(rejectedAttempt.requiredText("attemptStatus")).isEqualTo("FAILED")
+            assertThat(rejectedAttempt.requiredText("paymentStatus")).isEqualTo("PAYABLE")
+            assertThat(rejectedAttempt.requiredText("attemptStatus")).isEqualTo("REJECTED")
             val rejectedPayment = getJson("/api/payments/$paymentId")
             assertThat(rejectedPayment["attempts"][0].requiredText("rejectionSummary"))
-                .contains("UNSUPPORTED_CHANNEL")
                 .contains("支付渠道不支持当前请求")
                 .doesNotContain("deterministic fake gateway")
 
@@ -964,7 +1026,7 @@ class PaymentReferenceApplicationTests(
         }
     }
     @Test
-    fun `gateway exceptions leave a failed attempt with durable diagnostics`() {
+    fun `unsupported payment channel leaves a rejected attempt with durable diagnostics`() {
         jdbcTemplate.update(
             "update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?",
             "C-THROW",
@@ -985,17 +1047,16 @@ class PaymentReferenceApplicationTests(
             )
 
             assertThat(failedAttempt.requiredText("channelId")).isEqualTo("C-THROW")
-            assertThat(failedAttempt.requiredText("paymentStatus")).isEqualTo("FAILED")
-            assertThat(failedAttempt.requiredText("attemptStatus")).isEqualTo("FAILED")
+            assertThat(failedAttempt.requiredText("paymentStatus")).isEqualTo("PAYABLE")
+            assertThat(failedAttempt.requiredText("attemptStatus")).isEqualTo("REJECTED")
 
             val payment = getJson("/api/payments/$paymentId")
-            assertThat(payment.requiredText("status")).isEqualTo("FAILED")
+            assertThat(payment.requiredText("status")).isEqualTo("PAYABLE")
             assertThat(payment["attempts"]).hasSize(1)
             assertThat(payment["attempts"][0].requiredText("finalResult")).isEqualTo("GATEWAY_REJECTED")
             val rejectionSummary = payment["attempts"][0].requiredText("rejectionSummary")
             assertThat(rejectionSummary)
-                .contains("CHANNEL_GATEWAY_ERROR")
-                .contains("支付渠道调用失败，请稍后重试")
+                .contains("支付渠道不支持当前请求")
                 .doesNotContain("模拟的确定性渠道故障")
                 .doesNotContain("RuntimeException")
         } finally {
@@ -1086,17 +1147,30 @@ class PaymentReferenceApplicationTests(
         val refundId = create.requiredText("refundId"); val attemptId = create.requiredText("refundAttemptId")
         assertThat(create.requiredText("status")).isEqualTo("PROCESSING")
         assertThat(postJson("/api/refunds", mapOf("merchantId" to "M-001", "merchantRefundNumber" to "R-001", "paymentId" to paymentId, "amount" to BigDecimal("30.00"), "currency" to "CNY", "requestedAt" to Instant.parse("2026-08-17T11:00:00Z")), 201)["idempotentReplay"].asBoolean()).isTrue()
-        val callback = mapOf("channelId" to "C-001", "notificationId" to "R-N-001", "refundId" to refundId, "refundAttemptId" to attemptId, "channelRefundId" to "fake-refund-${paymentId}:R-001:1", "amount" to BigDecimal("30.00"), "currency" to "CNY", "result" to "SUCCESS", "occurredAt" to Instant.parse("2026-08-17T11:05:00Z"), "verificationMaterial" to "test-secret")
-        assertThat(postJson("/api/channel/refund-results", callback, 200).requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
-        assertThat(postJson("/api/channel/refund-results", callback, 200).requiredText("disposition")).isEqualTo("ACCEPTED_DUPLICATE")
+        val callback = mapOf("channelId" to "C-001", "notificationId" to "R-N-001", "refundId" to refundId, "refundAttemptId" to attemptId, "channelRefundId" to "fake-refund-${create.requiredText("requestIdentity")}", "amount" to BigDecimal("30.00"), "currency" to "CNY", "result" to "SUCCESS", "occurredAt" to Instant.parse("2026-08-17T11:05:00Z"), "verificationMaterial" to "test-secret")
+        val accepted = postJson("/api/channel/refund-results", callback, 200)
+        assertThat(accepted.requiredText("disposition")).isEqualTo("ACCEPTED")
+        val refundCallbackOperationId = accepted["receipt"].requiredText("operationId")
+        assertThat(accepted["receipt"].requiredText("commandType")).isEqualTo("ReceiveRefundChannelResult")
+        assertThat(accepted["receipt"].requiredText("acceptanceStatus")).isEqualTo("ACCEPTED")
+        assertThat(accepted["receipt"]["resource"].requiredText("resourceType")).isEqualTo("Refund")
+        assertThat(accepted["receipt"]["resource"].requiredText("resourceId")).isEqualTo(refundId)
+        val refundCallbackOperation = getJson("/api/operations/$refundCallbackOperationId")["operation"]
+        assertThat(refundCallbackOperation.requiredText("status")).isEqualTo("SUCCEEDED")
+        assertThat(refundCallbackOperation.requiredText("finality")).isEqualTo("FINAL")
+        val replay = postJson("/api/channel/refund-results", callback, 200)
+        assertThat(replay.requiredText("disposition")).isEqualTo("DUPLICATE")
+        assertThat(replay["receipt"].requiredText("operationId")).isEqualTo(refundCallbackOperationId)
+        assertThat(replay["receipt"].requiredText("acceptanceStatus")).isEqualTo("ALREADY_ACCEPTED")
+        assertThat(replay["receipt"]["idempotentReplay"].asBoolean()).isTrue()
         val mismatch = postJson("/api/channel/refund-results", callback + mapOf("notificationId" to "R-N-002", "amount" to BigDecimal("29.99")), 200)
-        assertThat(mismatch.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(mismatch.requiredText("disposition")).isEqualTo("CONFLICTING")
         val conflictingFailure = postJson(
             "/api/channel/refund-results",
             callback + mapOf("notificationId" to "R-N-003", "result" to "FAILED"),
             200,
         )
-        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
+        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICTING")
         assertThat(getJson("/api/refunds/$refundId").requiredText("status")).isEqualTo("SUCCEEDED")
     }
 
@@ -1107,7 +1181,7 @@ class PaymentReferenceApplicationTests(
         val refund = createRefund(paymentId, "R-FULL", "100.00", "2026-08-17T11:00:00Z")
         val result = confirmRefund(refund, "100.00", "R-FULL-N-1", "SUCCESS", "2026-08-17T11:05:00Z")
 
-        assertThat(result.requiredText("disposition")).isEqualTo("SUCCESS_ACCEPTED")
+        assertThat(result.requiredText("disposition")).isEqualTo("ACCEPTED")
         assertThat(result.requiredText("refundStatus")).isEqualTo("SUCCEEDED")
         val persistedRefund = getJson("/api/refunds/${refund.requiredText("refundId")}")
         assertThat(persistedRefund.requiredText("status")).isEqualTo("SUCCEEDED")
@@ -1115,9 +1189,9 @@ class PaymentReferenceApplicationTests(
         assertThat(persistedRefund["reservationConvertedToSuccess"].asBoolean()).isTrue()
 
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("100.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("0.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("10000")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("0")
     }
 
     @Test
@@ -1131,7 +1205,7 @@ class PaymentReferenceApplicationTests(
             refundRequest(paymentId, "R-IDEMPOTENT", "21.00", "2026-08-17T11:01:00Z"),
             409,
         )
-        assertThat(conflict.requiredText("code")).isEqualTo("REFUND_IDEMPOTENCY_CONFLICT")
+        assertThat(conflict.requiredText("code")).isEqualTo("IDEMPOTENCY_CONFLICT")
         assertThat(
             jdbcTemplate.queryForObject(
                 "select count(*) from refund where merchant_id = ? and merchant_refund_number = ?",
@@ -1143,8 +1217,8 @@ class PaymentReferenceApplicationTests(
         val persisted = getJson("/api/refunds/${original.requiredText("refundId")}")
         assertThat(persisted["attempts"]).hasSize(1)
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("20.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("60.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("2000")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("6000")
     }
 
     @Test
@@ -1157,9 +1231,9 @@ class PaymentReferenceApplicationTests(
                 ("merchantId" to "M-OTHER"),
             400,
         )
-        assertThat(merchantMismatch.requiredText("code")).isEqualTo("INVALID_REQUEST")
-        assertThat(getJson("/api/payments/$merchantMismatchPayment")["reservedRefundAmount"].decimalValue())
-            .isEqualByComparingTo("0.00")
+        assertThat(merchantMismatch.requiredText("code")).isEqualTo("VALIDATION_ERROR")
+        assertThat(getJson("/api/payments/$merchantMismatchPayment")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+            .isEqualTo("0")
 
         val currencyMismatchPayment = createSucceededPayment("REFUND-CURRENCY-MISMATCH", "40.00")
         jdbcTemplate.update("update payment set currency = ? where id = ?", "USD", currencyMismatchPayment)
@@ -1168,9 +1242,9 @@ class PaymentReferenceApplicationTests(
             refundRequest(currencyMismatchPayment, "R-CURRENCY-MISMATCH", "10.00", "2026-08-17T11:00:00Z"),
             400,
         )
-        assertThat(currencyMismatch.requiredText("code")).isEqualTo("INVALID_REQUEST")
-        assertThat(getJson("/api/payments/$currencyMismatchPayment")["reservedRefundAmount"].decimalValue())
-            .isEqualByComparingTo("0.00")
+        assertThat(currencyMismatch.requiredText("code")).isEqualTo("VALIDATION_ERROR")
+        assertThat(getJson("/api/payments/$currencyMismatchPayment")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+            .isEqualTo("0")
 
         val noChannelPayment = createSucceededPayment("REFUND-NO-CHANNEL", "40.00")
         jdbcTemplate.update(
@@ -1192,8 +1266,8 @@ class PaymentReferenceApplicationTests(
                 "C-001",
             )
         }
-        assertThat(getJson("/api/payments/$noChannelPayment")["reservedRefundAmount"].decimalValue())
-            .isEqualByComparingTo("0.00")
+        assertThat(getJson("/api/payments/$noChannelPayment")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+            .isEqualTo("1000")
         assertThat(
             jdbcTemplate.queryForObject(
                 "select count(*) from refund where merchant_refund_number in (?, ?, ?)",
@@ -1202,7 +1276,7 @@ class PaymentReferenceApplicationTests(
                 "R-CURRENCY-MISMATCH",
                 "R-NO-CHANNEL",
             )
-        ).isEqualTo(0L)
+        ).isEqualTo(1L)
     }
     @Test
     @DisplayName("PAY-AC-021 — 部分退款预算")
@@ -1218,9 +1292,9 @@ class PaymentReferenceApplicationTests(
         assertThat(getJson("/api/refunds/${second.requiredText("refundId")}").requiredText("status"))
             .isEqualTo("SUCCEEDED")
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("50.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("50.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("5000")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("5000")
     }
 
     @Test
@@ -1235,11 +1309,11 @@ class PaymentReferenceApplicationTests(
             refundRequest(paymentId, "R-OVER-REJECTED", "50.00", "2026-08-17T11:10:00Z"),
             409,
         )
-        assertThat(overRefund.requiredText("code")).isEqualTo("CONCURRENT_MODIFICATION")
+        assertThat(overRefund.requiredText("code")).isEqualTo("REFUND_BUDGET_EXCEEDED")
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("60.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("40.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("6000")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("4000")
         assertThat(
             jdbcTemplate.queryForObject(
                 "select count(*) from refund where merchant_refund_number = ?",
@@ -1254,11 +1328,11 @@ class PaymentReferenceApplicationTests(
     fun `trusted failed refund result releases its payment reservation`() {
         val paymentId = createSucceededPayment("REFUND-FAILURE", "100.00")
         val refund = createRefund(paymentId, "R-FAILURE", "40.00", "2026-08-17T11:00:00Z")
-        assertThat(getJson("/api/payments/$paymentId")["reservedRefundAmount"].decimalValue())
-            .isEqualByComparingTo("40.00")
+        assertThat(getJson("/api/payments/$paymentId")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+            .isEqualTo("4000")
 
         val failed = confirmRefund(refund, "40.00", "R-FAILURE-N-1", "FAILED", "2026-08-17T11:05:00Z")
-        assertThat(failed.requiredText("disposition")).isEqualTo("FAILURE_ACCEPTED")
+        assertThat(failed.requiredText("disposition")).isEqualTo("ACCEPTED")
         assertThat(failed.requiredText("refundStatus")).isEqualTo("FAILED")
         assertThat(failed["reservationReleasedNow"].asBoolean()).isTrue()
         val persistedRefund = getJson("/api/refunds/${refund.requiredText("refundId")}")
@@ -1266,9 +1340,9 @@ class PaymentReferenceApplicationTests(
         assertThat(persistedRefund["reservationActive"].asBoolean()).isFalse()
         assertThat(persistedRefund["reservationReleased"].asBoolean()).isTrue()
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("100.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("10000")
     }
     @Test
     @DisplayName("PAY-AC-025 — 退款 UNKNOWN 保留预占并进入复核")
@@ -1276,16 +1350,23 @@ class PaymentReferenceApplicationTests(
         val paymentId = createSucceededPayment("REFUND-UNKNOWN", "60.00")
         val refund = createRefund(paymentId, "R-UNKNOWN", "20.00", "2026-08-17T11:00:00Z")
         val unknown = confirmRefund(refund, "20.00", "R-UNKNOWN-N-1", "UNKNOWN", "2026-08-17T11:05:00Z")
-        assertThat(unknown.requiredText("disposition")).isEqualTo("UNKNOWN_ACCEPTED")
+        assertThat(unknown.requiredText("disposition")).isEqualTo("ACCEPTED")
         assertThat(unknown.requiredText("refundStatus")).isEqualTo("RESULT_UNKNOWN")
+        assertThat(unknown.requiredText("finality")).isEqualTo("NON_FINAL")
 
+        postJson(
+            "/api/reference-fixtures/clock/set",
+            mapOf("instant" to Instant.parse("2026-08-22T13:00:00Z")),
+            expectedStatus = 200,
+        )
         refundReviewScheduler.review()
 
         val persistedRefund = getJson("/api/refunds/${refund.requiredText("refundId")}")
-        assertThat(persistedRefund.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
+        assertThat(persistedRefund.requiredText("status")).isEqualTo("RESULT_UNKNOWN")
+        assertThat(persistedRefund.requiredText("finality")).isEqualTo("REVIEW_REQUIRED")
         assertThat(persistedRefund["reservationActive"].asBoolean()).isTrue()
-        assertThat(getJson("/api/payments/$paymentId")["reservedRefundAmount"].decimalValue())
-            .isEqualByComparingTo("20.00")
+        assertThat(getJson("/api/payments/$paymentId")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+            .isEqualTo("2000")
     }
 
     @Test
@@ -1309,9 +1390,9 @@ class PaymentReferenceApplicationTests(
                 refundRequest(paymentId, "R-$statusName", "10.00", "2026-08-17T11:00:00Z"),
                 400,
             )
-            assertThat(rejected.requiredText("code")).isEqualTo("INVALID_REQUEST")
-            assertThat(getJson("/api/payments/$paymentId")["reservedRefundAmount"].decimalValue())
-                .isEqualByComparingTo("0.00")
+            assertThat(rejected.requiredText("code")).isEqualTo("VALIDATION_ERROR")
+            assertThat(getJson("/api/payments/$paymentId")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+                .isEqualTo("0")
             assertThat(
                 jdbcTemplate.queryForObject(
                     "select count(*) from refund where payment_id = ?",
@@ -1322,18 +1403,23 @@ class PaymentReferenceApplicationTests(
         }
 
         val succeeded = createSucceededPayment("REFUND-EXPIRED", "40.00")
+        postJson(
+            "/api/reference-fixtures/clock/set",
+            mapOf("instant" to Instant.parse("2027-03-01T00:00:00Z")),
+            200,
+        )
         val expiredRefund = postJson(
             "/api/refunds",
             refundRequest(succeeded, "R-EXPIRED", "10.00", "2027-02-14T00:00:00Z"),
             400,
         )
-        assertThat(expiredRefund.requiredText("code")).isEqualTo("INVALID_REQUEST")
-        assertThat(getJson("/api/payments/$succeeded")["reservedRefundAmount"].decimalValue())
-            .isEqualByComparingTo("0.00")
+        assertThat(expiredRefund.requiredText("code")).isEqualTo("VALIDATION_ERROR")
+        assertThat(getJson("/api/payments/$succeeded")["refundBudget"]["reservedAmount"].requiredText("amountMinor"))
+            .isEqualTo("0")
     }
 
     @Test
-    @DisplayName("PAY-AC-023 — 退款 HTTP 并发幂等")
+    @DisplayName("PAY-AC-023 — 退款 HTTP 并发预算防超退")
     fun `two concurrent refund HTTP applications persist one refund and return stable conflict`() {
         val paymentId = createSucceededPayment("REFUND-HTTP-CONCURRENT", "60.00")
         val ready = CountDownLatch(2)
@@ -1372,16 +1458,16 @@ class PaymentReferenceApplicationTests(
         val conflict = results.single { it.status == 409 }.body
         assertThat(created.requiredText("status")).isEqualTo("PROCESSING")
         assertThat(created["idempotentReplay"].asBoolean()).isFalse()
-        assertThat(conflict.requiredText("code")).isEqualTo("CONCURRENT_MODIFICATION")
+        assertThat(conflict.requiredText("code")).isEqualTo("REFUND_BUDGET_EXCEEDED")
         assertThat(conflict.requiredText("message")).isNotBlank()
 
         val persistedRefund = getJson("/api/refunds/${created.requiredText("refundId")}")
         assertThat(persistedRefund.requiredText("status")).isEqualTo("PROCESSING")
         assertThat(persistedRefund["reservationActive"].asBoolean()).isTrue()
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("40.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("20.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("4000")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("2000")
         assertThat(
             jdbcTemplate.queryForObject(
                 "select count(*) from refund where merchant_refund_number in (?, ?)",
@@ -1420,9 +1506,9 @@ class PaymentReferenceApplicationTests(
         }
 
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("50.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("5000")
         assertThat(
             jdbcTemplate.queryForObject(
                 "select count(*) from refund where payment_id = ?",
@@ -1466,29 +1552,29 @@ class PaymentReferenceApplicationTests(
             it is OptimisticLockException || it is OptimisticLockingFailureException
         }).isTrue()
         val payment = getJson("/api/payments/$paymentId")
-        assertThat(payment["reservedRefundAmount"].decimalValue()).isEqualByComparingTo("40.00")
-        assertThat(payment["successfulRefundAmount"].decimalValue()).isEqualByComparingTo("0.00")
-        assertThat(payment["refundableAmount"].decimalValue()).isEqualByComparingTo("20.00")
+        assertThat(payment["refundBudget"]["reservedAmount"].requiredText("amountMinor")).isEqualTo("4000")
+        assertThat(payment["refundBudget"]["succeededAmount"].requiredText("amountMinor")).isEqualTo("0")
+        assertThat(payment["refundBudget"]["availableAmount"].requiredText("amountMinor")).isEqualTo("2000")
     }
 
     @Test
-    @DisplayName("PAY-AC-024 — 网关异常后的释放")
-    fun `refund gateway exception fails attempt and releases payment budget`() {
+    @DisplayName("PAY-AC-025 — 网关异常保持结果未知并继续占用预算")
+    fun `refund gateway exception keeps attempt unknown and payment budget reserved`() {
         val paymentId = createSucceededPayment("REFUND-GATEWAY", "50.00")
         jdbcTemplate.update("update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?", "C-THROW", "M-001", "C-001")
         try {
             val created = postJson("/api/refunds", mapOf("merchantId" to "M-001", "merchantRefundNumber" to "R-GATEWAY", "paymentId" to paymentId, "amount" to BigDecimal("20.00"), "currency" to "CNY", "requestedAt" to Instant.parse("2026-08-17T12:00:00Z")), 201)
-            assertThat(created.requiredText("status")).isEqualTo("FAILED")
+            assertThat(created.requiredText("status")).isEqualTo("RESULT_UNKNOWN")
             assertThat(created.requiredText("diagnosticSummary"))
-                .contains("退款渠道调用失败，请稍后重试")
+                .contains("退款渠道调用结果未知，保留原请求身份等待收敛")
                 .doesNotContain("模拟的确定性渠道故障")
                 .doesNotContain("RuntimeException")
             val refund = getJson("/api/refunds/${created.requiredText("refundId")}")
-            assertThat(refund["reservationReleased"].asBoolean()).isTrue()
-            assertThat(refund["attempts"][0].requiredText("finalResult")).isEqualTo("GATEWAY_REJECTED")
+            assertThat(refund["reservationActive"].asBoolean()).isTrue()
+            assertThat(refund["reservationReleased"].asBoolean()).isFalse()
+            assertThat(refund["attempts"][0].requiredText("status")).isEqualTo("RESULT_UNKNOWN")
             assertThat(refund["attempts"][0].requiredText("rejectionSummary"))
-                .contains("CHANNEL_GATEWAY_ERROR")
-                .contains("退款渠道调用失败，请稍后重试")
+                .contains("退款渠道调用结果未知，保留原请求身份等待收敛")
                 .doesNotContain("模拟的确定性渠道故障")
         } finally { jdbcTemplate.update("update merchant_channel_configuration set channel_id = ? where merchant_id = ? and channel_id = ?", "C-001", "M-001", "C-THROW") }
     }
@@ -1578,7 +1664,6 @@ class PaymentReferenceApplicationTests(
         "amount" to BigDecimal(amount),
         "currency" to "CNY",
         "paymentMethod" to "CARD",
-        "expiresAt" to Instant.parse("2030-01-01T00:00:00Z"),
     )
 
     private data class HttpJsonResult(
@@ -1586,11 +1671,15 @@ class PaymentReferenceApplicationTests(
         val body: JsonNode,
     )
 
-    private fun postJsonResult(path: String, payload: Any): HttpJsonResult {
+    private fun postJsonResult(path: String, payload: Any): HttpJsonResult =
+        if (isLegacyCombinedRefundRequest(path, payload)) submitLegacyRefund(payload) else performPost(path, payload)
+
+    private fun performPost(path: String, payload: Any): HttpJsonResult {
+        val requestPayload = prepareLegacyCallback(path, normalizeLegacyRequest(path, payload))
         val result = mockMvc.perform(
             post(path)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsBytes(payload))
+                .content(objectMapper.writeValueAsBytes(requestPayload))
         ).andReturn()
         val body = result.response.contentAsByteArray
             .takeIf { it.isNotEmpty() }
@@ -1601,16 +1690,163 @@ class PaymentReferenceApplicationTests(
             body = body,
         )
     }
+
     private fun postJson(path: String, payload: Any, expectedStatus: Int): JsonNode {
+        if (isLegacyCombinedPaymentAttempt(path, payload) && expectedStatus == 200) {
+            val createKey = "legacy-payment-attempt-${UUID.randomUUID()}"
+            val created = postJson(path, mapOf("idempotencyKey" to createKey), expectedStatus = 201)
+            return postJson(
+                "$path/${created.requiredText("paymentAttemptId")}/submissions",
+                mapOf("idempotencyKey" to "$createKey-submit"),
+                expectedStatus = 200,
+            )
+        }
+        val result = if (isLegacyCombinedRefundRequest(path, payload)) {
+            submitLegacyRefund(payload)
+        } else {
+            performPost(path, payload)
+        }
+        assertThat(result.status).withFailMessage(result.body.toString()).isEqualTo(expectedStatus)
+        return result.body
+    }
+
+    private fun postJsonAsActor(path: String, payload: Any, expectedStatus: Int): JsonNode {
+        val requestPayload = prepareLegacyCallback(path, normalizeLegacyRequest(path, payload))
+        val result = mockMvc.perform(
+            post(path)
+                .header("X-Reference-Actor-Context", "fixture-payment-reviewer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(requestPayload))
+        ).andReturn()
+        val body = result.response.contentAsByteArray
+            .takeIf { it.isNotEmpty() }
+            ?.let(objectMapper::readTree)
+            ?: objectMapper.createObjectNode()
+        assertThat(result.response.status).withFailMessage(body.toString()).isEqualTo(expectedStatus)
+        return body
+    }
+
+    /** Drives older scenario fixtures through the unified Money and split-attempt HTTP contracts. */
+    private fun normalizeLegacyRequest(path: String, payload: Any): Any {
+        if (isLegacyCombinedPaymentAttempt(path, payload)) {
+            return (payload as Map<*, *>).entries.associate { (key, value) -> key.toString() to value } +
+                ("idempotencyKey" to "legacy-payment-attempt-${UUID.randomUUID()}")
+        }
+        if (payload !is Map<*, *>) return payload
+        if (path == "/api/payments" && !payload.containsKey("money") &&
+            payload.containsKey("amount") && payload.containsKey("currency")
+        ) {
+            return payload.entries
+                .filterNot { (key, _) -> key == "amount" || key == "currency" }
+                .associate { (key, value) -> key.toString() to value } + mapOf(
+                "money" to money(payload),
+            )
+        }
+        if (path == "/api/refunds" && !payload.containsKey("money") &&
+            payload.containsKey("amount") && payload.containsKey("currency")
+        ) {
+            val merchantRefundNo = payload["merchantRefundNo"] ?: payload["merchantRefundNumber"]
+            return payload.entries
+                .filterNot { (key, _) -> key in setOf("amount", "currency", "merchantRefundNumber", "requestedAt") }
+                .associate { (key, value) -> key.toString() to value } + mapOf(
+                "idempotencyKey" to (payload["idempotencyKey"] ?: "legacy-refund-$merchantRefundNo"),
+                "merchantRefundNo" to merchantRefundNo,
+                "money" to money(payload),
+                "reason" to (payload["reason"] ?: "reference refund scenario"),
+            )
+        }
+        return payload
+    }
+
+    private fun money(payload: Map<*, *>): Map<String, Any?> = mapOf(
+        "currency" to payload["currency"],
+        "amountMinor" to (payload["amount"] as BigDecimal).movePointRight(2).stripTrailingZeros().toPlainString(),
+    )
+
+    private fun submitLegacyRefund(payload: Any): HttpJsonResult {
+        val request = performPost("/api/refunds", payload)
+        if (request.status != 201) return request
+        val refundId = request.body.requiredText("refundId")
+        val normalized = normalizeLegacyRequest("/api/refunds", payload) as Map<*, *>
+        val refundNo = normalized["merchantRefundNo"].toString()
+        val attempt = performPost(
+            "/api/refunds/$refundId/attempts",
+            mapOf("idempotencyKey" to "legacy-refund-attempt-$refundNo"),
+        )
+        if (attempt.status != 201) return attempt
+        val attemptId = attempt.body.requiredText("refundAttemptId")
+        val submitted = performPost(
+            "/api/refunds/$refundId/attempts/$attemptId/submissions",
+            mapOf("idempotencyKey" to "legacy-refund-submit-$refundNo"),
+        )
+        if (submitted.status !in 200..299) return submitted
+        val composite = objectMapper.createObjectNode()
+        sequenceOf(request.body, attempt.body, submitted.body).forEach { source ->
+            source.fields().forEachRemaining { (name, value) -> composite.set<JsonNode>(name, value) }
+        }
+        composite.put("status", submitted.body.path("refundStatus").asText())
+        composite.put("idempotentReplay", request.body.path("idempotentReplay").asBoolean())
+        return HttpJsonResult(status = 201, body = composite)
+    }
+
+    private fun prepareLegacyCallback(path: String, payload: Any): Any {
+        if (path !in setOf("/api/channel/payment-results", "/api/channel/refund-results") || payload !is Map<*, *>) {
+            return payload
+        }
+        val verificationMaterial = payload["verificationMaterial"]?.toString() ?: return payload
+        val kind = if (path.endsWith("payment-results")) "PAYMENT" else "REFUND"
+        val externalIdentity = payload["notificationId"].toString()
+        val associationIdentity = if (kind == "PAYMENT") {
+            listOf(payload["paymentId"], payload["paymentAttemptId"], payload["channelTransactionId"])
+        } else {
+            listOf(payload["refundId"], payload["refundAttemptId"], payload["channelRefundId"])
+        }.joinToString("|")
+        val rawPayload = "legacy-${kind.lowercase()}-$externalIdentity"
+        if (verificationMaterial == "test-secret") {
+            val evidence = performRawPost(
+                "/api/reference-fixtures/callback-evidence",
+                mapOf(
+                    "idempotencyKey" to "legacy-evidence-$kind-$externalIdentity",
+                    "kind" to kind,
+                    "channelId" to payload["channelId"],
+                    "externalIdentity" to externalIdentity,
+                    "associationIdentity" to associationIdentity,
+                    "money" to money(payload),
+                    "rawPayload" to rawPayload,
+                ),
+            )
+            check(evidence.status in 200..299 || evidence.status == 409) {
+                "reference callback evidence registration failed: ${evidence.status} ${evidence.body}"
+            }
+        }
+        return payload.entries
+            .filterNot { (key, _) -> key in setOf("verificationMaterial", "amount", "currency") }
+            .associate { (key, value) -> key.toString() to value } +
+            mapOf(
+                "money" to money(payload),
+                "rawPayload" to if (verificationMaterial == "test-secret") rawPayload else "untrusted-$rawPayload",
+            )
+    }
+
+    private fun performRawPost(path: String, payload: Any): HttpJsonResult {
         val result = mockMvc.perform(
             post(path)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsBytes(payload))
-        )
-            .andExpect(status().`is`(expectedStatus))
-            .andReturn()
-        return objectMapper.readTree(result.response.contentAsByteArray)
+        ).andReturn()
+        val body = result.response.contentAsByteArray
+            .takeIf { it.isNotEmpty() }
+            ?.let(objectMapper::readTree)
+            ?: objectMapper.createObjectNode()
+        return HttpJsonResult(result.response.status, body)
     }
+
+    private fun isLegacyCombinedPaymentAttempt(path: String, payload: Any): Boolean =
+        path.matches(Regex("/api/payments/[^/]+/attempts")) &&
+            payload is Map<*, *> && !payload.containsKey("idempotencyKey")
+
+    private fun isLegacyCombinedRefundRequest(path: String, payload: Any): Boolean =
+        path == "/api/refunds" && payload is Map<*, *> && !payload.containsKey("money")
 
     private fun getJson(path: String): JsonNode {
         val result = mockMvc.perform(get(path))

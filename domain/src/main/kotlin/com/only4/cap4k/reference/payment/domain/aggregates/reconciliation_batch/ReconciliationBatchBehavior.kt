@@ -72,12 +72,18 @@ internal fun ReconciliationBatch.appendReconciliationRun(
     val matched = items.count { it.differenceType == ReconciliationDifferenceType.MATCHED }
     val differences = items.size - matched
     val unresolved = items.count { !it.resolved }
-    val completedAt = startedAt
+    val readyToComplete = statement.completeness == StatementCompleteness.COMPLETE &&
+        unresolved == 0 && items.none { it.settlementBlocked }
+    val completedAt = startedAt.takeIf { readyToComplete || isLateOlderRevision }
     val run = ReconciliationRun(
         statementIdentity = statement.statementIdentity,
         statementRevision = statement.statementRevision,
         statementCompleteness = statement.completeness,
-        status = if (isLateOlderRevision) ReconciliationRunStatus.SUPERSEDED else ReconciliationRunStatus.COMPLETED,
+        status = when {
+            isLateOlderRevision -> ReconciliationRunStatus.SUPERSEDED
+            readyToComplete -> ReconciliationRunStatus.COMPLETED
+            else -> ReconciliationRunStatus.RECONCILING
+        },
         fetchedAt = LocalDateTime.ofInstant(statement.fetchedAt, ZoneOffset.UTC),
         startedAt = startedAt,
         completedAt = completedAt,
@@ -93,7 +99,7 @@ internal fun ReconciliationBatch.appendReconciliationRun(
     reconciliationRuns.add(run)
     if (!isLateOlderRevision) {
         currentEffectiveRunId = runId.toString()
-        applyEffectiveRun(run, completedAt)
+        applyEffectiveRun(run, startedAt)
     }
     return ReconciliationRunResult(run, false)
 }
@@ -107,11 +113,38 @@ fun ReconciliationBatch.appendDisposition(
     creation: ReconciliationDispositionCreation,
     confirmation: ReconciliationConfirmationFactCreation? = null
 ): ReconciliationDisposition {
+    val item = requireDispositionEligible(differenceIdentity, creation, confirmation)
+    val authorized = creation.authorizationResult == DispositionAuthorization.AUTHORIZED
+    val conclusion = creation.conclusion
+
+    val disposition = ReconciliationDisposition(
+        creation.operatorIdentity, creation.operatorRole, creation.authorizationResult,
+        creation.status, creation.conclusion, creation.settlementImpact,
+        creation.reason, creation.evidence, creation.followUp, creation.disposedAt
+    )
+    item.reconciliationDispositions.add(disposition)
+    if (authorized) {
+        if (conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT) {
+            item.appendConfirmation(requireNotNull(confirmation))
+        }
+        item.resolved = conclusion != ReconciliationDispositionConclusion.ESCALATE
+        item.settlementBlocked = !item.resolved || creation.settlementImpact == SettlementImpact.BLOCKS_SETTLEMENT
+    }
+    recalculate(effectiveRun(), creation.disposedAt)
+    return disposition
+}
+
+/** Pure domain preflight shared by the application command and the append boundary. */
+fun ReconciliationBatch.requireDispositionEligible(
+    differenceIdentity: String,
+    creation: ReconciliationDispositionCreation,
+    confirmation: ReconciliationConfirmationFactCreation? = null,
+): ReconciliationItem {
     val run = effectiveRun()
     val item = run.reconciliationItems.firstOrNull { it.differenceIdentity == differenceIdentity }
         ?: throw IllegalArgumentException("未找到对账差异：$differenceIdentity")
     val authorized = creation.authorizationResult == DispositionAuthorization.AUTHORIZED
-    val conclusion = if (authorized) {
+    if (authorized) {
         require(creation.status == ReconciliationDispositionStatus.APPLIED) {
             "已授权的差异处置必须使用 APPLIED 状态"
         }
@@ -137,24 +170,8 @@ fun ReconciliationBatch.appendDisposition(
             "未授权的差异处置必须使用 REJECTED 状态"
         }
         require(confirmation == null) { "未授权的差异处置不能创建确认事实" }
-        null
     }
-
-    val disposition = ReconciliationDisposition(
-        creation.operatorIdentity, creation.operatorRole, creation.authorizationResult,
-        creation.status, creation.conclusion, creation.settlementImpact,
-        creation.evidence, creation.followUp, creation.disposedAt
-    )
-    item.reconciliationDispositions.add(disposition)
-    if (authorized) {
-        if (conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT) {
-            item.appendConfirmation(requireNotNull(confirmation))
-        }
-        item.resolved = conclusion != ReconciliationDispositionConclusion.ESCALATE
-        item.settlementBlocked = !item.resolved || creation.settlementImpact == SettlementImpact.BLOCKS_SETTLEMENT
-    }
-    recalculate(run, creation.disposedAt)
-    return disposition
+    return item
 }
 
 private fun ReconciliationItem.requireConfirmationEligibility(
@@ -220,6 +237,10 @@ private fun compareStatementRevision(left: String, right: String): Int {
 
 private fun ReconciliationBatch.recalculate(run: ReconciliationRun, at: LocalDateTime) {
     run.unresolvedDifferenceCount = run.reconciliationItems.count { !it.resolved }
+    val readyToComplete = run.statementCompleteness == StatementCompleteness.COMPLETE &&
+        run.unresolvedDifferenceCount == 0 && run.reconciliationItems.none { it.settlementBlocked }
+    run.status = if (readyToComplete) ReconciliationRunStatus.COMPLETED else ReconciliationRunStatus.RECONCILING
+    run.completedAt = at.takeIf { readyToComplete }
     applyEffectiveRun(run, at)
 }
 

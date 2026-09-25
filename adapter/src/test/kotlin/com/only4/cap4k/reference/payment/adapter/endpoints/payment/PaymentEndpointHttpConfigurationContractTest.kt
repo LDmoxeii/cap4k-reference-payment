@@ -14,10 +14,14 @@ class PaymentEndpointHttpConfigurationContractTest {
     @Test
     fun `handwritten bindings retain method path status and mapper contracts`() {
         assertBinding("createPaymentHttpBinding", "special", "POST", "/api/payments", 201, "request.body(CreatePaymentEndpoint.Request::class)")
-        assertBinding("startPaymentAttemptHttpBinding", "special", "POST", "/api/payments/{paymentId}/attempts", 200, "request.path(\"paymentId\", String::class)")
+        assertBinding("createPaymentAttemptHttpBinding", "special", "POST", "/api/payments/{paymentId}/attempts", 201, "request.path(\"paymentId\", String::class)")
+        assertBinding("submitPaymentAttemptHttpBinding", "special", "POST", "/api/payments/{paymentId}/attempts/{paymentAttemptId}/submissions", 200, "request.path(\"paymentAttemptId\", String::class)")
         assertBinding("confirmPaymentResultHttpBinding", "json", "POST", "/api/channel/payment-results", null, null)
-        assertBinding("adjudicatePaymentReviewHttpBinding", "special", "POST", "/api/payments/{paymentId}/reviews/{reviewId}/decisions", 200, "request.path(\"reviewId\", String::class)")
+        assertBinding("getPaymentChannelResultReceiptsHttpBinding", "special", "GET", "/api/channel/payment-results/{resultIdentity}/receipts", 200, "request.path(\"resultIdentity\", String::class)")
+        assertBinding("adjudicatePaymentReviewHttpBinding", "special", "POST", "/api/payments/{paymentId}/reviews/{reviewId}/decisions", 200, "request.body(AdjudicatePaymentReviewBody::class)")
         assertBinding("getPaymentHttpBinding", "special", "GET", "/api/payments/{paymentId}", 200, "request.path(\"paymentId\", String::class)")
+        assertBinding("getPaymentTimelineHttpBinding", "special", "GET", "/api/payments/{paymentId}/timeline", 200, "request.path(\"paymentId\", String::class)")
+        assertBinding("listPaymentIntentsHttpBinding", "json", "POST", "/api/payments/search", null, null)
     }
 
     private fun assertBinding(functionName: String, factory: String, method: String, path: String, status: Int?, mapperEvidence: String?) {

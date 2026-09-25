@@ -96,6 +96,7 @@ data class RefundResultRecordingOutcome(
     val accepted: Boolean
         get() = disposition == RefundResultDisposition.SUCCESS_ACCEPTED ||
             disposition == RefundResultDisposition.FAILURE_ACCEPTED ||
+            disposition == RefundResultDisposition.RETRYABLE_FAILURE_ACCEPTED ||
             disposition == RefundResultDisposition.UNKNOWN_ACCEPTED ||
             disposition == RefundResultDisposition.ACCEPTED_DUPLICATE
 

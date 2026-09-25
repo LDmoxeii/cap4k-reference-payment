@@ -95,7 +95,7 @@ class ChannelResultRecordingOutcomeTest {
         assertThatIllegalArgumentException().isThrownBy {
             successfulOutcome().copy(
                 disposition = ChannelResultDisposition.FAILURE_ACCEPTED,
-                attemptStatus = PaymentAttemptStatus.PROCESSING,
+                attemptStatus = PaymentAttemptStatus.ACCEPTED,
                 successFactFormedNow = false,
             )
         }

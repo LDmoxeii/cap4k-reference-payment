@@ -38,9 +38,9 @@ object GetMerchantSettlementQry {
          */
         val merchantId: String,
         /**
-         * 渠道标识
+         * 执行渠道快照；不属于 scope
          */
-        val channelId: String,
+        val executionChannelId: String?,
         /**
          * 币种
          */
@@ -129,6 +129,8 @@ object GetMerchantSettlementQry {
          * 确认时间
          */
         val confirmedAt: Instant?,
+        val confirmedReason: String?,
+        val confirmedEvidence: String?,
         /**
          * 作废操作人
          */
@@ -137,6 +139,7 @@ object GetMerchantSettlementQry {
          * 作废原因
          */
         val voidReason: String?,
+        val voidEvidence: String?,
         /**
          * 作废时间
          */
@@ -195,6 +198,8 @@ object GetMerchantSettlementQry {
              * 来源事实身份
              */
             val sourceFactIdentity: String,
+            val decision: String,
+            val reasonCode: String,
             /**
              * 费用事实身份
              */

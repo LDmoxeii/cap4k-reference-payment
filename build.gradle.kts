@@ -45,7 +45,7 @@ cap4k {
             username.set("sa")
             password.set("secret")
             schema.set("PUBLIC")
-            includeTables.set(listOf("payment", "payment_attempt", "payment_notification_receipt", "payment_review_case", "payment_review_decision", "refund", "refund_attempt", "refund_notification_receipt", "merchant_channel_configuration", "reconciliation_batch", "reconciliation_run", "reconciliation_item", "reconciliation_disposition", "reconciliation_confirmation_fact", "merchant_settlement", "settlement_line", "settlement_execution_attempt", "settlement_result_receipt"))
+            includeTables.set(listOf("operation", "payment_channel_result_receipt", "merchant_notification", "merchant_notification_delivery_attempt", "manual_review_item", "manual_review_resolution", "payment", "payment_attempt", "payment_submission_receipt", "payment_notification_receipt", "payment_review_case", "payment_review_decision", "refund", "refund_attempt", "refund_notification_receipt", "merchant_channel_configuration", "authoritative_bill", "bill_revision", "bill_revision_record", "bill_available_signal", "reconciliation_batch", "reconciliation_run", "reconciliation_item", "reconciliation_disposition", "reconciliation_confirmation_fact", "merchant_settlement", "settlement_line", "settlement_execution_attempt", "settlement_result_receipt"))
             excludeTables.set(emptyList())
         }
     }

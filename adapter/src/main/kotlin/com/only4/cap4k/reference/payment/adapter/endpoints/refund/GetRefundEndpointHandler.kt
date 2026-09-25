@@ -2,6 +2,8 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.refund
 
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
+import com.only4.cap4k.reference.payment.adapter.contract.ReferenceContractStatusMapper
+import com.only4.cap4k.reference.payment.adapter.endpoints.toContractMoney
 import com.only4.cap4k.reference.payment.application.queries.refund.read.GetRefundQry
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.contract.endpoints.refund.api.GetRefundEndpoint
@@ -16,10 +18,12 @@ class GetRefundEndpointHandler : EndpointHandler<GetRefundEndpoint.Request, GetR
             paymentId = response.paymentId.toString(),
             merchantId = response.merchantId,
             merchantRefundNumber = response.merchantRefundNumber,
-            amount = response.amount,
-            currency = response.currency,
+            idempotencyKey = response.idempotencyKey,
+            money = response.amount.toContractMoney(response.currency),
+            reason = response.reason,
             paymentMethod = response.paymentMethod,
-            status = response.status,
+            status = ReferenceContractStatusMapper.refundStatus(response.status),
+            finality = ReferenceContractStatusMapper.refundFinality(response.status, response.settlementBlocked),
             requestedAt = response.requestedAt,
             refundDeadlineAt = response.refundDeadlineAt,
             channelAcceptedAt = response.channelAcceptedAt,
@@ -46,7 +50,7 @@ class GetRefundEndpointHandler : EndpointHandler<GetRefundEndpoint.Request, GetR
                 GetRefundEndpoint.Response.RefundAttemptSummary(
                     refundAttemptId = attempt.refundAttemptId,
                     channelId = attempt.channelId,
-                    status = attempt.status,
+                    status = ReferenceContractStatusMapper.refundAttemptStatus(attempt.status),
                     requestIdentity = attempt.requestIdentity,
                     initiatedAt = attempt.initiatedAt,
                     acceptedAt = attempt.acceptedAt,
@@ -66,8 +70,7 @@ class GetRefundEndpointHandler : EndpointHandler<GetRefundEndpoint.Request, GetR
                             notificationIdentity = receipt.notificationIdentity,
                             channelId = receipt.channelId,
                             channelRefundId = receipt.channelRefundId,
-                            amount = receipt.amount,
-                            currency = receipt.currency,
+                            money = receipt.amount.toContractMoney(receipt.currency),
                             result = receipt.result,
                             occurredAt = receipt.occurredAt,
                             firstReceivedAt = receipt.firstReceivedAt,
@@ -75,7 +78,7 @@ class GetRefundEndpointHandler : EndpointHandler<GetRefundEndpoint.Request, GetR
                             receiveCount = receipt.receiveCount,
                             verified = receipt.verified,
                             accepted = receipt.accepted,
-                            decision = receipt.decision,
+                            decision = ReferenceContractStatusMapper.refundDisposition(receipt.decision),
                             verdictSummary = receipt.verdictSummary,
                             rejectionSummary = receipt.rejectionSummary,
                             conflictSummary = receipt.conflictSummary,

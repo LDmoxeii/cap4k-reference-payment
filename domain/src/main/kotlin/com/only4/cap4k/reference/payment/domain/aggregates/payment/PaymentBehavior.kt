@@ -8,6 +8,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.time.Duration
 import java.time.LocalDateTime
 
 data class SettlementFeeRule(
@@ -16,9 +17,12 @@ data class SettlementFeeRule(
     val fixedFeeAmount: BigDecimal,
     val roundingMode: RoundingMode,
     val currencyPrecision: Int,
+    /** Effective ReferencePolicy fee rate frozen with the first accepted success fact. */
+    val feeRate: BigDecimal = BigDecimal.valueOf(basisPoints.toLong()).movePointLeft(4),
 ) {
     init {
         require(configurationId.isNotBlank())
+        require(feeRate >= BigDecimal.ZERO)
         require(basisPoints >= 0)
         require(fixedFeeAmount >= BigDecimal.ZERO)
         require(currencyPrecision >= 0)
@@ -56,74 +60,214 @@ private fun reviewCheck(
 }
 
 /**
- * 创建或复用当前正在处理的渠道尝试。
- *
- * 到期、存在阻断结算的复核、或已经形成终态时都不能继续主动发起渠道请求；
- * 对已有 PROCESSING attempt 的复用是应用重试幂等边界，而不是创建新的支付机会。
+ * Creates an explicit payment attempt only.  This is deliberately separated from submission:
+ * no channel call or channel receipt can happen on this transition.
  */
+fun Payment.createAttempt(
+    channelId: String,
+    channelConfigurationId: String,
+    channelConfigurationSnapshot: String,
+    requestIdentity: String,
+    initiatedAt: LocalDateTime,
+    interactionInformation: String,
+    riskReason: String? = null,
+): PaymentAttempt {
+    check(initiatedAt.isBefore(expiresAt)) { "PAYMENT_EXPIRED" }
+    check(status == PaymentStatus.PENDING || status == PaymentStatus.PROCESSING) {
+        "支付 $id 当前状态为 $status，不能创建新的支付尝试"
+    }
+    val inFlight = attempts.filter { it.status in inFlightAttemptStatuses }
+    if (inFlight.isNotEmpty()) {
+        check(!riskReason.isNullOrBlank()) { "PAYMENT_ATTEMPT_RISK_REASON_REQUIRED" }
+        openReview(
+            PaymentReviewType.CONCURRENT_ATTEMPT_RISK,
+            initiatedAt,
+            inFlight.map { it.id.toString() }.sorted(),
+            emptyList(),
+            "存在未收敛支付尝试，新尝试必须按显式风险原因创建：${riskReason.trim()}",
+            "concurrent-attempt:${inFlight.map { it.id.toString() }.sorted().joinToString(",")}:${riskReason.trim()}",
+        )
+    } else {
+        check(currentReviewEligibility().settlementEligible) { "PAYMENT_REVIEW_REQUIRED" }
+    }
+    return PaymentAttempt(
+        channelId = channelId,
+        channelConfigurationId = channelConfigurationId,
+        channelConfigurationSnapshot = channelConfigurationSnapshot,
+        requestIdentity = requestIdentity,
+        status = PaymentAttemptStatus.CREATED,
+        initiatedAt = initiatedAt,
+        interactionInformation = interactionInformation,
+        riskReason = riskReason?.trim()?.takeIf { it.isNotEmpty() },
+    ).also {
+        attempts.add(it)
+        attemptCount = attempts.size
+    }
+}
+
+/**
+ * Freezes an unchangeable submission identity before the adapter invokes the reference channel.
+ * Any later invocation must observe a non-CREATED state and is therefore unable to call again.
+ */
+fun Payment.freezeAttemptSubmission(paymentAttemptId: PaymentAttemptId, submittedAt: LocalDateTime): PaymentAttempt {
+    val attempt = attempts.firstOrNull { it.id == paymentAttemptId }
+        ?: error("支付尝试 $paymentAttemptId 不属于支付单 $id")
+    check(attempt.status == PaymentAttemptStatus.CREATED) {
+        "支付尝试 $paymentAttemptId 当前状态为 ${attempt.status}，不能提交给渠道"
+    }
+    attempt.submissionIdentity = "payment-submit:${attempt.id}"
+    attempt.submittedAt = submittedAt
+    attempt.status = PaymentAttemptStatus.SUBMITTED
+    status = PaymentStatus.PROCESSING
+    return attempt
+}
+
+/** Appends the sole channel submission receipt and advances only submission acceptance, never payment success. */
+fun Payment.recordAttemptSubmission(
+    paymentAttemptId: PaymentAttemptId,
+    submissionIdentity: String,
+    submittedAt: LocalDateTime,
+    outcome: String,
+    channelReference: String?,
+    diagnosticSummary: String?,
+): PaymentAttempt {
+    val attempt = attempts.firstOrNull { it.id == paymentAttemptId }
+        ?: error("支付尝试 $paymentAttemptId 不属于支付单 $id")
+    check(attempt.submissionIdentity == submissionIdentity) { "PAYMENT_SUBMISSION_IDENTITY_CONFLICT" }
+    val normalizedOutcome = outcome.trim().uppercase()
+    check(normalizedOutcome in setOf("ACCEPTED", "REJECTED", "RESULT_UNKNOWN")) {
+        "不支持的支付渠道提交结果：$outcome"
+    }
+    check(attempt.status == PaymentAttemptStatus.SUBMITTED) {
+        "支付尝试 $paymentAttemptId 当前状态为 ${attempt.status}，不能记录渠道提交结果"
+    }
+    check(attempt.paymentSubmissionReceipts.none { it.submissionIdentity == submissionIdentity }) {
+        "PAYMENT_SUBMISSION_IDENTITY_CONFLICT"
+    }
+    attempt.paymentSubmissionReceipts.add(
+        PaymentSubmissionReceipt(
+            submissionIdentity = submissionIdentity,
+            requestIdentity = attempt.requestIdentity,
+            channelId = attempt.channelId,
+            submittedAt = submittedAt,
+            outcome = normalizedOutcome,
+            channelReference = channelReference?.trim()?.takeIf { it.isNotEmpty() },
+            diagnosticSummary = diagnosticSummary?.trim()?.takeIf { it.isNotEmpty() },
+        ),
+    )
+    when (normalizedOutcome) {
+        "ACCEPTED" -> {
+            attempt.status = PaymentAttemptStatus.ACCEPTED
+            attempt.acceptedAt = submittedAt
+            if (!channelReference.isNullOrBlank()) attempt.interactionInformation = channelReference.trim()
+            status = PaymentStatus.PROCESSING
+        }
+        "REJECTED" -> {
+            attempt.status = PaymentAttemptStatus.REJECTED
+            attempt.finalResult = PaymentAttemptFinalResult.GATEWAY_REJECTED
+            attempt.completedAt = submittedAt
+            attempt.rejectionSummary = diagnosticSummary ?: "支付渠道拒绝提交"
+            rejectedNotificationCount += 1
+            lastRejectionSummary = attempt.rejectionSummary
+            status = when {
+                attempts.any { it.status in inFlightAttemptStatuses } -> PaymentStatus.PROCESSING
+                submittedAt.isBefore(expiresAt) -> PaymentStatus.PENDING
+                else -> PaymentStatus.FAILED
+            }
+        }
+        else -> {
+            attempt.status = PaymentAttemptStatus.RESULT_UNKNOWN
+            attempt.finalResult = PaymentAttemptFinalResult.RESULT_UNKNOWN
+            attempt.completedAt = submittedAt
+            attempt.rejectionSummary = diagnosticSummary ?: "支付渠道提交结果未知"
+            status = PaymentStatus.RESULT_UNKNOWN
+        }
+    }
+    return attempt
+}
+
+/**
+ * Retained only as an in-process domain-test helper while legacy tests migrate.  It is not an
+ * application command or HTTP surface and never calls a channel.
+ */
+@Deprecated("Use createAttempt followed by freezeAttemptSubmission")
 fun Payment.startAttempt(
     channelId: String,
     channelConfigurationId: String,
     channelConfigurationSnapshot: String,
     requestIdentity: String,
     initiatedAt: LocalDateTime,
-): PaymentAttempt {
-    check(initiatedAt.isBefore(expiresAt)) { "PAYMENT_EXPIRED" }
-    check(currentReviewEligibility().settlementEligible) { "PAYMENT_REVIEW_REQUIRED" }
-    check(status == PaymentStatus.PENDING || status == PaymentStatus.PROCESSING) {
-        "支付 $id 当前状态为 $status，不能发起新的支付尝试"
-    }
-    attempts.firstOrNull { it.status == PaymentAttemptStatus.PROCESSING }?.let { return it }
-    return PaymentAttempt(
-        channelId = channelId,
-        channelConfigurationId = channelConfigurationId,
-        channelConfigurationSnapshot = channelConfigurationSnapshot,
-        requestIdentity = requestIdentity,
-        status = PaymentAttemptStatus.PROCESSING,
-        initiatedAt = initiatedAt,
-    ).also {
-        attempts.add(it)
-        attemptCount = attempts.size
-        status = PaymentStatus.PROCESSING
-    }
+): PaymentAttempt = createAttempt(
+    channelId = channelId,
+    channelConfigurationId = channelConfigurationId,
+    channelConfigurationSnapshot = channelConfigurationSnapshot,
+    requestIdentity = requestIdentity,
+    initiatedAt = initiatedAt,
+    interactionInformation = "legacy:$channelId",
+).also { attempt ->
+    attempt.submissionIdentity = "legacy:${attempt.requestIdentity}"
+    attempt.submittedAt = initiatedAt
+    attempt.status = PaymentAttemptStatus.SUBMITTED
+    status = PaymentStatus.PROCESSING
 }
 
 fun Payment.rejectAttemptStart(paymentAttemptId: PaymentAttemptId, failureCode: String, diagnosticSummary: String?) {
     val attempt = attempts.firstOrNull { it.id == paymentAttemptId }
         ?: error("支付尝试 $paymentAttemptId 不属于支付单 $id")
-    attempt.status = PaymentAttemptStatus.FAILED
+    attempt.status = PaymentAttemptStatus.REJECTED
     attempt.finalResult = PaymentAttemptFinalResult.GATEWAY_REJECTED
+    attempt.completedAt = attempt.submittedAt ?: attempt.initiatedAt
     attempt.rejectionSummary = listOfNotNull(failureCode, diagnosticSummary).joinToString(": ")
     rejectedNotificationCount += 1
     lastRejectionSummary = attempt.rejectionSummary
-    if (status != PaymentStatus.SUCCEEDED) status = PaymentStatus.FAILED
+    if (status != PaymentStatus.SUCCEEDED) {
+        status = if (attempt.completedAt!!.isBefore(expiresAt)) PaymentStatus.PENDING else PaymentStatus.FAILED
+    }
 }
 
 /**
  * 根据业务到期时间收敛支付状态。
  *
- * 没有在途 attempt 时可以安全关闭；存在 PROCESSING/RESULT_UNKNOWN attempt 时必须进入
+     * 没有在途 attempt 时可以安全关闭；存在 SUBMITTED/ACCEPTED/RESULT_UNKNOWN attempt 时必须进入
  * RESULT_UNKNOWN 并形成稳定 review，避免把渠道可能已成功的交易误判为失败或再次付款。
  */
-fun Payment.expire(now: LocalDateTime): PaymentExpiryOutcome {
-    if (now.isBefore(expiresAt) || status in setOf(PaymentStatus.CLOSED, PaymentStatus.FAILED, PaymentStatus.SUCCEEDED)) {
+fun Payment.expire(
+    now: LocalDateTime,
+    unknownResultReviewAfter: Duration = Duration.ZERO,
+): PaymentExpiryOutcome {
+    require(!unknownResultReviewAfter.isNegative) { "支付未知结果复核期限不能为负数" }
+    if (status in setOf(PaymentStatus.CLOSED, PaymentStatus.FAILED, PaymentStatus.SUCCEEDED)) {
         return PaymentExpiryOutcome(status, false, false, null)
     }
     val pending = attempts.filter {
-        it.status == PaymentAttemptStatus.PROCESSING || it.status == PaymentAttemptStatus.RESULT_UNKNOWN
+            it.status in inFlightAttemptStatuses
     }
     if (pending.isEmpty()) {
+        if (now.isBefore(expiresAt)) return PaymentExpiryOutcome(status, false, false, null)
         status = PaymentStatus.CLOSED
         closedAt = now
         closeReason = "PAYMENT_EXPIRED_WITHOUT_PENDING_ATTEMPT"
         currentReviewEligibility()
         return PaymentExpiryOutcome(status, true, false, null)
     }
+    if (status != PaymentStatus.RESULT_UNKNOWN && now.isBefore(expiresAt)) {
+        return PaymentExpiryOutcome(status, false, false, null)
+    }
     pending.forEach {
-        it.status = PaymentAttemptStatus.RESULT_UNKNOWN
-        if (it.finalResult == null) it.finalResult = PaymentAttemptFinalResult.RESULT_UNKNOWN
+        if (it.status != PaymentAttemptStatus.RESULT_UNKNOWN) {
+            it.status = PaymentAttemptStatus.RESULT_UNKNOWN
+            if (it.finalResult == null) it.finalResult = PaymentAttemptFinalResult.RESULT_UNKNOWN
+            it.completedAt = now
+        }
     }
     status = PaymentStatus.RESULT_UNKNOWN
+    val reviewDueAt = pending.minOf { attempt ->
+        (attempt.notificationLastReceivedAt ?: expiresAt).plusSeconds(unknownResultReviewAfter.seconds)
+    }
+    if (now.isBefore(reviewDueAt)) {
+        currentReviewEligibility()
+        return PaymentExpiryOutcome(status, false, false, null)
+    }
     val ids = pending.map { it.id.toString() }.sorted()
     val (review, opened) = openReview(
         PaymentReviewType.EXPIRY_RESULT_UNKNOWN,
@@ -315,7 +459,7 @@ fun Payment.recordChannelResult(
             attempt, receipt, normalizedResult, channelTransactionId, occurredAt, receivedAt
         )
         status == PaymentStatus.RESULT_UNKNOWN -> afterUnknown(
-            attempt, receipt, normalizedResult, channelTransactionId, occurredAt, settlementFeeRule
+            attempt, receipt, normalizedResult, channelTransactionId, occurredAt, receivedAt, settlementFeeRule
         )
         else -> initialResult(
             attempt, receipt, normalizedResult, channelTransactionId, occurredAt, receivedAt, settlementFeeRule
@@ -344,29 +488,20 @@ private fun Payment.initialResult(
         attempt.resultOccurredAt = occurredAt
         attempt.finalResult = PaymentAttemptFinalResult.FAILED
         attempt.status = PaymentAttemptStatus.FAILED
-        status = PaymentStatus.FAILED
+        attempt.completedAt = occurredAt
+        status = statusAfterAttemptFailure(receivedAt)
         outcome(attempt, ChannelResultDisposition.FAILURE_ACCEPTED)
     }
     else -> {
         receipt.accepted = true
-        receipt.decision = ChannelResultDisposition.CONFLICT
+        receipt.decision = ChannelResultDisposition.UNKNOWN_ACCEPTED
         attempt.channelTransactionId = channelTransactionId
         attempt.resultOccurredAt = occurredAt
         attempt.finalResult = PaymentAttemptFinalResult.RESULT_UNKNOWN
         attempt.status = PaymentAttemptStatus.RESULT_UNKNOWN
+        attempt.completedAt = occurredAt
         status = PaymentStatus.RESULT_UNKNOWN
-        val summary = "支付尝试 ${attempt.id} 的渠道结果仍未知"
-        receipt.conflictSummary = summary
-        markConflict(attempt, summary)
-        val (review, _) = openReview(
-            PaymentReviewType.EXPIRY_RESULT_UNKNOWN,
-            receivedAt,
-            listOf(attempt.id.toString()),
-            listOf(receipt.payloadIdentity),
-            summary,
-            "unknown:${attempt.id}",
-        )
-        outcome(attempt, ChannelResultDisposition.CONFLICT, conflict = summary, reviewIdentity = review.reviewIdentity)
+        outcome(attempt, ChannelResultDisposition.UNKNOWN_ACCEPTED)
     }
 }
 
@@ -377,6 +512,7 @@ private fun Payment.afterUnknown(
     result: String,
     channelTransactionId: String,
     occurredAt: LocalDateTime,
+    receivedAt: LocalDateTime,
     feeRule: SettlementFeeRule?,
 ): ChannelResultRecordingOutcome = when (result) {
     "SUCCESS" -> {
@@ -391,26 +527,15 @@ private fun Payment.afterUnknown(
         attempt.resultOccurredAt = occurredAt
         attempt.finalResult = PaymentAttemptFinalResult.FAILED
         attempt.status = PaymentAttemptStatus.FAILED
-        status = PaymentStatus.FAILED
+        attempt.completedAt = occurredAt
+        status = statusAfterAttemptFailure(receivedAt)
         resolveUnknownReviews(attempt, receipt, PaymentReviewDecisionType.SYSTEM_CONFIRM_FAILURE, occurredAt)
         outcome(attempt, ChannelResultDisposition.FAILURE_ACCEPTED)
     }
     else -> {
-        val summary = "支付尝试 ${attempt.id} 的渠道结果仍未知"
         receipt.accepted = true
-        receipt.decision = ChannelResultDisposition.CONFLICT
-        receipt.conflictSummary = summary
-        markConflict(attempt, summary)
-        outcome(
-            attempt,
-            ChannelResultDisposition.CONFLICT,
-            conflict = summary,
-            reviewIdentity = reviewCases.firstOrNull {
-                it.status == PaymentReviewStatus.OPEN &&
-                    it.type == PaymentReviewType.EXPIRY_RESULT_UNKNOWN &&
-                    it.triggeringAttemptIdentities.csvContains(attempt.id.toString())
-            }?.reviewIdentity,
-        )
+        receipt.decision = ChannelResultDisposition.UNKNOWN_ACCEPTED
+        outcome(attempt, ChannelResultDisposition.UNKNOWN_ACCEPTED)
     }
 }
 
@@ -435,12 +560,13 @@ private fun Payment.afterTerminalWithoutSuccess(
     }
     val terminalStatus = status
     receipt.accepted = true
-    receipt.decision = ChannelResultDisposition.CONFLICT
+    receipt.decision = ChannelResultDisposition.LATE
     receipt.conflictSummary = "支付已处于终态 $terminalStatus，之后收到可信成功结果"
     attempt.channelTransactionId = channelTransactionId
     attempt.resultOccurredAt = occurredAt
     attempt.finalResult = PaymentAttemptFinalResult.SUCCESS
     attempt.status = PaymentAttemptStatus.SUCCEEDED
+    attempt.completedAt = occurredAt
     markConflict(attempt, requireNotNull(receipt.conflictSummary))
     ensureMerchantNotificationIntent(PaymentNotificationIntentState.HELD_FOR_REVIEW)
     val reviewType = if (terminalStatus == PaymentStatus.FAILED) {
@@ -458,7 +584,7 @@ private fun Payment.afterTerminalWithoutSuccess(
     )
     return outcome(
         attempt,
-        ChannelResultDisposition.CONFLICT,
+        ChannelResultDisposition.LATE,
         conflict = receipt.conflictSummary,
         reviewIdentity = review.reviewIdentity,
     )
@@ -684,6 +810,25 @@ private val lateSuccessReviewTypes = setOf(
     PaymentReviewType.SUCCESS_AFTER_FAILURE_CONFLICT,
 )
 
+private val inFlightAttemptStatuses = setOf(
+    PaymentAttemptStatus.CREATED,
+    PaymentAttemptStatus.SUBMITTED,
+    PaymentAttemptStatus.ACCEPTED,
+    PaymentAttemptStatus.RESULT_UNKNOWN,
+)
+
+/** A failed attempt is terminal; the Payment is terminal only when no retry window remains. */
+private fun Payment.statusAfterAttemptFailure(at: LocalDateTime): PaymentStatus = when {
+    attempts.any { it.status == PaymentAttemptStatus.RESULT_UNKNOWN } -> PaymentStatus.RESULT_UNKNOWN
+    attempts.any { it.status in setOf(
+        PaymentAttemptStatus.CREATED,
+        PaymentAttemptStatus.SUBMITTED,
+        PaymentAttemptStatus.ACCEPTED,
+    ) } -> PaymentStatus.PROCESSING
+    at.isBefore(expiresAt) -> PaymentStatus.PENDING
+    else -> PaymentStatus.FAILED
+}
+
 private val terminalConflictReviewTypes = setOf(
     PaymentReviewType.LATE_SUCCESS_AFTER_TERMINAL,
     PaymentReviewType.SUCCESS_AFTER_FAILURE_CONFLICT,
@@ -816,11 +961,11 @@ private fun Payment.ensureMerchantNotificationIntent(state: PaymentNotificationI
 private fun Payment.freezeSettlementFee(rule: SettlementFeeRule, formedAt: LocalDateTime) {
     check(settlementFeeFactIdentity == null)
     val fee = amount
-        .multiply(BigDecimal.valueOf(rule.basisPoints.toLong()))
-        .divide(BigDecimal.valueOf(10_000L))
+        .multiply(rule.feeRate)
         .add(rule.fixedFeeAmount)
         .setScale(rule.currencyPrecision, rule.roundingMode)
     settlementFeeFactIdentity = "payment:$id:settlement-fee"
+    settlementFeeRate = rule.feeRate
     settlementFeeBasisPoints = rule.basisPoints
     settlementFixedFeeAmount = rule.fixedFeeAmount
     settlementFeeRoundingMode = rule.roundingMode.name
@@ -833,6 +978,7 @@ private fun Payment.freezeSettlementFee(rule: SettlementFeeRule, formedAt: Local
 private fun Payment.requireSettlementFeeSnapshot() {
     check(
         settlementFeeFactIdentity != null &&
+            settlementFeeRate != null &&
             settlementFeeBasisPoints != null &&
             settlementFixedFeeAmount != null &&
             settlementFeeRoundingMode != null &&
@@ -883,7 +1029,7 @@ private fun Payment.outcome(
         conflictSummary = conflict,
         successFactFormedNow = successFormed,
         reviewIdentity = reviewIdentity,
-        settlementEligible = eligibility.settlementEligible,
+        settlementEligible = status == PaymentStatus.SUCCEEDED && eligibility.settlementEligible,
         notificationIntentState = merchantSuccessNotificationIntentState,
     )
 }

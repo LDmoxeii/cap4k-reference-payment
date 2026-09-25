@@ -3,6 +3,10 @@ package com.only4.cap4k.reference.payment.adapter.application.capabilities.merch
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityHandler
 import com.only4.cap4k.reference.payment.application.capabilities.merchant_settlement.result.VerifySettlementResult
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackEvidenceInput
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackKind
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackVerification
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackVerifier
 import org.springframework.stereotype.Service
 
 @Service
@@ -14,21 +18,36 @@ import org.springframework.stereotype.Service
     aggregates = ["MerchantSettlement"],
     family = "capability-handler"
 )
-class VerifySettlementResultHandler : CapabilityHandler<VerifySettlementResult.Request, VerifySettlementResult.Response> {
+class VerifySettlementResultHandler(
+    private val verifier: ReferenceCallbackVerifier,
+) : CapabilityHandler<VerifySettlementResult.Request, VerifySettlementResult.Response> {
     override fun call(request: VerifySettlementResult.Request): VerifySettlementResult.Response {
         val normalized = request.result.trim().uppercase()
-        val verified = request.channelId == TRUSTED_CHANNEL &&
-            request.verificationMaterial == TRUSTED_SECRET &&
-            normalized in setOf("SUCCESS", "FAILED", "UNKNOWN")
+        val verification = if (normalized in setOf("SUCCESS", "FAILED", "UNKNOWN")) {
+            verifier.verify(
+                ReferenceCallbackEvidenceInput(
+                    kind = ReferenceCallbackKind.SETTLEMENT,
+                    channelId = request.channelId,
+                    externalIdentity = request.notificationId,
+                    associationIdentity = listOf(
+                        request.merchantSettlementId,
+                        request.executionAttemptId,
+                        request.executionGroupIdentity,
+                        request.requestIdentity,
+                        request.externalSettlementIdentity,
+                    ).joinToString("|"),
+                    amount = request.amount,
+                    currency = request.currency,
+                    canonicalPayload = request.payload,
+                ),
+            )
+        } else {
+            ReferenceCallbackVerification(false, "结算结果类型不受支持")
+        }
         return VerifySettlementResult.Response(
-            verified = verified,
+            verified = verification.verified,
             normalizedResult = normalized,
-            verificationSummary = if (verified) "reference 结算结果核验通过" else "结算结果不可信或不受支持",
+            verificationSummary = verification.reason,
         )
-    }
-
-    companion object {
-        private const val TRUSTED_CHANNEL = "C-001"
-        private const val TRUSTED_SECRET = "settlement-secret"
     }
 }

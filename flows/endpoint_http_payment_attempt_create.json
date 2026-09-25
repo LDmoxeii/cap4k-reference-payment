@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:payment.attempt.create",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.payment.attempt.CreatePaymentAttemptCmd.Request",
+      "name": "CreatePaymentAttemptCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.payment.attempt.CreatePaymentAttemptCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:payment.attempt.create",
+      "name": "payment.attempt.create [POST /api/payments/{paymentId}/attempts]",
+      "fullName": "endpoint-http:payment.attempt.create",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:payment.attempt.create",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.payment.attempt.CreatePaymentAttemptCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

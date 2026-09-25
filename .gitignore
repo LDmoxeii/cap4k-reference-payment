@@ -15,11 +15,11 @@ out/
 .DS_Store
 Thumbs.db
 
+
+# Comet project-local Codex hook contains machine-specific paths.
+/.codex/hooks.json
 # >>> Comet managed project state >>>
 !/.comet/
 /.comet/*
 !/.comet/config.yaml
 # <<< Comet managed project state <<<
-
-# Comet project-local Codex hook contains machine-specific paths.
-/.codex/hooks.json

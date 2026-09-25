@@ -86,7 +86,8 @@ class ReconciliationBatchBehaviorTest {
         assertThat(item.paymentReviewIdentitySnapshot).isEqualTo("payment-review:one,payment-review:two")
         assertThat(item.paymentReviewSummary).isEqualTo("late success requires authorized review")
         assertThat(result.run.unresolvedDifferenceCount).isEqualTo(1)
-        assertThat(result.run.status).isEqualTo(ReconciliationRunStatus.COMPLETED)
+        assertThat(result.run.status).isEqualTo(ReconciliationRunStatus.RECONCILING)
+        assertThat(result.run.completedAt).isNull()
         assertThat(batch.status).isEqualTo(ReconciliationBatchStatus.AWAITING_DISPOSITION)
     }
 
@@ -124,10 +125,16 @@ class ReconciliationBatchBehaviorTest {
         assertThat(incomplete.blockingReason).isEqualTo("渠道账单不完整")
 
         val unresolved = givenPendingBatch()
-        unresolved.appendTestRun(givenCompleteStatement(records = emptyList()), listOf(givenPlatformFact("platform-only", "tx-only")), NOW)
+        val unresolvedRun = unresolved.appendTestRun(
+            givenCompleteStatement(records = emptyList()),
+            listOf(givenPlatformFact("platform-only", "tx-only")),
+            NOW,
+        ).run
         assertThat(unresolved.status).isEqualTo(ReconciliationBatchStatus.AWAITING_DISPOSITION)
         assertThat(unresolved.completedAt).isNull()
         assertThat(unresolved.unresolvedDifferenceCount).isEqualTo(1)
+        assertThat(unresolvedRun.status).isEqualTo(ReconciliationRunStatus.RECONCILING)
+        assertThat(unresolvedRun.completedAt).isNull()
     }
 
     @Test
@@ -271,7 +278,8 @@ class ReconciliationBatchBehaviorTest {
         impact: SettlementImpact = SettlementImpact.DOES_NOT_BLOCK_SETTLEMENT,
     ) = ReconciliationDispositionCreation(
         operatorIdentity = "finance-1", operatorRole = "FINANCE_OPERATOR", authorizationResult = authorization,
-        status = status, conclusion = conclusion, settlementImpact = impact, evidence = "ticket-1",
+        status = status, conclusion = conclusion, settlementImpact = impact, reason = "verified difference",
+        evidence = "ticket-1",
         followUp = "none", disposedAt = NOW.plusMinutes(5),
     )
 

@@ -2,6 +2,7 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.reconciliation
 
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
+import com.only4.cap4k.reference.payment.adapter.endpoints.toContractMoney
 import com.only4.cap4k.reference.payment.application.queries.reconciliation.read.GetReconciliationBatchQry
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.GetReconciliationBatchEndpoint
@@ -50,8 +51,9 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                             differenceType = item.differenceType,
                             channelRecordIdentity = item.channelRecordIdentity,
                             channelTransactionIdentity = item.channelTransactionIdentity,
-                            channelAmount = item.channelAmount,
-                            channelCurrency = item.channelCurrency,
+                            channelMoney = item.channelAmount?.toContractMoney(
+                                requireNotNull(item.channelCurrency) { "渠道金额缺少币种" },
+                            ),
                             channelRawStatus = item.channelRawStatus,
                             channelOccurredAt = item.channelOccurredAt,
                             channelReceivedAt = item.channelReceivedAt,
@@ -61,8 +63,9 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                             refundId = item.refundId?.toString(),
                             refundAttemptId = item.refundAttemptId,
                             platformTransactionIdentity = item.platformTransactionIdentity,
-                            platformAmount = item.platformAmount,
-                            platformCurrency = item.platformCurrency,
+                            platformMoney = item.platformAmount?.toContractMoney(
+                                requireNotNull(item.platformCurrency) { "平台金额缺少币种" },
+                            ),
                             platformRawStatus = item.platformRawStatus,
                             platformOccurredAt = item.platformOccurredAt,
                             platformRecordedAt = item.platformRecordedAt,
@@ -81,6 +84,7 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                                     status = disposition.status,
                                     conclusion = disposition.conclusion,
                                     settlementImpact = disposition.settlementImpact,
+                                    reason = disposition.reason,
                                     evidence = disposition.evidence,
                                     followUp = disposition.followUp,
                                     disposedAt = disposition.disposedAt,
@@ -94,8 +98,7 @@ class GetReconciliationBatchEndpointHandler : EndpointHandler<GetReconciliationB
                                     confirmationReason = confirmation.confirmationReason,
                                     evidence = confirmation.evidence,
                                     transactionKind = confirmation.transactionKind,
-                                    amount = confirmation.amount,
-                                    currency = confirmation.currency,
+                                    money = confirmation.amount.toContractMoney(confirmation.currency),
                                     externalTransactionIdentity = confirmation.externalTransactionIdentity,
                                     paymentId = confirmation.paymentId?.toString(),
                                     refundId = confirmation.refundId?.toString(),

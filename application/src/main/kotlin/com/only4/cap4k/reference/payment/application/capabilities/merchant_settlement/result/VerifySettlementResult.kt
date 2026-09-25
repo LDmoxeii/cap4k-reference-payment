@@ -67,9 +67,9 @@ object VerifySettlementResult {
          */
         val occurredAt: Instant,
         /**
-         * 核验材料
+         * 由 adapter 规范化后的原始 callback payload；不包含验真结论或 proof
          */
-        val verificationMaterial: String
+        val payload: String,
     ) : CapabilityCall<Response>
 
     data class Response(

@@ -1,7 +1,17 @@
+drop table if exists operation;
+drop table if exists payment_channel_result_receipt;
+drop table if exists merchant_notification_delivery_attempt;
+drop table if exists merchant_notification;
+drop table if exists manual_review_resolution;
+drop table if exists manual_review_item;
 drop table if exists settlement_result_receipt;
 drop table if exists settlement_execution_attempt;
 drop table if exists settlement_line;
 drop table if exists merchant_settlement;
+drop table if exists bill_available_signal;
+drop table if exists bill_revision_record;
+drop table if exists bill_revision;
+drop table if exists authoritative_bill;
 drop table if exists reconciliation_confirmation_fact;
 drop table if exists reconciliation_disposition;
 drop table if exists reconciliation_item;
@@ -13,9 +23,157 @@ drop table if exists refund;
 drop table if exists payment_review_decision;
 drop table if exists payment_review_case;
 drop table if exists payment_notification_receipt;
+drop table if exists payment_submission_receipt;
 drop table if exists payment_attempt;
 drop table if exists merchant_channel_configuration;
 drop table if exists payment;
+
+create table operation (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    merchant_id varchar(64) not null comment '命令业务范围商户标识',
+    command_type varchar(128) not null comment '规范化命令类型',
+    idempotency_key varchar(128) not null comment '命令幂等键',
+    canonical_request_hash varchar(128) not null comment '规范化请求哈希',
+    resource_type varchar(64) not null comment '受理后关联资源类型',
+    resource_id varchar(128) not null comment '受理后关联资源标识',
+    status varchar(32) not null comment 'Operation 状态',
+    finality varchar(32) not null comment 'Operation 最终性',
+    read_after_mode varchar(32) not null comment '资源读取方式',
+    read_after_resource_url varchar(512) comment '受理后资源读取地址',
+    retry_after_ms bigint not null default 0 comment '受理时冻结的建议轮询间隔；READ_ONCE 为零',
+    result_json varchar(8192) comment '成功结果的稳定 JSON 对象',
+    error_code varchar(128) comment '异步失败的稳定业务错误码',
+    error_message varchar(2048) comment '异步失败的受控错误说明',
+    error_details_json varchar(8192) comment '异步失败的稳定 JSON details',
+    error_correlation_id varchar(128) comment '异步失败的稳定关联标识',
+    error_retryable boolean comment '异步失败的重试提示',
+    review_id varchar(128) comment '停止自动处理时的人工核对引用',
+    accepted_at timestamp with time zone not null comment '命令受理时间',
+    completed_at timestamp with time zone comment 'Operation 完成时间',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_operation_idempotency unique (merchant_id, command_type, idempotency_key)
+);
+comment on table operation is '统一命令受理记录：按 merchant、命令类型和幂等键保存稳定受理、资源引用与读取语义';
+
+create table payment_channel_result_receipt (
+    id varchar(36) primary key comment '支付渠道结果收件唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    result_identity varchar(256) not null comment '渠道提供的稳定外部结果身份',
+    payload_identity varchar(128) not null comment '服务端形成的 canonical payload 指纹',
+    channel_id varchar(64) not null comment '渠道标识',
+    payment_id varchar(36) comment '可选的关联支付标识 @RefAggregate=Payment;',
+    payment_attempt_id varchar(36) comment '可选的关联支付 attempt 标识',
+    channel_transaction_id varchar(256) not null comment '渠道交易标识',
+    raw_evidence varchar(8192) not null comment '原始 canonical 渠道证据',
+    verification varchar(32) not null comment '服务端 verifier 形成的核验结论',
+    verification_summary varchar(2048) comment '服务端核验摘要',
+    outcome varchar(32) not null comment '规范化渠道结果 SUCCESS、FAILURE 或 UNKNOWN',
+    amount decimal(19, 8) not null comment '结果金额',
+    currency varchar(3) not null comment '结果币种',
+    occurred_at timestamp with time zone not null comment '渠道事实发生时间',
+    recorded_at timestamp with time zone not null comment '服务端首次记录时间',
+    last_received_at timestamp with time zone not null comment '服务端最近接收时间',
+    receive_count integer not null default 1 comment '相同 external identity 与 payload 的接收次数',
+    disposition varchar(64) not null comment '统一渠道结果处置',
+    rejection_summary varchar(2048) comment '拒绝或未知引用摘要',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_payment_channel_result_receipt unique (channel_id, result_identity, payload_identity)
+);
+comment on table payment_channel_result_receipt is '支付渠道结果权威收件：独立于目标聚合保存全部外部结果，使未知 payment/attempt 引用仍可按 external identity 查询';
+
+create table merchant_notification (
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    notification_identity varchar(512) not null comment '来源业务事实的稳定通知身份',
+    content_identity varchar(128) not null comment '首次形成时冻结的内容指纹',
+    merchant_id varchar(64) not null comment '商户业务范围',
+    source_kind varchar(64) not null comment '来源事实类型',
+    source_fact_identity varchar(256) not null comment '来源权威事实的稳定身份',
+    payment_id varchar(36) comment '可追踪的支付标识 @RefAggregate=Payment;',
+    content varchar(4096) not null comment '冻结的 reference 通知内容',
+    status integer not null comment '当前通知投递状态 @Type=MerchantNotificationStatus;',
+    finality varchar(32) not null comment '通知投递最终性',
+    max_attempts integer not null comment '通知形成时冻结的最多投递次数',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_merchant_notification_identity unique (notification_identity)
+);
+comment on table merchant_notification is '商户通知意图：冻结来源事实、身份和内容，投递失败不影响来源业务事实';
+
+create table merchant_notification_delivery_attempt (
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    merchant_notification_id varchar(36) not null comment '所属商户通知标识 @ParentRef;',
+    attempt_sequence integer not null comment '投递尝试顺序',
+    delivery_identity varchar(256) not null comment '本次投递的稳定请求身份',
+    content_identity varchar(128) not null comment '冻结内容指纹快照',
+    outcome integer not null comment '本次投递结果 @Type=MerchantNotificationDeliveryOutcome;',
+    diagnostic varchar(2048) comment '受控发送诊断',
+    recorded_at timestamp with time zone not null comment '本次投递结果的服务端记录时间',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_merchant_notification_attempt unique (merchant_notification_id, attempt_sequence),
+    constraint uk_merchant_notification_delivery unique (delivery_identity)
+);
+comment on table merchant_notification_delivery_attempt is '商户通知投递尝试：同一通知与内容下追加每次投递结果 @Parent=merchant_notification;';
+
+create table manual_review_item (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    review_identity varchar(512) not null comment '跨聚合人工事项稳定身份',
+    type varchar(64) not null comment '统一人工事项类型',
+    status varchar(32) not null comment '统一人工事项状态',
+    finality varchar(32) not null comment '统一最终性',
+    merchant_id varchar(64) comment '可选商户业务范围',
+    payment_id varchar(36) comment '用于 payment trace 的规范化支付引用 @RefAggregate=Payment;',
+    origin_kind varchar(64) not null comment '触发事项的权威事实类型',
+    origin_identity varchar(512) not null comment '触发事项的权威事实稳定身份',
+    summary varchar(2048) not null comment '面向人工的事项摘要',
+    related_refs_json varchar(8192) not null comment '关联权威资源引用 canonical JSON',
+    blocking_scopes_json varchar(8192) not null comment '阻断范围 canonical JSON',
+    evidence_refs_json varchar(8192) not null comment '证据引用 canonical JSON',
+    sort_time timestamp with time zone not null comment '稳定列表排序时间',
+    resolved_at timestamp with time zone comment '事项最终解决时间',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_manual_review_item_identity unique (review_identity)
+);
+comment on table manual_review_item is '统一人工核对事项：由支付、退款、对账和结算的原始事实稳定触发，保存阻断范围、关联和追加处置';
+
+create table manual_review_resolution (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    manual_review_item_id varchar(36) not null comment '所属人工核对事项标识 @ParentRef;',
+    resolution_identity varchar(512) not null comment '追加处置稳定身份',
+    actor_id varchar(128) not null comment '可信 ReferenceActorContext 映射的责任人',
+    actor_role varchar(128) not null comment '可信 ReferenceActorContext 映射的责任角色',
+    outcome varchar(64) not null comment '人工处置结论',
+    reason varchar(2048) not null comment '人工处置原因',
+    evidence varchar(4096) not null comment '人工处置证据',
+    resolved_at timestamp with time zone not null comment '处置责任时间',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_manual_review_resolution_identity unique (manual_review_item_id, resolution_identity)
+);
+comment on table manual_review_resolution is '人工核对事项处置历史：仅追加可信责任人、结论、原因和证据，不覆盖来源业务事实 @Parent=manual_review_item;';
 
 create table payment (
 
@@ -53,6 +211,7 @@ create table payment (
     review_count integer not null default 0 comment '复核案件数量',
     blocking_review_count integer not null default 0 comment '阻断性复核数量',
     settlement_fee_fact_identity varchar(128) comment '结算手续费事实身份',
+    settlement_fee_rate decimal(19, 8) comment '支付成功时冻结的 ReferencePolicy 手续费率',
     settlement_fee_basis_points integer comment '结算手续费基点',
     settlement_fixed_fee_amount decimal(19, 4) comment '结算固定手续费金额',
     settlement_fee_rounding_mode varchar(32) comment '结算手续费舍入模式',
@@ -79,7 +238,13 @@ create table payment_attempt (
     channel_configuration_snapshot varchar(2048) not null comment '发起时使用的渠道配置快照',
     request_identity varchar(128) not null comment '执行请求幂等身份',
     status integer not null comment '当前业务状态枚举 @Type=PaymentAttemptStatus;',
-    initiated_at timestamp with time zone not null comment '渠道请求发起时间',
+    initiated_at timestamp with time zone not null comment '创建支付尝试时间',
+    submission_identity varchar(160) comment '提交到渠道前冻结的稳定提交身份',
+    submitted_at timestamp with time zone comment '提交到渠道的服务端时间',
+    accepted_at timestamp with time zone comment '渠道受理时间',
+    completed_at timestamp with time zone comment '尝试终结或进入未知结果时间',
+    interaction_information varchar(4096) comment '渠道交互信息快照，例如 redirect 或 reference 指令',
+    risk_reason varchar(2048) comment '在已有 in-flight 或 unknown 尝试时新建尝试的显式风险说明',
     channel_transaction_id varchar(128) comment '渠道交易标识',
     final_result integer comment '最终结果枚举 @Type=PaymentAttemptFinalResult;',
     result_occurred_at timestamp with time zone comment '渠道结果发生时间',
@@ -100,6 +265,26 @@ create table payment_attempt (
     constraint uk_payment_attempt_request unique (channel_id, request_identity)
 );
 comment on table payment_attempt is '支付尝试：Payment 聚合内一次渠道请求及其最终结果与通知证据 @Parent=payment;';
+
+create table payment_submission_receipt (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    payment_attempt_id varchar(36) not null comment '关联支付尝试标识 @ParentRef;',
+    submission_identity varchar(160) not null comment '渠道提交稳定身份',
+    request_identity varchar(128) not null comment '支付尝试请求身份快照',
+    channel_id varchar(64) not null comment '渠道标识快照',
+    submitted_at timestamp with time zone not null comment '渠道提交时间',
+    outcome varchar(32) not null comment '渠道提交结果 ACCEPTED、REJECTED 或 RESULT_UNKNOWN',
+    channel_reference varchar(256) comment '渠道受理或交互引用',
+    diagnostic_summary varchar(2048) comment '受控渠道提交诊断摘要',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_payment_submission_receipt unique (payment_attempt_id, submission_identity)
+);
+comment on table payment_submission_receipt is '支付渠道提交收件：保存提交前冻结身份、一次渠道调用的受理/拒绝/未知证据，不形成支付成功事实 @Parent=payment_attempt;';
 
 create table payment_notification_receipt (
 
@@ -184,8 +369,10 @@ create table refund (
     payment_id varchar(36) not null comment '关联支付标识 @RefAggregate=Payment;',
     merchant_id varchar(64) not null comment '商户标识',
     merchant_refund_number varchar(128) not null comment '商户退款单号',
+    idempotency_key varchar(128) not null comment '退款申请幂等键',
     amount decimal(19, 4) not null comment '本次业务金额',
     currency varchar(3) not null comment '业务币种',
+    reason varchar(2048) not null comment '退款申请原因',
     payment_method varchar(64) not null comment '支付方式',
     status integer not null comment '当前业务状态枚举 @Type=RefundStatus;',
     requested_at timestamp with time zone not null comment '退款申请时间',
@@ -193,10 +380,10 @@ create table refund (
     channel_accepted_at timestamp with time zone comment '渠道受理时间',
     finalized_at timestamp with time zone comment '退款最终完成时间',
     review_required_at timestamp with time zone comment '进入退款结果复核时间',
-    channel_id varchar(64) not null comment '渠道标识',
-    channel_configuration_id varchar(36) not null comment '渠道配置标识',
-    channel_configuration_snapshot varchar(2048) not null comment '发起时使用的渠道配置快照',
-    request_identity varchar(128) not null comment '执行请求幂等身份',
+    channel_id varchar(64) comment '最近一次退款尝试使用的渠道标识',
+    channel_configuration_id varchar(36) comment '最近一次退款尝试使用的渠道配置标识',
+    channel_configuration_snapshot varchar(2048) comment '最近一次退款尝试使用的渠道配置快照',
+    request_identity varchar(128) comment '最近一次退款尝试的执行请求幂等身份',
     channel_refund_id varchar(128) comment '渠道退款标识',
     reservation_active boolean not null default true comment '退款预算占用是否有效',
     reservation_released boolean not null default false comment '退款预算占用是否已释放',
@@ -214,7 +401,8 @@ create table refund (
     created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
     updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
-    constraint uk_refund_merchant_number unique (merchant_id, merchant_refund_number)
+    constraint uk_refund_merchant_number unique (merchant_id, merchant_refund_number),
+    constraint uk_refund_merchant_idempotency unique (merchant_id, idempotency_key)
 );
 comment on table refund is '退款主聚合：记录退款申请、退款预算占用、渠道结果和最终退款事实';
 
@@ -295,7 +483,7 @@ create table merchant_channel_configuration (
     channel_rule_summary varchar(2048) not null comment '渠道路由规则摘要',
     refund_window_days integer not null default 180 comment '退款窗口天数',
     refund_result_review_after_minutes integer not null default 30 comment '退款结果复核等待分钟数',
-    settlement_fee_basis_points integer not null default 200 comment '结算手续费基点',
+    settlement_fee_basis_points integer not null default 60 comment '结算手续费基点；reference 默认费率 0.006',
     settlement_fixed_fee_amount decimal(19, 4) not null comment '结算固定手续费金额',
     settlement_fee_rounding_mode varchar(32) not null default 'HALF_UP' comment '结算手续费舍入模式',
     settlement_result_review_after_minutes integer not null default 30 comment '结算结果复核等待分钟数',
@@ -308,6 +496,87 @@ create table merchant_channel_configuration (
     constraint uk_merchant_channel_configuration unique (merchant_id, channel_id, currency, payment_method)
 );
 comment on table merchant_channel_configuration is '商户渠道配置：保存商户在渠道、币种和支付方式维度上的路由与费用快照来源';
+
+create table authoritative_bill (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    channel_id varchar(64) not null comment '渠道标识',
+    bill_identity varchar(128) not null comment '权威账单稳定身份',
+    business_date date not null comment '账单业务日期',
+    currency varchar(3) not null comment '业务币种',
+    business_timezone varchar(64) not null comment '账单业务时区',
+    current_revision varchar(64) comment '当前权威修订版本；只允许高版本前进',
+    current_revision_id varchar(36) comment '当前权威修订记录标识',
+    last_fetch_diagnostic varchar(2048) comment '最近一次账单读取诊断',
+    read_attempt_count integer not null default 0 comment '账单读取尝试累计次数',
+    last_read_attempt_at timestamp with time zone comment '最近账单读取尝试时间',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_authoritative_bill_identity unique (channel_id, bill_identity)
+);
+comment on table authoritative_bill is '权威账单：按渠道和稳定账单身份保存当前不可回退修订指针、读取诊断和信号历史';
+
+create table bill_revision (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    authoritative_bill_id varchar(36) not null comment '所属权威账单标识 @ParentRef;',
+    revision varchar(64) not null comment '不可变账单修订版本',
+    completeness integer not null comment '账单完整性枚举 @Type=com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.StatementCompleteness;',
+    raw_evidence varchar(8192) not null comment 'provider 原始账单证据引用或 canonical payload',
+    payload_fingerprint varchar(128) not null comment '不可变账单正文指纹',
+    published_at timestamp with time zone not null comment 'provider 发布账单修订时间',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_bill_revision_identity unique (authoritative_bill_id, revision)
+);
+comment on table bill_revision is '不可变权威账单修订：保存完整性、原始证据、指纹、发布时间及逐行证据 @Parent=authoritative_bill;';
+
+create table bill_revision_record (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    bill_revision_id varchar(36) not null comment '所属账单修订标识 @ParentRef;',
+    record_identity varchar(128) not null comment '账单行稳定身份',
+    channel_transaction_identity varchar(128) not null comment '渠道交易稳定身份',
+    transaction_kind integer not null comment '交易类型枚举 @Type=com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind;',
+    amount decimal(19, 4) not null comment '账单行金额',
+    currency varchar(3) not null comment '账单行币种',
+    raw_status varchar(64) not null comment '账单行原始状态',
+    occurred_at timestamp with time zone comment '渠道事实发生时间',
+    received_at timestamp with time zone not null comment 'provider 记录或拉取时间',
+    raw_evidence varchar(4096) not null comment '账单行原始证据',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_bill_revision_record_identity unique (bill_revision_id, record_identity)
+);
+comment on table bill_revision_record is '账单修订逐行不可变证据：稳定记录身份、交易身份、金额、状态、时间和原始证据 @Parent=bill_revision;';
+
+create table bill_available_signal (
+
+    id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
+    version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
+    authoritative_bill_id varchar(36) not null comment '所属权威账单标识 @ParentRef;',
+    signal_identity varchar(128) not null comment '账单可用信号稳定身份',
+    announced_revision varchar(64) not null comment '信号声明的账单版本',
+    published_at timestamp with time zone not null comment '信号发布时间',
+    received_at timestamp with time zone not null comment '服务端接收时间',
+    fetch_attempt_count integer not null default 0 comment '该信号驱动的读取尝试次数',
+    diagnostic varchar(2048) comment '信号读取诊断',
+    created_at timestamp with time zone not null comment '记录创建时间 @Managed=enrichment.audit-time.created-at;',
+    created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
+    updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
+    updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_bill_available_signal_identity unique (authoritative_bill_id, signal_identity)
+);
+comment on table bill_available_signal is '账单可用信号：保存稳定信号身份、版本声明、读取次数和可诊断失败，不以信号正文替代权威账单 @Parent=authoritative_bill;';
 
 create table reconciliation_batch (
 
@@ -411,6 +680,7 @@ create table reconciliation_disposition (
     status integer not null comment '当前业务状态枚举 @Type=ReconciliationDispositionStatus;',
     conclusion integer comment '处置结论 @Type=ReconciliationDispositionConclusion;',
     settlement_impact integer not null comment '对结算资格的影响枚举 @Type=SettlementImpact;',
+    reason varchar(2048) not null comment '处置业务原因',
     evidence varchar(4096) not null comment '业务证据文本',
     follow_up varchar(2048) comment '后续处理说明',
     disposed_at timestamp with time zone not null comment '差异处置时间',
@@ -451,14 +721,14 @@ create table merchant_settlement (
     id varchar(36) primary key comment '记录唯一标识 @Managed=identifier.uuid7;',
     version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
     merchant_id varchar(64) not null comment '商户标识',
-    channel_id varchar(64) not null comment '渠道标识',
+    execution_channel_id varchar(64) comment '结算执行渠道快照；不参与 merchant/currency/period scope、唯一性或幂等判定',
     currency varchar(3) not null comment '业务币种',
     period_type varchar(32) not null default 'DAILY' comment '结算周期类型',
     period_start timestamp with time zone not null comment '结算周期开始时间',
     period_end timestamp with time zone not null comment '结算周期结束时间',
     business_timezone varchar(64) not null comment '业务日计算时区',
-    scope_identity varchar(512) not null comment '结算范围身份',
-    effective_scope_identity varchar(512) comment '当前生效范围身份',
+    scope_identity varchar(512) not null comment '结算范围身份：merchantId + currency + settlementPeriod(start,end,timezone)，不含渠道或单日表达',
+    effective_scope_identity varchar(512) comment '当前生效范围身份：仅 merchantId + currency + settlementPeriod(start,end,timezone)',
     status integer not null comment '当前业务状态枚举 @Type=MerchantSettlementStatus;',
     eligible_count integer not null default 0 comment '纳入结算的交易数量',
     excluded_count integer not null default 0 comment '排除交易数量',
@@ -474,8 +744,11 @@ create table merchant_settlement (
     replacement_settlement_id varchar(36) comment '替代结算单标识 @RefAggregate=MerchantSettlement;',
     confirmed_by varchar(128) comment '确认操作人',
     confirmed_at timestamp with time zone comment '确认时间',
+    confirmed_reason varchar(2048) comment '确认原因',
+    confirmed_evidence varchar(4096) comment '确认证据',
     voided_by varchar(128) comment '作废操作人',
     void_reason varchar(2048) comment '作废原因',
+    void_evidence varchar(4096) comment '作废证据',
     voided_at timestamp with time zone comment '作废时间',
     settled_fact_formed boolean not null default false comment '结算完成事实是否已形成',
     external_settlement_identity varchar(128) comment '外部结算身份',
@@ -489,7 +762,7 @@ create table merchant_settlement (
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
     constraint uk_merchant_settlement_effective_scope unique (effective_scope_identity)
 );
-comment on table merchant_settlement is '商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期';
+comment on table merchant_settlement is '商户结算单：按 merchant+currency+settlementPeriod 唯一冻结跨渠道结算构成；渠道仅保留在线项和执行证据中';
 
 create table settlement_line (
 
@@ -500,6 +773,8 @@ create table settlement_line (
     source_kind integer not null comment '结算来源类型枚举 @Type=SettlementLineSourceKind;',
     transaction_kind integer not null comment '交易类型枚举 @Type=com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind;',
     source_fact_identity varchar(128) not null comment '结算来源事实身份',
+    decision varchar(16) not null comment '候选判断：INCLUDED 或 EXCLUDED',
+    reason_code varchar(64) not null comment '稳定的纳入或排除原因代码',
     effective_consumption_identity varchar(512) comment '来源事实消费身份',
     fee_fact_identity varchar(128) comment '手续费事实身份',
     payment_id varchar(36) comment '关联支付标识 @RefAggregate=Payment;',
@@ -535,7 +810,7 @@ create table settlement_line (
     constraint uk_settlement_line_source unique (merchant_settlement_id, source_kind, source_fact_identity),
     constraint uk_settlement_line_effective_consumption unique (effective_consumption_identity)
 );
-comment on table settlement_line is '结算明细：保存一条被纳入结算的支付、退款或对账确认来源及其费用快照 @Parent=merchant_settlement;';
+comment on table settlement_line is '结算候选快照：保存纳入或排除判断、来源事实及费用证据；只有 INCLUDED 参与结算金额与消费身份 @Parent=merchant_settlement;';
 
 create table settlement_execution_attempt (
 

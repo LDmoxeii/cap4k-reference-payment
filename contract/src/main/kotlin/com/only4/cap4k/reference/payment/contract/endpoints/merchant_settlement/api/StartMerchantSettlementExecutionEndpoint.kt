@@ -2,7 +2,7 @@ package com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.time.Instant
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 
 /**
  * POST /api/merchant-settlements/{settlementId}/executions
@@ -23,19 +23,10 @@ object StartMerchantSettlementExecutionEndpoint {
         /**
          * 结算标识
          */
-        val settlementId: String,
-        /**
-         * 操作员身份
-         */
-        val operatorIdentity: String,
-        /**
-         * 操作员角色
-         */
-        val operatorRole: String,
-        /**
-         * 请求时间
-         */
-        val requestedAt: Instant
+        val settlementId: String = "",
+        /** 执行渠道是出款 evidence，不参与结算范围唯一性。 */
+        val executionChannelId: String,
+        val idempotencyKey: String,
     ) : EndpointRequest<Response>
 
     data class Response(
@@ -66,7 +57,9 @@ object StartMerchantSettlementExecutionEndpoint {
         /**
          * 诊断摘要
          */
-        val diagnosticSummary: String?
+        val diagnosticSummary: String?,
+        val actorId: String,
+        val receipt: OperationReceipt,
     )
 
 }

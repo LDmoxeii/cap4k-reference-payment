@@ -83,6 +83,7 @@ class ReconciliationBatchFactory : AggregateFactory<ReconciliationBatchFactory.P
             status = creation.status,
             conclusion = creation.conclusion,
             settlementImpact = creation.settlementImpact,
+            reason = creation.reason,
             evidence = creation.evidence,
             followUp = creation.followUp,
             disposedAt = creation.disposedAt

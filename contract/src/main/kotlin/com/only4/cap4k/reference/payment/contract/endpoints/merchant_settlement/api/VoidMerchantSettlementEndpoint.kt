@@ -2,6 +2,7 @@ package com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import java.time.Instant
 
 /**
@@ -23,23 +24,13 @@ object VoidMerchantSettlementEndpoint {
         /**
          * 结算标识
          */
-        val settlementId: String,
-        /**
-         * 操作员身份
-         */
-        val operatorIdentity: String,
-        /**
-         * 操作员角色
-         */
-        val operatorRole: String,
+        val settlementId: String = "",
         /**
          * 原因
          */
         val reason: String,
-        /**
-         * 作废时间
-         */
-        val voidedAt: Instant,
+        val evidence: String,
+        val idempotencyKey: String,
         /**
          * 是否创建替代项
          */
@@ -58,7 +49,12 @@ object VoidMerchantSettlementEndpoint {
         /**
          * 替代结算标识
          */
-        val replacementSettlementId: String?
+        val replacementSettlementId: String?,
+        val actorId: String,
+        val voidedAt: Instant,
+        val reason: String,
+        val evidence: String,
+        val receipt: OperationReceipt,
     )
 
 }

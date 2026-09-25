@@ -2,7 +2,7 @@ package com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.time.Instant
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 
 /**
  * POST /api/reconciliation-batches/{batchId}/reruns
@@ -24,14 +24,7 @@ object RerunReconciliationBatchEndpoint {
          * 批次标识
          */
         val batchId: String,
-        /**
-         * 请求操作人
-         */
-        val requestedBy: String,
-        /**
-         * 请求时间
-         */
-        val requestedAt: Instant
+        val idempotencyKey: String,
     ) : EndpointRequest<Response>
 
     data class Response(
@@ -58,7 +51,8 @@ object RerunReconciliationBatchEndpoint {
         /**
          * 对账单版本
          */
-        val statementRevision: String?
+        val statementRevision: String?,
+        val receipt: OperationReceipt,
     )
 
 }

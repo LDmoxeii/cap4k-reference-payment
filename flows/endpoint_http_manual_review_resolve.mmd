@@ -1,0 +1,5 @@
+flowchart TD
+  N1["ResolveManualReviewCmd.Request"]
+  N2["manual-review.resolve [POST /api/manual-reviews/{reviewId}/resolutions]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

@@ -32,7 +32,11 @@ enum class ChannelResultDisposition(
 
     CONFLICT(6, "同一通知身份被重复使用且事实发生冲突", "conflict", true),
 
-    ATTEMPT_NOT_FOUND(7, "引用的支付尝试不属于当前支付单", "rejected", true);
+    ATTEMPT_NOT_FOUND(7, "引用的支付尝试不属于当前支付单", "rejected", true),
+
+    LATE(8, "支付已关闭或失败后收到可信的迟到结果", "conflict", true),
+
+    UNKNOWN_ACCEPTED(9, "已接受可信的未知结果并等待后续收敛", "accepted", true);
 
     fun isAccepted(): Boolean = group == "accepted"
 

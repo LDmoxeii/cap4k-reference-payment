@@ -5,24 +5,33 @@ import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
 import com.only4.cap4k.reference.payment.application.commands.reconciliation.disposition.DisposeReconciliationDifferenceCmd
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId
 import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.DisposeReconciliationDifferenceEndpoint
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceActorContextResolver
+import java.time.Clock
+import java.time.Instant
 import org.springframework.stereotype.Component
 
 @Component
-class DisposeReconciliationDifferenceEndpointHandler : EndpointHandler<DisposeReconciliationDifferenceEndpoint.Request, DisposeReconciliationDifferenceEndpoint.Response> {
+class DisposeReconciliationDifferenceEndpointHandler(
+    private val actorContextResolver: ReferenceActorContextResolver,
+    private val clock: Clock,
+) : EndpointHandler<DisposeReconciliationDifferenceEndpoint.Request, DisposeReconciliationDifferenceEndpoint.Response> {
     override fun handle(request: DisposeReconciliationDifferenceEndpoint.Request): DisposeReconciliationDifferenceEndpoint.Response {
+        val actor = actorContextResolver.consume()
         val response = Mediator.commands.send(
             DisposeReconciliationDifferenceCmd.Request(
                 reconciliationBatchId = ReconciliationBatchId.parse(request.batchId),
                 itemId = request.itemId,
                 merchantId = request.merchantId,
                 channelId = request.channelId,
-                operatorIdentity = request.operatorIdentity,
-                operatorRole = request.operatorRole,
+                operatorIdentity = actor.actorId,
+                idempotencyKey = request.idempotencyKey,
+                operatorRole = actor.role,
                 conclusion = request.conclusion,
                 settlementImpact = request.settlementImpact,
                 evidence = request.evidence,
+                reason = request.reason,
                 followUp = request.followUp,
-                disposedAt = request.disposedAt,
+                disposedAt = Instant.now(clock),
             )
         )
         return DisposeReconciliationDifferenceEndpoint.Response(
@@ -33,6 +42,8 @@ class DisposeReconciliationDifferenceEndpointHandler : EndpointHandler<DisposeRe
             batchStatus = response.batchStatus,
             settlementBlocked = response.settlementBlocked,
             blockingReason = response.blockingReason,
+            actorId = response.actorId,
+            receipt = response.receipt,
         )
     }
 }

@@ -10,7 +10,7 @@
       { "name": "eventIdentity", "type": "String" },
       { "name": "settlementId", "type": "String" },
       { "name": "merchantId", "type": "String" },
-      { "name": "channelId", "type": "String" },
+      { "name": "executionChannelId", "type": "String?" },
       { "name": "currency", "type": "String" },
       { "name": "netAmount", "type": "Big_decimal" },
       { "name": "completedAt", "type": "java.time.Instant" },

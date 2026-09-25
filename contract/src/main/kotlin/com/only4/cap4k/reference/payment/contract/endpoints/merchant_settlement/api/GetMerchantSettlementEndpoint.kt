@@ -2,7 +2,8 @@ package com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
+import com.only4.cap4k.reference.payment.contract.common.Finality
+import com.only4.cap4k.reference.payment.contract.common.Money
 import java.time.Instant
 
 /**
@@ -37,9 +38,9 @@ object GetMerchantSettlementEndpoint {
          */
         val merchantId: String,
         /**
-         * 渠道标识
+         * 执行渠道快照；不属于 scope
          */
-        val channelId: String,
+        val executionChannelId: String?,
         /**
          * 币种
          */
@@ -69,9 +70,11 @@ object GetMerchantSettlementEndpoint {
          */
         val effectiveScopeIdentity: String?,
         /**
-         * 状态
+         * Unified public settlement status.
          */
         val status: String,
+        /** Settlement finality is independent from command/operation completion. */
+        val finality: Finality,
         /**
          * 符合数量
          */
@@ -87,23 +90,23 @@ object GetMerchantSettlementEndpoint {
         /**
          * 支付毛金额
          */
-        val paymentGrossAmount: BigDecimal,
+        val grossMoney: Money,
         /**
          * 退款毛金额
          */
-        val refundGrossAmount: BigDecimal,
+        val refundMoney: Money,
         /**
          * 费用总额
          */
-        val feeTotalAmount: BigDecimal,
+        val feeMoney: Money,
         /**
          * 调整总额
          */
-        val adjustmentTotalAmount: BigDecimal,
+        val adjustmentMoney: Money,
         /**
          * 净金额
          */
-        val netAmount: BigDecimal,
+        val netMoney: Money,
         /**
          * 是否冻结组合
          */
@@ -128,6 +131,8 @@ object GetMerchantSettlementEndpoint {
          * 确认时间
          */
         val confirmedAt: Instant?,
+        val confirmedReason: String?,
+        val confirmedEvidence: String?,
         /**
          * 作废操作人
          */
@@ -136,6 +141,7 @@ object GetMerchantSettlementEndpoint {
          * 作废原因
          */
         val voidReason: String?,
+        val voidEvidence: String?,
         /**
          * 作废时间
          */
@@ -194,6 +200,8 @@ object GetMerchantSettlementEndpoint {
              * 来源事实身份
              */
             val sourceFactIdentity: String,
+            val decision: String,
+            val reasonCode: String,
             /**
              * 费用事实身份
              */
@@ -237,19 +245,15 @@ object GetMerchantSettlementEndpoint {
             /**
              * 毛金额
              */
-            val grossAmount: BigDecimal,
+            val grossMoney: Money,
             /**
              * 费用金额
              */
-            val feeAmount: BigDecimal,
+            val feeMoney: Money,
             /**
              * 带符号净额
              */
-            val signedNetAmount: BigDecimal,
-            /**
-             * 币种
-             */
-            val currency: String,
+            val signedNetMoney: Money,
             /**
              * 发生时间
              */
@@ -265,7 +269,7 @@ object GetMerchantSettlementEndpoint {
             /**
              * 固定费用
              */
-            val feeFixedAmount: BigDecimal?,
+            val feeFixedMoney: Money?,
             /**
              * 费用舍入方式
              */
@@ -277,7 +281,7 @@ object GetMerchantSettlementEndpoint {
             /**
              * 费用计算金额
              */
-            val feeCalculationAmount: BigDecimal?,
+            val feeCalculationMoney: Money?,
             /**
              * 明细行列表依据
              */
@@ -343,11 +347,7 @@ object GetMerchantSettlementEndpoint {
             /**
              * 金额
              */
-            val amount: BigDecimal,
-            /**
-             * 币种
-             */
-            val currency: String,
+            val money: Money,
             /**
              * 外部结算身份
              */
@@ -409,11 +409,7 @@ object GetMerchantSettlementEndpoint {
             /**
              * 金额
              */
-            val amount: BigDecimal,
-            /**
-             * 币种
-             */
-            val currency: String,
+            val money: Money,
             /**
              * 结果
              */

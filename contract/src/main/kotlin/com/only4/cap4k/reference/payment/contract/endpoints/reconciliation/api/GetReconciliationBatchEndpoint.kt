@@ -2,7 +2,7 @@ package com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
+import com.only4.cap4k.reference.payment.contract.common.Money
 import java.time.Instant
 import java.time.LocalDate
 
@@ -180,11 +180,7 @@ object GetReconciliationBatchEndpoint {
             /**
              * 运行列表条目列表渠道金额
              */
-            val channelAmount: BigDecimal?,
-            /**
-             * 运行列表条目列表渠道币种
-             */
-            val channelCurrency: String?,
+            val channelMoney: Money?,
             /**
              * 运行列表条目列表渠道原始状态
              */
@@ -224,11 +220,7 @@ object GetReconciliationBatchEndpoint {
             /**
              * 运行列表条目列表平台金额
              */
-            val platformAmount: BigDecimal?,
-            /**
-             * 运行列表条目列表平台币种
-             */
-            val platformCurrency: String?,
+            val platformMoney: Money?,
             /**
              * 运行列表条目列表平台原始状态
              */
@@ -298,6 +290,10 @@ object GetReconciliationBatchEndpoint {
              */
             val settlementImpact: String,
             /**
+             * 处置原因
+             */
+            val reason: String,
+            /**
              * 证据
              */
             val evidence: String,
@@ -338,11 +334,7 @@ object GetReconciliationBatchEndpoint {
             /**
              * 金额
              */
-            val amount: BigDecimal,
-            /**
-             * 币种
-             */
-            val currency: String,
+            val money: Money,
             /**
              * 外部交易身份
              */

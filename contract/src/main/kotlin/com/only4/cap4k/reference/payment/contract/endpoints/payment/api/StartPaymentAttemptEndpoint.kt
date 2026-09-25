@@ -22,30 +22,30 @@ object StartPaymentAttemptEndpoint {
         /**
          * 支付标识
          */
-        val paymentId: String
+                val paymentId: String
     ) : EndpointRequest<Response>
 
     data class Response(
         /**
          * 支付尝试标识
          */
-        val paymentAttemptId: String,
+                val paymentAttemptId: String,
         /**
          * 渠道标识
          */
-        val channelId: String,
+                val channelId: String,
         /**
          * 请求身份
          */
-        val requestIdentity: String,
+                val requestIdentity: String,
         /**
          * 支付状态
          */
-        val paymentStatus: String,
+                val paymentStatus: String,
         /**
          * 尝试状态
          */
-        val attemptStatus: String
+                val attemptStatus: String
     )
 
 }

@@ -2,6 +2,7 @@ package com.only4.cap4k.reference.payment.contract.endpoints.payment.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import java.time.Instant
 
 /** POST /api/payments/{paymentId}/reviews/{reviewId}/decisions */
@@ -13,6 +14,8 @@ object AdjudicatePaymentReviewEndpoint {
          * 支付标识
          */
         val paymentId: String,
+        val merchantId: String,
+        val idempotencyKey: String,
         /**
          * 复核标识
          */
@@ -26,18 +29,6 @@ object AdjudicatePaymentReviewEndpoint {
          */
         val decision: String,
         /**
-         * 操作员身份
-         */
-        val operatorIdentity: String,
-        /**
-         * 操作员角色
-         */
-        val operatorRole: String,
-        /**
-         * 授权材料
-         */
-        val authorizationMaterial: String,
-        /**
          * 原因
          */
         val reason: String,
@@ -45,10 +36,6 @@ object AdjudicatePaymentReviewEndpoint {
          * 证据
          */
         val evidence: String,
-        /**
-         * 决策时间
-         */
-        val decidedAt: Instant,
         /**
          * 资格影响
          */
@@ -79,5 +66,14 @@ object AdjudicatePaymentReviewEndpoint {
          * 通知意图状态
          */
         val notificationIntentState: String?,
+        val decisionId: String,
+        val decisionIdentity: String,
+        val decision: String,
+        /** 由可信 reference actor context 解析并持久化的责任人。 */
+        val actorId: String,
+        val reason: String,
+        val evidence: String,
+        val decidedAt: Instant,
+        val receipt: OperationReceipt,
     )
 }

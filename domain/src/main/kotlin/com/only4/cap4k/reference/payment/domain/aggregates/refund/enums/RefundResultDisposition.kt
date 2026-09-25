@@ -34,7 +34,9 @@ enum class RefundResultDisposition(
 
     CONFLICT(7, "退款通知与不可变的既有结果发生冲突", "conflict", true),
 
-    ATTEMPT_NOT_FOUND(8, "引用的退款尝试不属于当前退款单", "rejected", true);
+    ATTEMPT_NOT_FOUND(8, "引用的退款尝试不属于当前退款单", "rejected", true),
+
+    RETRYABLE_FAILURE_ACCEPTED(9, "已接受可重试失败，原退款预算继续占用", "accepted", true);
 
     companion object {
         private val enumMap: Map<Int, RefundResultDisposition> = entries.associateBy { it.value }

@@ -1,5 +1,6 @@
 package com.only4.cap4k.reference.payment.adapter.application.capabilities.reconciliation.channel
 
+import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.channel.ChannelStatementUnavailableException
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatement
 import java.time.LocalDate
 import java.util.concurrent.ConcurrentHashMap
@@ -48,9 +49,3 @@ class ChannelStatementFixtureStore {
         val reconciliationDate: LocalDate,
     )
 }
-
-class ChannelStatementUnavailableException(
-    channelId: String,
-    currency: String,
-    reconciliationDate: LocalDate,
-) : RuntimeException("channel statement is unavailable for $channelId/$currency/$reconciliationDate")

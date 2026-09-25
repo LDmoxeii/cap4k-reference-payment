@@ -6,6 +6,70 @@ alter table __event alter column data text;
 alter table __event alter column execution_context text;
 alter table __event alter column retry_policy text;
 
+alter table operation
+    add constraint uk_operation_idempotency unique (merchant_id, command_type, idempotency_key);
+
+-- The generated entity currently omits design/schema.sql varchar lengths for Operation payloads.
+alter table operation alter column read_after_resource_url varchar(512);
+alter table operation alter column result_json varchar(8192);
+alter table operation alter column error_message varchar(2048);
+alter table operation alter column error_details_json varchar(8192);
+
+alter table payment_channel_result_receipt alter column result_identity varchar(256);
+alter table payment_channel_result_receipt alter column payload_identity varchar(128);
+alter table payment_channel_result_receipt alter column channel_transaction_id varchar(256);
+alter table payment_channel_result_receipt alter column raw_evidence varchar(8192);
+alter table payment_channel_result_receipt alter column verification_summary varchar(2048);
+alter table payment_channel_result_receipt alter column rejection_summary varchar(2048);
+alter table payment_channel_result_receipt alter column amount decimal(19, 8);
+alter table payment_channel_result_receipt
+    add constraint uk_payment_channel_result_receipt unique (channel_id, result_identity, payload_identity);
+
+-- The entity generator currently omits explicit varchar lengths from design/schema.sql.
+alter table merchant_notification alter column notification_identity varchar(512);
+alter table merchant_notification alter column source_fact_identity varchar(256);
+alter table merchant_notification alter column content varchar(4096);
+alter table merchant_notification_delivery_attempt alter column delivery_identity varchar(256);
+alter table merchant_notification_delivery_attempt alter column diagnostic varchar(2048);
+
+alter table merchant_notification
+    add constraint uk_merchant_notification_identity unique (notification_identity);
+
+alter table merchant_notification_delivery_attempt
+    add constraint uk_merchant_notification_attempt unique (merchant_notification_id, attempt_sequence);
+
+alter table merchant_notification_delivery_attempt
+    add constraint uk_merchant_notification_delivery unique (delivery_identity);
+
+alter table manual_review_item alter column review_identity varchar(512);
+comment on column manual_review_item.payment_id is '用于 payment trace 的规范化支付引用 @RefAggregate=Payment;';
+alter table manual_review_item alter column origin_identity varchar(512);
+alter table manual_review_item alter column summary varchar(2048);
+alter table manual_review_item alter column related_refs_json varchar(8192);
+alter table manual_review_item alter column blocking_scopes_json varchar(8192);
+alter table manual_review_item alter column evidence_refs_json varchar(8192);
+alter table manual_review_resolution alter column resolution_identity varchar(512);
+alter table manual_review_resolution alter column reason varchar(2048);
+alter table manual_review_resolution alter column evidence varchar(4096);
+
+alter table manual_review_item
+    add constraint uk_manual_review_item_identity unique (review_identity);
+
+alter table manual_review_resolution
+    add constraint uk_manual_review_resolution_identity unique (manual_review_item_id, resolution_identity);
+
+alter table authoritative_bill
+    add constraint uk_authoritative_bill_identity unique (channel_id, bill_identity);
+
+alter table bill_revision
+    add constraint uk_bill_revision_identity unique (authoritative_bill_id, revision);
+
+alter table bill_revision_record
+    add constraint uk_bill_revision_record_identity unique (bill_revision_id, record_identity);
+
+alter table bill_available_signal
+    add constraint uk_bill_available_signal_identity unique (authoritative_bill_id, signal_identity);
+
 alter table reconciliation_batch
     add constraint uk_reconciliation_batch_scope unique (channel_id, currency, reconciliation_date);
 
@@ -14,6 +78,9 @@ alter table reconciliation_run
 
 alter table merchant_settlement
     add constraint uk_merchant_settlement_effective_scope unique (effective_scope_identity);
+alter table merchant_settlement alter column confirmed_reason varchar(2048);
+alter table merchant_settlement alter column confirmed_evidence varchar(4096);
+alter table merchant_settlement alter column void_evidence varchar(4096);
 
 alter table settlement_line
     add constraint uk_settlement_line_identity unique (merchant_settlement_id, line_identity);
@@ -40,6 +107,10 @@ alter table payment
 alter table payment
     add constraint uk_payment_notification_intent unique (merchant_success_notification_intent_identity);
 
+-- Hibernate's generated BigDecimal default scale is 2, which would round the policy rate
+-- 0.006 to 0.01 before it can be read back.  Preserve the design/schema.sql fee-rate snapshot.
+alter table payment alter column settlement_fee_rate decimal(19, 8);
+
 alter table payment_notification_receipt
     add constraint uk_payment_notification_receipt_payload unique (payment_attempt_id, notification_identity, payload_identity);
 
@@ -50,8 +121,32 @@ alter table payment_review_decision
     add constraint uk_payment_review_decision unique (payment_review_case_id, decision_identity);
 
 -- 人类可读的表/字段备注与 design/schema.sql 保持同一套业务语义；机器 token 也一并保留。
+comment on table operation is '统一命令受理记录：按 merchant、命令类型和幂等键保存稳定受理、资源引用与读取语义';
+comment on table payment_channel_result_receipt is '支付渠道结果权威收件：独立于目标聚合保存全部外部结果，使未知 payment/attempt 引用仍可按 external identity 查询';
+comment on table merchant_notification is '商户通知意图：冻结来源事实、身份和内容，投递失败不影响来源业务事实';
+comment on table merchant_notification_delivery_attempt is '商户通知投递尝试：同一通知与内容下追加每次投递结果 @Parent=merchant_notification;';
+comment on column merchant_notification.notification_identity is '来源业务事实的稳定通知身份';
+comment on column merchant_notification.content_identity is '首次形成时冻结的内容指纹';
+comment on column merchant_notification.merchant_id is '商户业务范围';
+comment on column merchant_notification.source_kind is '来源事实类型';
+comment on column merchant_notification.source_fact_identity is '来源权威事实的稳定身份';
+comment on column merchant_notification.payment_id is '可追踪的支付标识 @RefAggregate=Payment;';
+comment on column merchant_notification.content is '冻结的 reference 通知内容';
+comment on column merchant_notification.status is '当前通知投递状态 @Type=MerchantNotificationStatus;';
+comment on column merchant_notification.finality is '通知投递最终性';
+comment on column merchant_notification.max_attempts is '通知形成时冻结的最多投递次数';
+comment on column merchant_notification_delivery_attempt.merchant_notification_id is '所属商户通知标识 @ParentRef;';
+comment on column merchant_notification_delivery_attempt.attempt_sequence is '投递尝试顺序';
+comment on column merchant_notification_delivery_attempt.delivery_identity is '本次投递的稳定请求身份';
+comment on column merchant_notification_delivery_attempt.content_identity is '冻结内容指纹快照';
+comment on column merchant_notification_delivery_attempt.outcome is '本次投递结果 @Type=MerchantNotificationDeliveryOutcome;';
+comment on column merchant_notification_delivery_attempt.diagnostic is '受控发送诊断';
+comment on column merchant_notification_delivery_attempt.recorded_at is '本次投递结果的服务端记录时间';
+comment on table manual_review_item is '统一人工核对事项：由支付、退款、对账和结算的原始事实稳定触发，保存阻断范围、关联和追加处置';
+comment on table manual_review_resolution is '人工核对事项处置历史：仅追加可信责任人、结论、原因和证据，不覆盖来源业务事实 @Parent=manual_review_item;';
 comment on table payment is '支付主聚合：记录商户订单的金额、状态、成功事实、通知收敛、复核和退款预算';
 comment on table payment_attempt is '支付尝试：Payment 聚合内一次渠道请求及其最终结果与通知证据 @Parent=payment;';
+comment on table payment_submission_receipt is '支付渠道提交收件：保存提交前冻结身份、一次渠道调用的受理/拒绝/未知证据，不形成支付成功事实 @Parent=payment_attempt;';
 comment on table payment_notification_receipt is '支付通知回执：保存渠道回调的原始身份、校验结果和重复/矛盾处理证据 @Parent=payment_attempt;';
 comment on table payment_review_case is '支付复核案件：保存迟到、未知或矛盾支付结果的人工复核上下文 @Parent=payment;';
 comment on table payment_review_decision is '支付复核决定：保存授权操作人对复核案件作出的追加式裁决证据 @Parent=payment_review_case;';
@@ -59,15 +154,61 @@ comment on table refund is '退款主聚合：记录退款申请、退款预算�
 comment on table refund_attempt is '退款尝试：Refund 聚合内一次渠道退款请求及其等待、结果和通知证据 @Parent=refund;';
 comment on table refund_notification_receipt is '退款通知回执：保存渠道退款回调的身份、金额、校验和冲突证据 @Parent=refund_attempt;';
 comment on table merchant_channel_configuration is '商户渠道配置：保存商户在渠道、币种和支付方式维度上的路由与费用快照来源';
+comment on table authoritative_bill is '权威账单：按渠道和稳定账单身份保存当前不可回退修订指针、读取诊断和信号历史';
+comment on table bill_revision is '不可变权威账单修订：保存完整性、原始证据、指纹、发布时间及逐行证据 @Parent=authoritative_bill;';
+comment on table bill_revision_record is '账单修订逐行不可变证据：稳定记录身份、交易身份、金额、状态、时间和原始证据 @Parent=bill_revision;';
+comment on table bill_available_signal is '账单可用信号：保存稳定信号身份、版本声明、读取次数和可诊断失败，不以信号正文替代权威账单 @Parent=authoritative_bill;';
 comment on table reconciliation_batch is '对账批次：以渠道、币种和业务日为范围维护对账周期、有效运行和结算阻断状态';
 comment on table reconciliation_run is '对账运行：保存某一账单身份与修订版本的拉取、匹配和完成结果 @Parent=reconciliation_batch;';
 comment on table reconciliation_item is '对账差异项：保存渠道事实与平台事实的双方快照、匹配依据和处置状态 @Parent=reconciliation_run;';
 comment on table reconciliation_disposition is '对账差异处置：保存操作人对差异项的授权、结论、影响和证据 @Parent=reconciliation_item;';
 comment on table reconciliation_confirmation_fact is '对账确认事实：保存经授权确认后的外部交易事实，不覆盖原始差异证据 @Parent=reconciliation_item;';
-comment on table merchant_settlement is '商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期';
-comment on table settlement_line is '结算明细：保存一条被纳入结算的支付、退款或对账确认来源及其费用快照 @Parent=merchant_settlement;';
+comment on table merchant_settlement is '商户结算单：按 merchant+currency+settlementPeriod 唯一冻结跨渠道结算构成；渠道仅保留在线项和执行证据中';
+comment on table settlement_line is '结算候选快照：保存纳入或排除判断、来源事实及费用证据；只有 INCLUDED 参与结算金额与消费身份 @Parent=merchant_settlement;';
 comment on table settlement_execution_attempt is '结算执行尝试：保存一次出款请求、等待窗口、结果和重试/冲突证据 @Parent=merchant_settlement;';
 comment on table settlement_result_receipt is '结算结果回执：保存渠道出款回调的稳定身份、金额、结果和重复/矛盾证据 @Parent=settlement_execution_attempt;';
+comment on column operation.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column operation.version is '并发更新版本号 @Managed=version;';
+comment on column operation.merchant_id is '命令业务范围商户标识';
+comment on column operation.command_type is '规范化命令类型';
+comment on column operation.idempotency_key is '命令幂等键';
+comment on column operation.canonical_request_hash is '规范化请求哈希';
+comment on column operation.resource_type is '受理后关联资源类型';
+comment on column operation.resource_id is '受理后关联资源标识';
+comment on column operation.status is 'Operation 状态';
+comment on column operation.finality is 'Operation 最终性';
+comment on column operation.read_after_mode is '资源读取方式';
+comment on column operation.read_after_resource_url is '受理后资源读取地址';
+comment on column operation.accepted_at is '命令受理时间';
+comment on column operation.completed_at is 'Operation 完成时间';
+comment on column operation.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column operation.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column operation.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column operation.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column payment_channel_result_receipt.id is '支付渠道结果收件唯一标识 @Managed=identifier.uuid7;';
+comment on column payment_channel_result_receipt.version is '并发更新版本号 @Managed=version;';
+comment on column payment_channel_result_receipt.result_identity is '渠道提供的稳定外部结果身份';
+comment on column payment_channel_result_receipt.payload_identity is '服务端形成的 canonical payload 指纹';
+comment on column payment_channel_result_receipt.channel_id is '渠道标识';
+comment on column payment_channel_result_receipt.payment_id is '可选的关联支付标识 @RefAggregate=Payment;';
+comment on column payment_channel_result_receipt.payment_attempt_id is '可选的关联支付 attempt 标识';
+comment on column payment_channel_result_receipt.channel_transaction_id is '渠道交易标识';
+comment on column payment_channel_result_receipt.raw_evidence is '原始 canonical 渠道证据';
+comment on column payment_channel_result_receipt.verification is '服务端 verifier 形成的核验结论';
+comment on column payment_channel_result_receipt.verification_summary is '服务端核验摘要';
+comment on column payment_channel_result_receipt.outcome is '规范化渠道结果 SUCCESS、FAILURE 或 UNKNOWN';
+comment on column payment_channel_result_receipt.amount is '结果金额';
+comment on column payment_channel_result_receipt.currency is '结果币种';
+comment on column payment_channel_result_receipt.occurred_at is '渠道事实发生时间';
+comment on column payment_channel_result_receipt.recorded_at is '服务端首次记录时间';
+comment on column payment_channel_result_receipt.last_received_at is '服务端最近接收时间';
+comment on column payment_channel_result_receipt.receive_count is '相同 external identity 与 payload 的接收次数';
+comment on column payment_channel_result_receipt.disposition is '统一渠道结果处置';
+comment on column payment_channel_result_receipt.rejection_summary is '拒绝或未知引用摘要';
+comment on column payment_channel_result_receipt.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column payment_channel_result_receipt.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column payment_channel_result_receipt.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column payment_channel_result_receipt.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
 comment on column payment.id is '记录唯一标识 @Managed=identifier.uuid7;';
 comment on column payment.version is '并发更新版本号 @Managed=version;';
 comment on column payment.merchant_id is '商户标识';
@@ -102,6 +243,7 @@ comment on column payment.merchant_success_notification_intent_state is '商户�
 comment on column payment.review_count is '复核案件数量';
 comment on column payment.blocking_review_count is '阻断性复核数量';
 comment on column payment.settlement_fee_fact_identity is '结算手续费事实身份';
+comment on column payment.settlement_fee_rate is '支付成功时冻结的 ReferencePolicy 手续费率';
 comment on column payment.settlement_fee_basis_points is '结算手续费基点';
 comment on column payment.settlement_fixed_fee_amount is '结算固定手续费金额';
 comment on column payment.settlement_fee_rounding_mode is '结算手续费舍入模式';
@@ -120,7 +262,7 @@ comment on column payment_attempt.channel_configuration_id is '渠道配置标�
 comment on column payment_attempt.channel_configuration_snapshot is '发起时使用的渠道配置快照';
 comment on column payment_attempt.request_identity is '执行请求幂等身份';
 comment on column payment_attempt.status is '当前业务状态枚举 @Type=PaymentAttemptStatus;';
-comment on column payment_attempt.initiated_at is '渠道请求发起时间';
+comment on column payment_attempt.initiated_at is '创建支付尝试时间';
 comment on column payment_attempt.channel_transaction_id is '渠道交易标识';
 comment on column payment_attempt.final_result is '最终结果枚举 @Type=PaymentAttemptFinalResult;';
 comment on column payment_attempt.result_occurred_at is '渠道结果发生时间';
@@ -201,8 +343,10 @@ comment on column refund.version is '并发更新版本号 @Managed=version;';
 comment on column refund.payment_id is '关联支付标识 @RefAggregate=Payment;';
 comment on column refund.merchant_id is '商户标识';
 comment on column refund.merchant_refund_number is '商户退款单号';
+comment on column refund.idempotency_key is '退款申请幂等键';
 comment on column refund.amount is '本次业务金额';
 comment on column refund.currency is '业务币种';
+comment on column refund.reason is '退款申请原因';
 comment on column refund.payment_method is '支付方式';
 comment on column refund.status is '当前业务状态枚举 @Type=RefundStatus;';
 comment on column refund.requested_at is '退款申请时间';
@@ -210,10 +354,10 @@ comment on column refund.refund_deadline_at is '退款期限截止时间';
 comment on column refund.channel_accepted_at is '渠道受理时间';
 comment on column refund.finalized_at is '退款最终完成时间';
 comment on column refund.review_required_at is '进入退款结果复核时间';
-comment on column refund.channel_id is '渠道标识';
-comment on column refund.channel_configuration_id is '渠道配置标识';
-comment on column refund.channel_configuration_snapshot is '发起时使用的渠道配置快照';
-comment on column refund.request_identity is '执行请求幂等身份';
+comment on column refund.channel_id is '最近一次退款尝试使用的渠道标识';
+comment on column refund.channel_configuration_id is '最近一次退款尝试使用的渠道配置标识';
+comment on column refund.channel_configuration_snapshot is '最近一次退款尝试使用的渠道配置快照';
+comment on column refund.request_identity is '最近一次退款尝试的执行请求幂等身份';
 comment on column refund.channel_refund_id is '渠道退款标识';
 comment on column refund.reservation_active is '退款预算占用是否有效';
 comment on column refund.reservation_released is '退款预算占用是否已释放';
@@ -294,7 +438,7 @@ comment on column merchant_channel_configuration.routing_priority is '路由优�
 comment on column merchant_channel_configuration.channel_rule_summary is '渠道路由规则摘要';
 comment on column merchant_channel_configuration.refund_window_days is '退款窗口天数';
 comment on column merchant_channel_configuration.refund_result_review_after_minutes is '退款结果复核等待分钟数';
-comment on column merchant_channel_configuration.settlement_fee_basis_points is '结算手续费基点';
+comment on column merchant_channel_configuration.settlement_fee_basis_points is '结算手续费基点；reference 默认费率 0.006';
 comment on column merchant_channel_configuration.settlement_fixed_fee_amount is '结算固定手续费金额';
 comment on column merchant_channel_configuration.settlement_fee_rounding_mode is '结算手续费舍入模式';
 comment on column merchant_channel_configuration.settlement_result_review_after_minutes is '结算结果复核等待分钟数';
@@ -416,14 +560,14 @@ comment on column reconciliation_confirmation_fact.updated_by is '记录最后�
 comment on column merchant_settlement.id is '记录唯一标识 @Managed=identifier.uuid7;';
 comment on column merchant_settlement.version is '并发更新版本号 @Managed=version;';
 comment on column merchant_settlement.merchant_id is '商户标识';
-comment on column merchant_settlement.channel_id is '渠道标识';
+comment on column merchant_settlement.execution_channel_id is '结算执行渠道快照；不参与 merchant/currency/period scope、唯一性或幂等判定';
 comment on column merchant_settlement.currency is '业务币种';
 comment on column merchant_settlement.period_type is '结算周期类型';
 comment on column merchant_settlement.period_start is '结算周期开始时间';
 comment on column merchant_settlement.period_end is '结算周期结束时间';
 comment on column merchant_settlement.business_timezone is '业务日计算时区';
-comment on column merchant_settlement.scope_identity is '结算范围身份';
-comment on column merchant_settlement.effective_scope_identity is '当前生效范围身份';
+comment on column merchant_settlement.scope_identity is '结算范围身份：merchantId + currency + settlementPeriod(start,end,timezone)，不含渠道或单日表达';
+comment on column merchant_settlement.effective_scope_identity is '当前生效范围身份：仅 merchantId + currency + settlementPeriod(start,end,timezone)';
 comment on column merchant_settlement.status is '当前业务状态枚举 @Type=MerchantSettlementStatus;';
 comment on column merchant_settlement.eligible_count is '纳入结算的交易数量';
 comment on column merchant_settlement.excluded_count is '排除交易数量';
@@ -439,8 +583,11 @@ comment on column merchant_settlement.predecessor_settlement_id is '前序结算
 comment on column merchant_settlement.replacement_settlement_id is '替代结算单标识 @RefAggregate=MerchantSettlement;';
 comment on column merchant_settlement.confirmed_by is '确认操作人';
 comment on column merchant_settlement.confirmed_at is '确认时间';
+comment on column merchant_settlement.confirmed_reason is '确认原因';
+comment on column merchant_settlement.confirmed_evidence is '确认证据';
 comment on column merchant_settlement.voided_by is '作废操作人';
 comment on column merchant_settlement.void_reason is '作废原因';
+comment on column merchant_settlement.void_evidence is '作废证据';
 comment on column merchant_settlement.voided_at is '作废时间';
 comment on column merchant_settlement.settled_fact_formed is '结算完成事实是否已形成';
 comment on column merchant_settlement.external_settlement_identity is '外部结算身份';
@@ -547,3 +694,138 @@ comment on column settlement_result_receipt.created_at is '记录创建时间 @M
 comment on column settlement_result_receipt.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
 comment on column settlement_result_receipt.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
 comment on column settlement_result_receipt.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+
+-- 统一契约扩展字段的运行时说明；与 design/schema.sql 的设计注释逐项对齐。
+comment on column operation.retry_after_ms is '受理时冻结的建议轮询间隔；READ_ONCE 为零';
+comment on column operation.result_json is '成功结果的稳定 JSON 对象';
+comment on column operation.error_code is '异步失败的稳定业务错误码';
+comment on column operation.error_message is '异步失败的受控错误说明';
+comment on column operation.error_details_json is '异步失败的稳定 JSON details';
+comment on column operation.error_correlation_id is '异步失败的稳定关联标识';
+comment on column operation.error_retryable is '异步失败的重试提示';
+comment on column operation.review_id is '停止自动处理时的人工核对引用';
+comment on column merchant_notification.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column merchant_notification.version is '并发更新版本号 @Managed=version;';
+comment on column merchant_notification.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column merchant_notification.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column merchant_notification.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column merchant_notification.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column merchant_notification_delivery_attempt.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column merchant_notification_delivery_attempt.version is '并发更新版本号 @Managed=version;';
+comment on column merchant_notification_delivery_attempt.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column merchant_notification_delivery_attempt.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column merchant_notification_delivery_attempt.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column merchant_notification_delivery_attempt.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column manual_review_item.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column manual_review_item.version is '并发更新版本号 @Managed=version;';
+comment on column manual_review_item.review_identity is '跨聚合人工事项稳定身份';
+comment on column manual_review_item.type is '统一人工事项类型';
+comment on column manual_review_item.status is '统一人工事项状态';
+comment on column manual_review_item.finality is '统一最终性';
+comment on column manual_review_item.merchant_id is '可选商户业务范围';
+comment on column manual_review_item.origin_kind is '触发事项的权威事实类型';
+comment on column manual_review_item.origin_identity is '触发事项的权威事实稳定身份';
+comment on column manual_review_item.summary is '面向人工的事项摘要';
+comment on column manual_review_item.related_refs_json is '关联权威资源引用 canonical JSON';
+comment on column manual_review_item.blocking_scopes_json is '阻断范围 canonical JSON';
+comment on column manual_review_item.evidence_refs_json is '证据引用 canonical JSON';
+comment on column manual_review_item.sort_time is '稳定列表排序时间';
+comment on column manual_review_item.resolved_at is '事项最终解决时间';
+comment on column manual_review_item.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column manual_review_item.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column manual_review_item.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column manual_review_item.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column manual_review_resolution.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column manual_review_resolution.version is '并发更新版本号 @Managed=version;';
+comment on column manual_review_resolution.manual_review_item_id is '所属人工核对事项标识 @ParentRef;';
+comment on column manual_review_resolution.resolution_identity is '追加处置稳定身份';
+comment on column manual_review_resolution.actor_id is '可信 ReferenceActorContext 映射的责任人';
+comment on column manual_review_resolution.actor_role is '可信 ReferenceActorContext 映射的责任角色';
+comment on column manual_review_resolution.outcome is '人工处置结论';
+comment on column manual_review_resolution.reason is '人工处置原因';
+comment on column manual_review_resolution.evidence is '人工处置证据';
+comment on column manual_review_resolution.resolved_at is '处置责任时间';
+comment on column manual_review_resolution.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column manual_review_resolution.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column manual_review_resolution.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column manual_review_resolution.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column payment_attempt.submission_identity is '提交到渠道前冻结的稳定提交身份';
+comment on column payment_attempt.submitted_at is '提交到渠道的服务端时间';
+comment on column payment_attempt.accepted_at is '渠道受理时间';
+comment on column payment_attempt.completed_at is '尝试终结或进入未知结果时间';
+comment on column payment_attempt.interaction_information is '渠道交互信息快照，例如 redirect 或 reference 指令';
+comment on column payment_attempt.risk_reason is '在已有 in-flight 或 unknown 尝试时新建尝试的显式风险说明';
+comment on column payment_submission_receipt.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column payment_submission_receipt.version is '并发更新版本号 @Managed=version;';
+comment on column payment_submission_receipt.payment_attempt_id is '关联支付尝试标识 @ParentRef;';
+comment on column payment_submission_receipt.submission_identity is '渠道提交稳定身份';
+comment on column payment_submission_receipt.request_identity is '支付尝试请求身份快照';
+comment on column payment_submission_receipt.channel_id is '渠道标识快照';
+comment on column payment_submission_receipt.submitted_at is '渠道提交时间';
+comment on column payment_submission_receipt.outcome is '渠道提交结果 ACCEPTED、REJECTED 或 RESULT_UNKNOWN';
+comment on column payment_submission_receipt.channel_reference is '渠道受理或交互引用';
+comment on column payment_submission_receipt.diagnostic_summary is '受控渠道提交诊断摘要';
+comment on column payment_submission_receipt.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column payment_submission_receipt.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column payment_submission_receipt.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column payment_submission_receipt.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column authoritative_bill.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column authoritative_bill.version is '并发更新版本号 @Managed=version;';
+comment on column authoritative_bill.channel_id is '渠道标识';
+comment on column authoritative_bill.bill_identity is '权威账单稳定身份';
+comment on column authoritative_bill.business_date is '账单业务日期';
+comment on column authoritative_bill.currency is '业务币种';
+comment on column authoritative_bill.business_timezone is '账单业务时区';
+comment on column authoritative_bill.current_revision is '当前权威修订版本；只允许高版本前进';
+comment on column authoritative_bill.current_revision_id is '当前权威修订记录标识';
+comment on column authoritative_bill.last_fetch_diagnostic is '最近一次账单读取诊断';
+comment on column authoritative_bill.read_attempt_count is '账单读取尝试累计次数';
+comment on column authoritative_bill.last_read_attempt_at is '最近账单读取尝试时间';
+comment on column authoritative_bill.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column authoritative_bill.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column authoritative_bill.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column authoritative_bill.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column bill_revision.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column bill_revision.version is '并发更新版本号 @Managed=version;';
+comment on column bill_revision.authoritative_bill_id is '所属权威账单标识 @ParentRef;';
+comment on column bill_revision.revision is '不可变账单修订版本';
+comment on column bill_revision.completeness is '账单完整性枚举 @Type=com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.StatementCompleteness;';
+comment on column bill_revision.raw_evidence is 'provider 原始账单证据引用或 canonical payload';
+comment on column bill_revision.payload_fingerprint is '不可变账单正文指纹';
+comment on column bill_revision.published_at is 'provider 发布账单修订时间';
+comment on column bill_revision.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column bill_revision.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column bill_revision.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column bill_revision.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column bill_revision_record.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column bill_revision_record.version is '并发更新版本号 @Managed=version;';
+comment on column bill_revision_record.bill_revision_id is '所属账单修订标识 @ParentRef;';
+comment on column bill_revision_record.record_identity is '账单行稳定身份';
+comment on column bill_revision_record.channel_transaction_identity is '渠道交易稳定身份';
+comment on column bill_revision_record.transaction_kind is '交易类型枚举 @Type=com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind;';
+comment on column bill_revision_record.amount is '账单行金额';
+comment on column bill_revision_record.currency is '账单行币种';
+comment on column bill_revision_record.raw_status is '账单行原始状态';
+comment on column bill_revision_record.occurred_at is '渠道事实发生时间';
+comment on column bill_revision_record.received_at is 'provider 记录或拉取时间';
+comment on column bill_revision_record.raw_evidence is '账单行原始证据';
+comment on column bill_revision_record.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column bill_revision_record.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column bill_revision_record.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column bill_revision_record.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column bill_available_signal.id is '记录唯一标识 @Managed=identifier.uuid7;';
+comment on column bill_available_signal.version is '并发更新版本号 @Managed=version;';
+comment on column bill_available_signal.authoritative_bill_id is '所属权威账单标识 @ParentRef;';
+comment on column bill_available_signal.signal_identity is '账单可用信号稳定身份';
+comment on column bill_available_signal.announced_revision is '信号声明的账单版本';
+comment on column bill_available_signal.published_at is '信号发布时间';
+comment on column bill_available_signal.received_at is '服务端接收时间';
+comment on column bill_available_signal.fetch_attempt_count is '该信号驱动的读取尝试次数';
+comment on column bill_available_signal.diagnostic is '信号读取诊断';
+comment on column bill_available_signal.created_at is '记录创建时间 @Managed=enrichment.audit-time.created-at;';
+comment on column bill_available_signal.created_by is '记录创建者 @Managed=enrichment.audit-actor.created-by;';
+comment on column bill_available_signal.updated_at is '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;';
+comment on column bill_available_signal.updated_by is '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;';
+comment on column reconciliation_disposition.reason is '处置业务原因';
+comment on column settlement_line.decision is '候选判断：INCLUDED 或 EXCLUDED';
+comment on column settlement_line.reason_code is '稳定的纳入或排除原因代码';

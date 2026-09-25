@@ -1,20 +1,42 @@
 [
   {
     "tag": "capability",
+    "package": "merchant_notification.sender",
+    "name": "SendMerchantNotification",
+    "description": "Deliver frozen merchant notification content under a stable delivery identity",
+    "aggregates": ["MerchantNotification"],
+    "fields": [
+      { "name": "notificationId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.MerchantNotificationId" },
+      { "name": "notificationIdentity", "type": "String" },
+      { "name": "contentIdentity", "type": "String" },
+      { "name": "deliveryIdentity", "type": "String" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "sourceKind", "type": "String" },
+      { "name": "sourceFactIdentity", "type": "String" },
+      { "name": "content", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.enums.MerchantNotificationDeliveryOutcome" },
+      { "name": "diagnostic", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "capability",
     "package": "merchant_settlement.candidate",
     "name": "LoadMerchantSettlementCandidates",
     "description": "Project eligible and excluded current-effective-run facts for a merchant settlement period",
     "aggregates": ["MerchantSettlement"],
     "fields": [
       { "name": "merchantId", "type": "String" },
-      { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
       { "name": "periodStart", "type": "java.time.Instant" },
       { "name": "periodEnd", "type": "java.time.Instant" },
-      { "name": "businessTimezone", "type": "String" }
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "predecessorSettlementId", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
       { "name": "eligibleFacts", "type": "List<com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementCandidateFact>" },
+      { "name": "excludedFacts", "type": "List<com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementCandidateFact>" },
       { "name": "excludedCount", "type": "Int" },
       { "name": "blockerSummaries", "type": "List<String>" }
     ]
@@ -38,7 +60,7 @@
       { "name": "result", "type": "String" },
       { "name": "resultCode", "type": "String?" },
       { "name": "occurredAt", "type": "java.time.Instant" },
-      { "name": "verificationMaterial", "type": "String" }
+      { "name": "payload", "type": "String" }
     ],
     "resultFields": [
       { "name": "verified", "type": "Boolean" },
@@ -79,7 +101,11 @@
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
       { "name": "payload", "type": "String" },
-      { "name": "verificationMaterial", "type": "String" }
+      { "name": "paymentId", "type": "String" },
+      { "name": "paymentAttemptId", "type": "String" },
+      { "name": "channelTransactionId", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" }
     ],
     "resultFields": [
       { "name": "verified", "type": "Boolean" },
@@ -100,7 +126,7 @@
       { "name": "currency", "type": "String" }
     ],
     "resultFields": [
-      { "name": "accepted", "type": "Boolean" },
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.application.capabilities.payment.gateway.PaymentChannelSubmissionOutcome" },
       { "name": "channelReference", "type": "String?" },
       { "name": "failureCode", "type": "String?" },
       { "name": "diagnosticSummary", "type": "String?" }
@@ -129,7 +155,8 @@
       { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
       { "name": "reconciliationDate", "type": "java.time.LocalDate" },
-      { "name": "businessTimezone", "type": "String" }
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "statementIdentity", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
       { "name": "statement", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.ChannelStatement" }
@@ -161,7 +188,11 @@
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
       { "name": "payload", "type": "String" },
-      { "name": "verificationMaterial", "type": "String" }
+      { "name": "refundId", "type": "String" },
+      { "name": "refundAttemptId", "type": "String" },
+      { "name": "channelRefundId", "type": "String" },
+      { "name": "amount", "type": "Big_decimal" },
+      { "name": "currency", "type": "String" }
     ],
     "resultFields": [
       { "name": "verified", "type": "Boolean" },

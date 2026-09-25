@@ -2,6 +2,9 @@ package com.only4.cap4k.reference.payment.contract.endpoints.payment.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
+import com.only4.cap4k.reference.payment.contract.common.ChannelResultDisposition
+import com.only4.cap4k.reference.payment.contract.common.Finality
+import com.only4.cap4k.reference.payment.contract.common.Money
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -31,11 +34,7 @@ object GetPaymentEndpoint {
         /**
          * 金额
          */
-        val amount: BigDecimal,
-        /**
-         * 币种
-         */
-        val currency: String,
+        val money: Money,
         /**
          * 支付方式
          */
@@ -44,6 +43,8 @@ object GetPaymentEndpoint {
          * 状态
          */
         val status: String,
+        /** Whether normal automation may continue without an accountable review decision. */
+        val finality: Finality,
         /**
          * 创建时间
          */
@@ -68,9 +69,9 @@ object GetPaymentEndpoint {
          * 渠道交易标识
          */
         val channelTransactionId: String?,
-        val reservedRefundAmount: BigDecimal,
-        val successfulRefundAmount: BigDecimal,
-        val refundableAmount: BigDecimal,
+        /** Immutable ReferencePolicy fee snapshot captured at the first accepted success. */
+        val feeSnapshot: FeeSnapshot?,
+        val refundBudget: RefundBudget,
         /**
          * 尝试次数
          */
@@ -148,6 +149,22 @@ object GetPaymentEndpoint {
          */
         val reviews: List<PaymentReviewSummary>,
     ) {
+        data class FeeSnapshot(
+            val feeRate: BigDecimal,
+            val basisPoints: Int,
+            val fixedFeeMoney: Money,
+            val roundingMode: String,
+            val currencyPrecision: Int,
+            val calculationMoney: Money,
+            val feeMoney: Money,
+            val formedAt: Instant,
+        )
+        data class RefundBudget(
+            val originalAmount: Money,
+            val succeededAmount: Money,
+            val reservedAmount: Money,
+            val availableAmount: Money,
+        )
         data class PaymentAttemptSummary(
             /**
              * 支付尝试标识
@@ -161,6 +178,12 @@ object GetPaymentEndpoint {
              * 状态
              */
             val status: String,
+            val submissionIdentity: String?,
+            val submittedAt: Instant?,
+            val acceptedAt: Instant?,
+            val completedAt: Instant?,
+            val interactionInformation: String?,
+            val riskReason: String?,
             /**
              * 请求身份
              */
@@ -217,10 +240,20 @@ object GetPaymentEndpoint {
              * 冲突摘要
              */
             val conflictSummary: String?,
+            val submissionReceipts: List<SubmissionReceiptSummary>,
             /**
              * 通知回执列表
              */
             val notificationReceipts: List<NotificationReceiptSummary>,
+        )
+        data class SubmissionReceiptSummary(
+            val submissionIdentity: String,
+            val requestIdentity: String,
+            val channelId: String,
+            val submittedAt: Instant,
+            val outcome: String,
+            val channelReference: String?,
+            val diagnosticSummary: String?,
         )
         data class NotificationReceiptSummary(
             /**
@@ -242,11 +275,7 @@ object GetPaymentEndpoint {
             /**
              * 金额
              */
-            val amount: BigDecimal,
-            /**
-             * 币种
-             */
-            val currency: String,
+            val money: Money,
             /**
              * 结果
              */
@@ -278,7 +307,7 @@ object GetPaymentEndpoint {
             /**
              * 决策
              */
-            val decision: String,
+            val decision: ChannelResultDisposition,
             /**
              * 判定摘要
              */

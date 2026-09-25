@@ -1,0 +1,5 @@
+flowchart TD
+  N1["ReceiveAuthoritativeBillAvailableSignalCmd.Request"]
+  N2["reference-fixture.bill-available.signal [POST /api/reference-fixtures/bills/{billIdentity}/signals]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

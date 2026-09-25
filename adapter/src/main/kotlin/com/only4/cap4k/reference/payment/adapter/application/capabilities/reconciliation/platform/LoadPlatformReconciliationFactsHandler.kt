@@ -5,6 +5,7 @@ import com.only4.cap4k.ddd.core.application.capability.CapabilityHandler
 import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.platform.LoadPlatformReconciliationFacts
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.currentReviewEligibility
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentAttemptStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationTransactionKind
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.values.PlatformReconciliationFact
@@ -33,37 +34,63 @@ class LoadPlatformReconciliationFactsHandler(
         val zone = ZoneId.of(request.businessTimezone)
         val currency = request.currency.uppercase()
         val payments = entityManager.createQuery(
-            "select p from Payment p where p.status = :status and p.currency = :currency",
+            "select p from Payment p where p.status in :statuses and p.currency = :currency",
             Payment::class.java,
         )
-            .setParameter("status", PaymentStatus.SUCCEEDED)
+            .setParameter("statuses", listOf(PaymentStatus.SUCCEEDED, PaymentStatus.RESULT_UNKNOWN))
             .setParameter("currency", currency)
             .resultList
-            .mapNotNull { payment ->
-                val occurredAt = payment.succeededAt ?: return@mapNotNull null
-                if (occurredAt.toBusinessDate(zone) != request.reconciliationDate) return@mapNotNull null
-                val channelIdentity = payment.channelTransactionId?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val attempt = payment.attempts.lastOrNull {
-                    it.channelId == request.channelId && it.channelTransactionId == channelIdentity
-                } ?: return@mapNotNull null
+            .flatMap { payment ->
                 val eligibility = payment.currentReviewEligibility()
-                PlatformReconciliationFact(
-                    factIdentity = "PAYMENT:${payment.id}",
-                    transactionKind = ReconciliationTransactionKind.PAYMENT,
-                    paymentId = payment.id,
-                    paymentAttemptId = attempt.id.toString(),
-                    refundId = null,
-                    refundAttemptId = null,
-                    channelTransactionIdentity = channelIdentity,
-                    amount = payment.amount,
-                    currency = payment.currency,
-                    rawStatus = payment.status.name,
-                    occurredAt = occurredAt.toInstant(ZoneOffset.UTC),
-                    recordedAt = (payment.updatedAt ?: occurredAt).toInstant(ZoneOffset.UTC),
-                    paymentReviewIdentitySnapshot = eligibility.blockingReviewIdentities.joinToString(",").ifBlank { null },
-                    paymentReviewSummary = eligibility.blockingReviewSummaries.joinToString(" | ").ifBlank { null },
-                    settlementEligible = eligibility.settlementEligible,
-                )
+                val attempts = when (payment.status) {
+                    PaymentStatus.SUCCEEDED -> {
+                        val channelIdentity = payment.channelTransactionId?.takeIf { it.isNotBlank() }
+                            ?: return@flatMap emptyList()
+                        listOfNotNull(payment.attempts.lastOrNull {
+                            it.channelId == request.channelId && it.channelTransactionId == channelIdentity
+                        })
+                    }
+
+                    PaymentStatus.RESULT_UNKNOWN -> payment.attempts.filter {
+                        it.channelId == request.channelId &&
+                            it.status == PaymentAttemptStatus.RESULT_UNKNOWN &&
+                            !it.channelTransactionId.isNullOrBlank() &&
+                            it.resultOccurredAt != null
+                    }
+
+                    else -> emptyList()
+                }
+                attempts.mapNotNull { attempt ->
+                    val occurredAt = when (payment.status) {
+                        PaymentStatus.SUCCEEDED -> payment.succeededAt
+                        PaymentStatus.RESULT_UNKNOWN -> attempt.resultOccurredAt
+                        else -> null
+                    } ?: return@mapNotNull null
+                    if (occurredAt.toBusinessDate(zone) != request.reconciliationDate) return@mapNotNull null
+                    val channelIdentity = attempt.channelTransactionId?.takeIf { it.isNotBlank() }
+                        ?: return@mapNotNull null
+                    PlatformReconciliationFact(
+                        factIdentity = if (payment.status == PaymentStatus.SUCCEEDED) {
+                            "PAYMENT:${payment.id}"
+                        } else {
+                            "PAYMENT:${payment.id}:ATTEMPT:${attempt.id}"
+                        },
+                        transactionKind = ReconciliationTransactionKind.PAYMENT,
+                        paymentId = payment.id,
+                        paymentAttemptId = attempt.id.toString(),
+                        refundId = null,
+                        refundAttemptId = null,
+                        channelTransactionIdentity = channelIdentity,
+                        amount = payment.amount,
+                        currency = payment.currency,
+                        rawStatus = payment.status.name,
+                        occurredAt = occurredAt.toInstant(ZoneOffset.UTC),
+                        recordedAt = (payment.updatedAt ?: occurredAt).toInstant(ZoneOffset.UTC),
+                        paymentReviewIdentitySnapshot = eligibility.blockingReviewIdentities.joinToString(",").ifBlank { null },
+                        paymentReviewSummary = eligibility.blockingReviewSummaries.joinToString(" | ").ifBlank { null },
+                        settlementEligible = payment.status == PaymentStatus.SUCCEEDED && eligibility.settlementEligible,
+                    )
+                }
             }
         val refunds = entityManager.createQuery(
             "select r from Refund r where r.status in :statuses and r.currency = :currency and r.channelId = :channelId",

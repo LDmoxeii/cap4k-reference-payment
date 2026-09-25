@@ -5,6 +5,9 @@ import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefund
+import com.only4.cap4k.reference.payment.application.manual_review.ManualReviewSupport
+import com.only4.cap4k.reference.payment.application.manual_review.openRefundThresholdReview
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.enums.RefundAttemptStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.markReviewRequired
 import java.time.Instant
 import java.time.LocalDateTime
@@ -22,14 +25,21 @@ import org.springframework.stereotype.Service
 object ReviewPendingRefundsCmd {
 
     @Service
-    class Handler : CommandHandler<Request, Response> {
+    class Handler(
+        private val manualReviewSupport: ManualReviewSupport,
+    ) : CommandHandler<Request, Response> {
         /** 普通 scheduler 只把超过冻结阈值且仍无最终结果的退款送入 REVIEW_REQUIRED；预算继续占用，不自动重试退款。 */
         override fun handle(command: Request): Response {
             val now = LocalDateTime.ofInstant(command.now, ZoneOffset.UTC)
-            val reviewedCount = Mediator.repositories.find(
+            val changedRefunds = Mediator.repositories.find(
                 SRefund.predicate { schema -> schema.reservationActive eq true }
-            ).count { it.markReviewRequired(now) }
-            return Response(reviewedCount)
+            ).filter { it.markReviewRequired(now) }
+            changedRefunds.forEach { refund ->
+                refund.attempts
+                    .filter { it.status == RefundAttemptStatus.REVIEW_REQUIRED }
+                    .forEach { manualReviewSupport.openRefundThresholdReview(refund, it) }
+            }
+            return Response(changedRefunds.size)
         }
     }
 

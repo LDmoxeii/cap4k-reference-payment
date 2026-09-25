@@ -2,7 +2,8 @@ package com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
+import com.only4.cap4k.reference.payment.contract.common.Money
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import java.time.Instant
 
 /**
@@ -24,19 +25,10 @@ object ConfirmMerchantSettlementEndpoint {
         /**
          * 结算标识
          */
-        val settlementId: String,
-        /**
-         * 操作员身份
-         */
-        val operatorIdentity: String,
-        /**
-         * 操作员角色
-         */
-        val operatorRole: String,
-        /**
-         * 确认时间
-         */
-        val confirmedAt: Instant
+        val settlementId: String = "",
+        val idempotencyKey: String,
+        val reason: String,
+        val evidence: String,
     ) : EndpointRequest<Response>
 
     data class Response(
@@ -51,7 +43,12 @@ object ConfirmMerchantSettlementEndpoint {
         /**
          * 净金额
          */
-        val netAmount: BigDecimal
+        val netMoney: Money,
+        val actorId: String,
+        val confirmedAt: Instant,
+        val reason: String,
+        val evidence: String,
+        val receipt: OperationReceipt,
     )
 
 }

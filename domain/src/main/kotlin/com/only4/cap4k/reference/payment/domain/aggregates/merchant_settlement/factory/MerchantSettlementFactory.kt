@@ -38,7 +38,7 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
     override fun create(entityPayload: Payload): MerchantSettlement =
         MerchantSettlement(
             merchantId = entityPayload.merchantId,
-            channelId = entityPayload.channelId,
+            executionChannelId = entityPayload.executionChannelId,
             currency = entityPayload.currency,
             periodType = entityPayload.periodType,
             periodStart = entityPayload.periodStart,
@@ -61,8 +61,11 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
             replacementSettlementId = entityPayload.replacementSettlementId,
             confirmedBy = entityPayload.confirmedBy,
             confirmedAt = entityPayload.confirmedAt,
+            confirmedReason = entityPayload.confirmedReason,
+            confirmedEvidence = entityPayload.confirmedEvidence,
             voidedBy = entityPayload.voidedBy,
             voidReason = entityPayload.voidReason,
+            voidEvidence = entityPayload.voidEvidence,
             voidedAt = entityPayload.voidedAt,
             settledFactFormed = entityPayload.settledFactFormed,
             externalSettlementIdentity = entityPayload.externalSettlementIdentity,
@@ -140,6 +143,8 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
             sourceKind = creation.sourceKind,
             transactionKind = creation.transactionKind,
             sourceFactIdentity = creation.sourceFactIdentity,
+            decision = creation.decision,
+            reasonCode = creation.reasonCode,
             effectiveConsumptionIdentity = creation.effectiveConsumptionIdentity,
             feeFactIdentity = creation.feeFactIdentity,
             paymentId = creation.paymentId,
@@ -171,7 +176,10 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
 
     data class Payload(
         val merchantId: String,
-        val channelId: String,
+        /**
+         * 可选的结算执行渠道快照；它不是结算范围的一部分。
+         */
+        val executionChannelId: String? = null,
         val currency: String,
         val periodType: String = "DAILY",
         val periodStart: LocalDateTime,
@@ -194,8 +202,11 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
         val replacementSettlementId: MerchantSettlementId?,
         val confirmedBy: String?,
         val confirmedAt: LocalDateTime?,
+        val confirmedReason: String? = null,
+        val confirmedEvidence: String? = null,
         val voidedBy: String?,
         val voidReason: String?,
+        val voidEvidence: String? = null,
         val voidedAt: LocalDateTime?,
         val settledFactFormed: Boolean = false,
         val externalSettlementIdentity: String?,

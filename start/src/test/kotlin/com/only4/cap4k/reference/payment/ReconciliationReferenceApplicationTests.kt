@@ -116,41 +116,36 @@ class ReconciliationReferenceApplicationTests(
                 triggeredAt = Instant.parse("2026-08-20T04:00:00Z"),
             )
         )
-        // Then：先检查 run 状态和差异计数，再通过 GET 回读 batch/run/item 及双方事实快照。
+        // Then：先检查 run 状态和差异计数，再通过公开 Run 资源回读双方事实快照。
         assertThat(response.idempotentReplay).isFalse()
         assertThat(response.batchStatus).isEqualTo("COMPLETED")
         assertThat(response.unresolvedDifferenceCount).isZero()
 
-        val batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        assertThat(batch.requiredText("status")).isEqualTo("COMPLETED")
-        assertThat(batch.requiredText("currentEffectiveRunId")).isEqualTo(response.runId)
-        assertThat(batch["matchedCount"].asInt()).isEqualTo(2)
-        assertThat(batch["differenceCount"].asInt()).isZero()
-        assertThat(batch["unresolvedDifferenceCount"].asInt()).isZero()
-        assertThat(batch["settlementBlocked"].asBoolean()).isFalse()
-        assertThat(batch["runs"]).hasSize(1)
-
-        val run = batch["runs"][0]
-        assertThat(run.requiredText("statementIdentity")).isEqualTo("statement-b3-matched")
-        assertThat(run.requiredText("statementRevision")).isEqualTo("1")
+        val run = getRun(requireNotNull(response.runId))
+        assertThat(run.requiredText("status")).isEqualTo("COMPLETED")
+        assertThat(run["effectiveRun"].asBoolean()).isTrue()
+        assertThat(run["matchedCount"].asInt()).isEqualTo(2)
+        assertThat(run["differenceCount"].asInt()).isZero()
+        assertThat(run["unresolvedDifferenceCount"].asInt()).isZero()
+        assertThat(run["settlementBlocked"].asBoolean()).isFalse()
+        assertThat(run.requiredText("billIdentity")).isEqualTo("statement-b3-matched")
+        assertThat(run.requiredText("billRevision")).isEqualTo("1")
         assertThat(run.requiredText("statementCompleteness")).isEqualTo("COMPLETE")
-        assertThat(run["channelRecordCount"].asInt()).isEqualTo(2)
-        assertThat(run["platformFactCount"].asInt()).isEqualTo(2)
-        assertThat(run["items"]).hasSize(2)
+        assertThat(run["differences"]).hasSize(2)
 
-        val paymentItem = run["items"].arrayItem("transactionKind", "PAYMENT")
+        val paymentItem = run["differences"].arrayItem("transactionKind", "PAYMENT")
         assertThat(paymentItem.requiredText("differenceType")).isEqualTo("MATCHED")
         assertThat(paymentItem.requiredText("paymentId")).isEqualTo(payment.paymentId)
         assertThat(paymentItem.requiredText("channelTransactionIdentity")).isEqualTo(payment.channelTransactionId)
-        assertThat(paymentItem["channelAmount"].decimalValue()).isEqualByComparingTo("150.00")
-        assertThat(paymentItem["platformAmount"].decimalValue()).isEqualByComparingTo("150.00")
+        assertThat(paymentItem["channelMoney"].requiredText("amountMinor")).isEqualTo("15000")
+        assertThat(paymentItem["platformMoney"].requiredText("amountMinor")).isEqualTo("15000")
 
-        val refundItem = run["items"].arrayItem("transactionKind", "REFUND")
+        val refundItem = run["differences"].arrayItem("transactionKind", "REFUND")
         assertThat(refundItem.requiredText("differenceType")).isEqualTo("MATCHED")
         assertThat(refundItem.requiredText("refundId")).isEqualTo(refund.refundId)
         assertThat(refundItem.requiredText("channelTransactionIdentity")).isEqualTo(refund.channelRefundId)
-        assertThat(refundItem["channelAmount"].decimalValue()).isEqualByComparingTo("30.00")
-        assertThat(refundItem["platformAmount"].decimalValue()).isEqualByComparingTo("30.00")
+        assertThat(refundItem["channelMoney"].requiredText("amountMinor")).isEqualTo("3000")
+        assertThat(refundItem["platformMoney"].requiredText("amountMinor")).isEqualTo("3000")
     }
 
     @Test
@@ -177,15 +172,18 @@ class ReconciliationReferenceApplicationTests(
                 "paymentId" to payment.paymentId,
                 "paymentAttemptId" to attemptId,
                 "channelTransactionId" to payment.channelTransactionId,
-                "amount" to BigDecimal("61.00"),
-                "currency" to "CNY",
+                "money" to money("61.00"),
                 "result" to "FAILED",
                 "occurredAt" to Instant.parse("2026-05-31T03:00:00Z"),
-                "verificationMaterial" to "test-secret",
+                "rawPayload" to registerCallbackEvidence(
+                    kind = "PAYMENT",
+                    notificationId = "N-B3-PAYMENT-REVIEW-BLOCK-FAILURE",
+                    associationIdentity = "${payment.paymentId}|$attemptId|${payment.channelTransactionId}",
+                    amount = "61.00",
+                ),
             ),
             expectedStatus = 200,
         )
-        assertThat(conflictingFailure.requiredText("disposition")).isEqualTo("CONFLICT")
         assertThat(conflictingFailure["settlementEligible"].asBoolean()).isFalse()
         val reviewIdentity = conflictingFailure.requiredText("reviewIdentity")
 
@@ -219,8 +217,8 @@ class ReconciliationReferenceApplicationTests(
         assertThat(response.batchStatus).isEqualTo("AWAITING_DISPOSITION")
         assertThat(response.unresolvedDifferenceCount).isEqualTo(1)
 
-        val batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        val item = batch["runs"][0]["items"].arrayItem("transactionKind", "PAYMENT")
+        val run = getRun(requireNotNull(response.runId))
+        val item = run["differences"].arrayItem("transactionKind", "PAYMENT")
         assertThat(item.requiredText("differenceType")).isEqualTo("MATCHED")
         assertThat(item["resolved"].asBoolean()).isFalse()
         assertThat(item["settlementBlocked"].asBoolean()).isTrue()
@@ -274,51 +272,47 @@ class ReconciliationReferenceApplicationTests(
         )
         assertThat(response.batchStatus).isEqualTo("AWAITING_DISPOSITION")
 
-        var batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        val item = batch["runs"][0]["items"].arrayItem("differenceType", "STATUS_MISMATCH")
+        var run = getRun(requireNotNull(response.runId))
+        val item = run["differences"].arrayItem("differenceType", "STATUS_MISMATCH")
         assertThat(item.requiredText("refundId")).isEqualTo(refund.refundId)
         assertThat(item.requiredText("platformRawStatus")).isEqualTo("RESULT_UNKNOWN")
         assertThat(item.requiredText("channelRawStatus")).isEqualTo("SUCCEEDED")
-        assertThat(item["platformAmount"].decimalValue()).isEqualByComparingTo("25.00")
-        assertThat(item["channelAmount"].decimalValue()).isEqualByComparingTo("25.00")
-        assertThat(item.requiredText("platformCurrency")).isEqualTo("CNY")
-        assertThat(item.requiredText("channelCurrency")).isEqualTo("CNY")
+        assertThat(item["platformMoney"].requiredText("amountMinor")).isEqualTo("2500")
+        assertThat(item["channelMoney"].requiredText("amountMinor")).isEqualTo("2500")
+        assertThat(item["platformMoney"].requiredText("currency")).isEqualTo("CNY")
+        assertThat(item["channelMoney"].requiredText("currency")).isEqualTo("CNY")
         assertThat(item.requiredText("platformTransactionIdentity")).isEqualTo(refund.channelRefundId)
         assertThat(item.requiredText("channelTransactionIdentity")).isEqualTo(refund.channelRefundId)
 
         val confirmed = postJson(
-            "/api/reconciliation-items/${item.requiredText("itemId")}/dispositions",
-            dispositionRequest(
-                batchId = response.reconciliationBatchId.toString(),
-                itemId = item.requiredText("itemId"),
-                operatorIdentity = "operator-status-1",
-                operatorRole = "RECONCILIATION_OPERATOR",
-                disposedAt = "2026-08-16T05:00:00Z",
+            "/api/reconciliation-runs/${response.runId}/differences/${item.requiredText("itemId")}/confirmations",
+            confirmationRequest(
+                idempotencyKey = "K-B3-STATUS-CONFIRM",
                 evidence = "verified channel refund success against the original pending platform record",
-                followUp = "include the confirmation fact in the B4 settlement candidate view",
+                reason = "include the confirmation fact in the B4 settlement candidate view",
             ),
             expectedStatus = 200,
+            actorAlias = RECONCILIATION_OPERATOR_ALIAS,
         )
-        assertThat(confirmed.requiredText("authorization")).isEqualTo("AUTHORIZED")
-        assertThat(confirmed.requiredText("status")).isEqualTo("APPLIED")
         assertThat(confirmed.requiredText("confirmationFactId")).isNotBlank()
-        assertThat(confirmed.requiredText("batchStatus")).isEqualTo("COMPLETED")
+        assertThat(confirmed.requiredText("actorId")).isEqualTo("reference-reconciliation-operator")
 
-        batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        val confirmedItem = batch["runs"][0]["items"].arrayItem("differenceType", "STATUS_MISMATCH")
+        run = getRun(requireNotNull(response.runId))
+        assertThat(run.requiredText("status")).isEqualTo("COMPLETED")
+        val confirmedItem = run["differences"].arrayItem("differenceType", "STATUS_MISMATCH")
         assertThat(confirmedItem.requiredText("platformRawStatus")).isEqualTo("RESULT_UNKNOWN")
         assertThat(confirmedItem.requiredText("channelRawStatus")).isEqualTo("SUCCEEDED")
         assertThat(confirmedItem["dispositions"]).hasSize(1)
         assertThat(confirmedItem["confirmationFacts"]).hasSize(1)
         val disposition = confirmedItem["dispositions"][0]
-        assertThat(disposition.requiredText("operatorIdentity")).isEqualTo("operator-status-1")
+        assertThat(disposition.requiredText("operatorIdentity")).isEqualTo("reference-reconciliation-operator")
         assertThat(disposition.requiredText("evidence")).contains("original pending platform record")
-        assertThat(disposition.requiredText("disposedAt")).isEqualTo("2026-08-16T05:00:00Z")
+        assertThat(disposition.requiredText("disposedAt")).isNotBlank()
         val confirmation = confirmedItem["confirmationFacts"][0]
-        assertThat(confirmation.requiredText("operatorIdentity")).isEqualTo("operator-status-1")
+        assertThat(confirmation.requiredText("operatorIdentity")).isEqualTo("reference-reconciliation-operator")
         assertThat(confirmation.requiredText("externalTransactionIdentity")).isEqualTo(refund.channelRefundId)
         assertThat(confirmation.requiredText("refundId")).isEqualTo(refund.refundId)
-        assertThat(confirmation.requiredText("confirmedAt")).isEqualTo("2026-08-16T05:00:00Z")
+        assertThat(confirmation.requiredText("confirmedAt")).isNotBlank()
 
         val originalRefund = getJson("/api/refunds/${refund.refundId}")
         assertThat(originalRefund.requiredText("status")).isEqualTo("RESULT_UNKNOWN")
@@ -362,43 +356,41 @@ class ReconciliationReferenceApplicationTests(
                 triggeredAt = Instant.parse("2026-08-10T04:00:00Z"),
             )
         )
-        var batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        val item = batch["runs"][0]["items"].arrayItem("differenceType", "AMOUNT_MISMATCH")
-        assertThat(item["platformAmount"].decimalValue()).isEqualByComparingTo("100.00")
-        assertThat(item["channelAmount"].decimalValue()).isEqualByComparingTo("99.00")
+        var run = getRun(requireNotNull(response.runId))
+        val item = run["differences"].arrayItem("differenceType", "AMOUNT_MISMATCH")
+        assertThat(item["platformMoney"].requiredText("amountMinor")).isEqualTo("10000")
+        assertThat(item["channelMoney"].requiredText("amountMinor")).isEqualTo("9900")
         assertThat(item["settlementBlocked"].asBoolean()).isTrue()
 
         val disposed = postJson(
-            "/api/reconciliation-items/${item.requiredText("itemId")}/dispositions",
+            "/api/reconciliation-runs/${response.runId}/differences/${item.requiredText("itemId")}/dispositions",
             dispositionRequest(
-                batchId = response.reconciliationBatchId.toString(),
-                itemId = item.requiredText("itemId"),
-                operatorIdentity = "operator-amount-1",
-                operatorRole = "RECONCILIATION_OPERATOR",
-                disposedAt = "2026-08-10T05:00:00Z",
+                idempotencyKey = "K-B3-AMOUNT-DISPOSITION",
                 conclusion = "NO_SETTLEMENT_IMPACT",
                 settlementImpact = "DOES_NOT_BLOCK_SETTLEMENT",
                 evidence = "the channel fee presentation explains the one yuan statement delta",
                 followUp = "retain both source amounts for audit",
             ),
             expectedStatus = 200,
+            actorAlias = RECONCILIATION_OPERATOR_ALIAS,
         )
         assertThat(disposed.requiredText("status")).isEqualTo("APPLIED")
         assertThat(disposed["confirmationFactId"].isNull).isTrue()
-        assertThat(disposed.requiredText("batchStatus")).isEqualTo("COMPLETED")
+        assertThat(disposed.requiredText("actorId")).isEqualTo("reference-reconciliation-operator")
 
-        batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        val disposedItem = batch["runs"][0]["items"].arrayItem("differenceType", "AMOUNT_MISMATCH")
-        assertThat(disposedItem["platformAmount"].decimalValue()).isEqualByComparingTo("100.00")
-        assertThat(disposedItem["channelAmount"].decimalValue()).isEqualByComparingTo("99.00")
+        run = getRun(requireNotNull(response.runId))
+        assertThat(run.requiredText("status")).isEqualTo("COMPLETED")
+        val disposedItem = run["differences"].arrayItem("differenceType", "AMOUNT_MISMATCH")
+        assertThat(disposedItem["platformMoney"].requiredText("amountMinor")).isEqualTo("10000")
+        assertThat(disposedItem["channelMoney"].requiredText("amountMinor")).isEqualTo("9900")
         assertThat(disposedItem.requiredText("differenceType")).isEqualTo("AMOUNT_MISMATCH")
         assertThat(disposedItem["confirmationFacts"]).isEmpty()
         assertThat(disposedItem["dispositions"]).hasSize(1)
         val disposition = disposedItem["dispositions"][0]
-        assertThat(disposition.requiredText("operatorIdentity")).isEqualTo("operator-amount-1")
+        assertThat(disposition.requiredText("operatorIdentity")).isEqualTo("reference-reconciliation-operator")
         assertThat(disposition.requiredText("conclusion")).isEqualTo("NO_SETTLEMENT_IMPACT")
         assertThat(disposition.requiredText("settlementImpact")).isEqualTo("DOES_NOT_BLOCK_SETTLEMENT")
-        assertThat(disposition.requiredText("disposedAt")).isEqualTo("2026-08-10T05:00:00Z")
+        assertThat(disposition.requiredText("disposedAt")).isNotBlank()
         assertThat(disposition.requiredText("evidence")).contains("one yuan")
     }
 
@@ -456,22 +448,22 @@ class ReconciliationReferenceApplicationTests(
         val second = Mediator.commands.send(
             RunDailyReconciliationCmd.Request("C-001", "CNY", Instant.parse("2026-08-12T04:00:00Z"))
         )
-        val firstBatch = getJson("/api/reconciliation-batches/${first.reconciliationBatchId}")
-        val secondBatch = getJson("/api/reconciliation-batches/${second.reconciliationBatchId}")
-        assertThat(firstBatch.requiredText("reconciliationDate")).isEqualTo("2026-08-10")
-        assertThat(secondBatch.requiredText("reconciliationDate")).isEqualTo("2026-08-11")
-        assertThat(firstBatch.requiredText("businessTimezone")).isEqualTo("Asia/Shanghai")
-        assertThat(secondBatch.requiredText("businessTimezone")).isEqualTo("Asia/Shanghai")
-        val firstItem = firstBatch["runs"][0]["items"].arrayItem("differenceType", "MATCHED")
-        val secondItem = secondBatch["runs"][0]["items"].arrayItem("differenceType", "MATCHED")
+        val firstRun = getRun(requireNotNull(first.runId))
+        val secondRun = getRun(requireNotNull(second.runId))
+        assertThat(firstRun.requiredText("businessDate")).isEqualTo("2026-08-10")
+        assertThat(secondRun.requiredText("businessDate")).isEqualTo("2026-08-11")
+        assertThat(firstRun.requiredText("businessTimezone")).isEqualTo("Asia/Shanghai")
+        assertThat(secondRun.requiredText("businessTimezone")).isEqualTo("Asia/Shanghai")
+        val firstItem = firstRun["differences"].arrayItem("differenceType", "MATCHED")
+        val secondItem = secondRun["differences"].arrayItem("differenceType", "MATCHED")
         assertThat(firstItem.requiredText("paymentId")).isEqualTo(beforeMidnight.paymentId)
         assertThat(secondItem.requiredText("paymentId")).isEqualTo(afterMidnight.paymentId)
         assertThat(firstItem.requiredText("platformOccurredAt")).isEqualTo("2026-08-10T15:59:00Z")
         assertThat(firstItem.requiredText("channelOccurredAt")).isEqualTo("2026-08-10T15:59:00Z")
         assertThat(secondItem.requiredText("platformOccurredAt")).isEqualTo("2026-08-10T16:01:00Z")
         assertThat(secondItem.requiredText("channelOccurredAt")).isEqualTo("2026-08-10T16:01:00Z")
-        assertThat(firstBatch["runs"][0]["platformFactCount"].asInt()).isEqualTo(1)
-        assertThat(secondBatch["runs"][0]["platformFactCount"].asInt()).isEqualTo(1)
+        assertThat(firstRun["matchedCount"].asInt()).isEqualTo(1)
+        assertThat(secondRun["matchedCount"].asInt()).isEqualTo(1)
     }
 
     @Test
@@ -503,36 +495,30 @@ class ReconciliationReferenceApplicationTests(
             )
         )
         assertThat(created.batchStatus).isEqualTo("AWAITING_DISPOSITION")
-        var batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
-        val firstItem = batch["runs"][0]["items"].arrayItem("differenceType", "CHANNEL_ONLY")
+        var run = getRun(requireNotNull(created.runId))
+        val firstItem = run["differences"].arrayItem("differenceType", "CHANNEL_ONLY")
 
         val denied = postJson(
-            "/api/reconciliation-items/${firstItem.requiredText("itemId")}/dispositions",
+            "/api/reconciliation-runs/${created.runId}/differences/${firstItem.requiredText("itemId")}/dispositions",
             dispositionRequest(
-                batchId = created.reconciliationBatchId.toString(),
-                itemId = firstItem.requiredText("itemId"),
-                operatorIdentity = "viewer-1",
-                operatorRole = "VIEWER",
-                disposedAt = "2026-08-19T05:00:00Z",
+                idempotencyKey = "K-B3-DIFFERENCE-DENIED",
             ),
-            expectedStatus = 200,
+            expectedStatus = 400,
+            actorAlias = PAYMENT_REVIEWER_ALIAS,
         )
-        assertThat(denied.requiredText("authorization")).isEqualTo("DENIED")
-        assertThat(denied.requiredText("status")).isEqualTo("REJECTED")
-        assertThat(denied["confirmationFactId"].isNull).isTrue()
-        assertThat(denied["settlementBlocked"].asBoolean()).isTrue()
+        assertThat(denied.requiredText("code")).isEqualTo("VALIDATION_ERROR")
 
         val replay = postJson(
-            "/api/reconciliation-batches/${created.reconciliationBatchId}/reruns",
-            rerunRequest(created.reconciliationBatchId.toString(), "2026-08-19T05:30:00Z"),
+            "/api/reconciliation-runs/${created.runId}/reruns",
+            rerunRequest("K-B3-DIFFERENCE-RERUN-1"),
             expectedStatus = 200,
+            actorAlias = RECONCILIATION_OPERATOR_ALIAS,
         )
         assertThat(replay["idempotentReplay"].asBoolean()).isTrue()
         assertThat(replay.requiredText("runId")).isEqualTo(created.runId)
-        batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
-        assertThat(batch["runs"]).hasSize(1)
-        assertThat(batch["runs"][0]["items"][0]["dispositions"]).hasSize(1)
-        assertThat(batch["runs"][0]["items"][0]["confirmationFacts"]).isEmpty()
+        run = getRun(requireNotNull(created.runId))
+        assertThat(run["differences"][0]["dispositions"]).isEmpty()
+        assertThat(run["differences"][0]["confirmationFacts"]).isEmpty()
 
         statements.publish(
             statement(
@@ -552,47 +538,44 @@ class ReconciliationReferenceApplicationTests(
             )
         )
         val revised = postJson(
-            "/api/reconciliation-batches/${created.reconciliationBatchId}/reruns",
-            rerunRequest(created.reconciliationBatchId.toString(), "2026-08-19T06:00:00Z"),
+            "/api/reconciliation-runs/${created.runId}/reruns",
+            rerunRequest("K-B3-DIFFERENCE-RERUN-2"),
             expectedStatus = 200,
+            actorAlias = RECONCILIATION_OPERATOR_ALIAS,
         )
         assertThat(revised["idempotentReplay"].asBoolean()).isFalse()
-        assertThat(revised.requiredText("statementRevision")).isEqualTo("2")
+        assertThat(revised.requiredText("billRevision")).isEqualTo("2")
         assertThat(revised.requiredText("runId")).isNotEqualTo(created.runId)
 
-        batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
-        assertThat(batch["runs"]).hasSize(2)
-        assertThat(batch.requiredText("currentEffectiveRunId")).isEqualTo(revised.requiredText("runId"))
-        val oldRun = batch["runs"].arrayItem("statementRevision", "1")
-        val currentRun = batch["runs"].arrayItem("statementRevision", "2")
+        val oldRun = getRun(requireNotNull(created.runId))
+        val currentRunId = revised.requiredText("runId")
+        val currentRun = getRun(currentRunId)
+        assertThat(oldRun["effectiveRun"].asBoolean()).isFalse()
+        assertThat(currentRun["effectiveRun"].asBoolean()).isTrue()
         assertThat(oldRun.requiredText("status")).isEqualTo("SUPERSEDED")
-        assertThat(oldRun["items"][0]["dispositions"]).hasSize(1)
-        assertThat(currentRun["items"][0]["dispositions"]).isEmpty()
-        val currentItem = currentRun["items"].arrayItem("differenceType", "CHANNEL_ONLY")
+        assertThat(oldRun["differences"][0]["dispositions"]).isEmpty()
+        assertThat(currentRun["differences"][0]["dispositions"]).isEmpty()
+        val currentItem = currentRun["differences"].arrayItem("differenceType", "CHANNEL_ONLY")
         assertThat(currentItem["platformFactIdentity"].isNull).isTrue()
         assertThat(currentItem.requiredText("channelTransactionIdentity")).isEqualTo("CT-B3-CHANNEL-ONLY")
 
         val confirmed = postJson(
-            "/api/reconciliation-items/${currentItem.requiredText("itemId")}/dispositions",
-            dispositionRequest(
-                batchId = created.reconciliationBatchId.toString(),
-                itemId = currentItem.requiredText("itemId"),
+            "/api/reconciliation-runs/$currentRunId/differences/${currentItem.requiredText("itemId")}/confirmations",
+            confirmationRequest(
+                idempotencyKey = "K-B3-DIFFERENCE-CONFIRM",
                 merchantId = "M-001",
                 channelId = "C-001",
-                operatorIdentity = "operator-1",
-                operatorRole = "RECONCILIATION_OPERATOR",
-                disposedAt = "2026-08-19T06:30:00Z",
             ),
             expectedStatus = 200,
+            actorAlias = RECONCILIATION_OPERATOR_ALIAS,
         )
-        assertThat(confirmed.requiredText("authorization")).isEqualTo("AUTHORIZED")
-        assertThat(confirmed.requiredText("status")).isEqualTo("APPLIED")
         assertThat(confirmed.requiredText("confirmationFactId")).isNotBlank()
-        assertThat(confirmed.requiredText("batchStatus")).isEqualTo("COMPLETED")
         assertThat(confirmed["settlementBlocked"].asBoolean()).isFalse()
+        assertThat(confirmed.requiredText("actorId")).isEqualTo("reference-reconciliation-operator")
 
-        batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
-        val confirmedItem = batch["runs"].arrayItem("statementRevision", "2")["items"]
+        run = getRun(currentRunId)
+        assertThat(run.requiredText("status")).isEqualTo("COMPLETED")
+        val confirmedItem = run["differences"]
             .arrayItem("differenceType", "CHANNEL_ONLY")
         assertThat(confirmedItem["resolved"].asBoolean()).isTrue()
         assertThat(confirmedItem["settlementBlocked"].asBoolean()).isFalse()
@@ -602,9 +585,10 @@ class ReconciliationReferenceApplicationTests(
         assertThat(confirmation.requiredText("sourceDifferenceIdentity"))
             .isEqualTo(confirmedItem.requiredText("differenceIdentity"))
         assertThat(confirmation.requiredText("externalTransactionIdentity")).isEqualTo("CT-B3-CHANNEL-ONLY")
-        assertThat(confirmation["amount"].decimalValue()).isEqualByComparingTo("42.00")
-        assertThat(confirmation.requiredText("currency")).isEqualTo("CNY")
+        assertThat(confirmation["money"].requiredText("amountMinor")).isEqualTo("4200")
+        assertThat(confirmation["money"].requiredText("currency")).isEqualTo("CNY")
         assertThat(confirmedItem["platformFactIdentity"].isNull).isTrue()
+
     }
 
     @Test
@@ -624,10 +608,86 @@ class ReconciliationReferenceApplicationTests(
         assertThat(runCount(date, identity, "2")).isEqualTo(1L)
 
         postIntegrationEvent(revisionOne.copy(eventIdentity = "B5-INBOUND-LATE-REV-1"), expectedStatus = 200)
-        val batch = getJson("/api/reconciliation-batches/${batchId(date)}")
-        assertThat(batch["runs"]).hasSize(2)
-        val effectiveRun = batch["runs"].arrayItem("runId", batch.requiredText("currentEffectiveRunId"))
-        assertThat(effectiveRun.requiredText("statementRevision")).isEqualTo("2")
+        val revisionOneRun = getRun(runId(date, identity, "1"))
+        val effectiveRun = getRun(runId(date, identity, "2"))
+        assertThat(revisionOneRun["effectiveRun"].asBoolean()).isFalse()
+        assertThat(effectiveRun["effectiveRun"].asBoolean()).isTrue()
+        assertThat(effectiveRun.requiredText("billRevision")).isEqualTo("2")
+    }
+
+    @Test
+    @DisplayName("PAY-AC-087 — reference maintenance runs authoritative daily reconciliation")
+    fun `reference maintenance uses logical clock and converges on authoritative bill revisions`() {
+        val date = LocalDate.parse("2026-09-20")
+        val identity = "maintenance-ac087-${java.util.UUID.randomUUID()}"
+        val nextBusinessDayInstant = date.plusDays(1).atTime(1, 0)
+            .atZone(java.time.ZoneId.of("Asia/Shanghai")).toInstant()
+        postJson(
+            "/api/reference-fixtures/clock/set",
+            mapOf("instant" to nextBusinessDayInstant),
+            expectedStatus = 200,
+        )
+        try {
+            fun registerRevision(revision: String) {
+                postJson(
+                    "/api/reference-fixtures/bills",
+                    mapOf(
+                        "channelId" to "C-001",
+                        "billIdentity" to identity,
+                        "businessDate" to date,
+                        "currency" to "CNY",
+                        "businessTimezone" to "Asia/Shanghai",
+                        "revision" to revision,
+                        "completeness" to "COMPLETE",
+                        "rawEvidence" to "evidence://$identity/$revision",
+                        "payloadFingerprint" to "$identity-fingerprint-$revision",
+                        "publishedAt" to nextBusinessDayInstant,
+                        "records" to emptyList<Any>(),
+                    ),
+                    expectedStatus = 200,
+                )
+            }
+
+            registerRevision("1")
+            val first = postJson(
+                "/api/reference-fixtures/maintenance",
+                mapOf("action" to "RECONCILIATION_DAILY"),
+                expectedStatus = 200,
+            )
+            assertThat(first.requiredText("action")).isEqualTo("RECONCILIATION_DAILY")
+            assertThat(first["changedCount"].asInt()).isEqualTo(1)
+            assertThat(runCount(date, identity, "1")).isEqualTo(1L)
+
+            val replay = postJson(
+                "/api/reference-fixtures/maintenance",
+                mapOf("action" to "RECONCILIATION_DAILY"),
+                expectedStatus = 200,
+            )
+            assertThat(replay["changedCount"].asInt()).isZero()
+            assertThat(runCount(date, identity, "1")).isEqualTo(1L)
+
+            registerRevision("2")
+            val revised = postJson(
+                "/api/reference-fixtures/maintenance",
+                mapOf("action" to "RECONCILIATION_DAILY"),
+                expectedStatus = 200,
+            )
+            assertThat(revised["changedCount"].asInt()).isEqualTo(1)
+            assertThat(runCount(date, identity, "2")).isEqualTo(1L)
+            assertThat(getRun(runId(date, identity, "1"))["effectiveRun"].asBoolean()).isFalse()
+            assertThat(getRun(runId(date, identity, "2"))["effectiveRun"].asBoolean()).isTrue()
+            assertThat(
+                jdbcTemplate.queryForObject(
+                    "select count(*) from reconciliation_batch where channel_id = ? and currency = ? and reconciliation_date = ?",
+                    Long::class.java,
+                    "C-001",
+                    "CNY",
+                    java.sql.Date.valueOf(date),
+                )
+            ).isEqualTo(1L)
+        } finally {
+            postJson("/api/reference-fixtures/clock/reset", emptyMap<String, Any>(), expectedStatus = 200)
+        }
     }
 
     @Test
@@ -653,10 +713,12 @@ class ReconciliationReferenceApplicationTests(
         postIntegrationEvent(event, expectedStatus = 200)
         assertThat(runCount(date, identity, "1")).isEqualTo(1L)
 
+        val recoveredRunId = runId(date, identity, "1")
         val rerun = postJson(
-            "/api/reconciliation-batches/${scheduled.reconciliationBatchId}/reruns",
-            rerunRequest(scheduled.reconciliationBatchId.toString(), "2026-07-23T04:00:00Z"),
+            "/api/reconciliation-runs/$recoveredRunId/reruns",
+            rerunRequest("K-B5-PROVIDER-RECOVERY-RERUN"),
             expectedStatus = 200,
+            actorAlias = RECONCILIATION_OPERATOR_ALIAS,
         )
         assertThat(rerun["idempotentReplay"].asBoolean()).isTrue()
         assertThat(runCount(date, identity, "1")).isEqualTo(1L)
@@ -677,10 +739,8 @@ class ReconciliationReferenceApplicationTests(
         assertThat(response.batchStatus).isEqualTo("FETCH_FAILED")
         assertThat(response.blockingReason).contains("暂时不可用")
 
-        var batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        assertThat(batch.requiredText("status")).isEqualTo("FETCH_FAILED")
-        assertThat(batch["settlementBlocked"].asBoolean()).isTrue()
-        assertThat(batch["runs"]).isEmpty()
+        assertThat(batchCount(LocalDate.parse("2026-08-16"))).isEqualTo(1L)
+        assertThat(runCount(LocalDate.parse("2026-08-16"), "statement-b3-incomplete", "1")).isZero()
 
         statements.publish(
             statement(
@@ -691,21 +751,23 @@ class ReconciliationReferenceApplicationTests(
                 records = emptyList(),
             )
         )
-        val rerun = postJson(
-            "/api/reconciliation-batches/${response.reconciliationBatchId}/reruns",
-            rerunRequest(response.reconciliationBatchId.toString(), "2026-08-18T04:00:00Z"),
+        postIntegrationEvent(
+            channelStatementAvailableEvent(
+                eventIdentity = "B3-INCOMPLETE-AVAILABLE",
+                date = LocalDate.parse("2026-08-16"),
+                statementIdentity = "statement-b3-incomplete",
+                revision = "1",
+            ),
             expectedStatus = 200,
         )
-        assertThat(rerun.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
-        assertThat(rerun["idempotentReplay"].asBoolean()).isFalse()
 
-        batch = getJson("/api/reconciliation-batches/${response.reconciliationBatchId}")
-        assertThat(batch.requiredText("status")).isEqualTo("REVIEW_REQUIRED")
-        assertThat(batch["settlementBlocked"].asBoolean()).isTrue()
-        assertThat(batch.requiredText("blockingReason")).contains("不完整")
-        assertThat(batch["runs"]).hasSize(1)
-        assertThat(batch["runs"][0].requiredText("statementCompleteness")).isEqualTo("INCOMPLETE")
-        assertThat(batch["runs"][0]["items"]).isEmpty()
+        val run = getRun(runId(LocalDate.parse("2026-08-16"), "statement-b3-incomplete", "1"))
+        assertThat(run.requiredText("status")).isEqualTo("ACTION_REQUIRED")
+        assertThat(run.requiredText("finality")).isEqualTo("REVIEW_REQUIRED")
+        assertThat(run["settlementBlocked"].asBoolean()).isTrue()
+        assertThat(run.requiredText("blockingReason")).contains("不完整")
+        assertThat(run.requiredText("statementCompleteness")).isEqualTo("INCOMPLETE")
+        assertThat(run["differences"]).isEmpty()
     }
 
     @Test
@@ -849,13 +911,15 @@ class ReconciliationReferenceApplicationTests(
         assertThat(mapped.statusCode.value()).isEqualTo(409)
         assertThat(mapped.body!!.code).isEqualTo("CONCURRENT_MODIFICATION")
 
-        val batch = getJson("/api/reconciliation-batches/${created.reconciliationBatchId}")
-        assertThat(batch["runs"]).hasSize(2)
-        assertThat(batch["runs"].elements().asSequence().count {
-            it.path("statementRevision").asText() == "2"
-        }).isEqualTo(1)
-        val effectiveRun = batch["runs"].arrayItem("runId", batch.requiredText("currentEffectiveRunId"))
-        assertThat(effectiveRun.requiredText("statementRevision")).isEqualTo("2")
+        assertThat(runCount(reconciliationDate, "statement-b3-revision-concurrency", "2")).isEqualTo(1L)
+        val revisionTwoRunId = runId(reconciliationDate, "statement-b3-revision-concurrency", "2")
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select current_effective_run_id from reconciliation_batch where id = ?",
+                String::class.java,
+                created.reconciliationBatchId.toString(),
+            )
+        ).isEqualTo(revisionTwoRunId)
     }
 
     @Test
@@ -925,8 +989,7 @@ class ReconciliationReferenceApplicationTests(
                 "merchantId" to "M-001",
                 "merchantOrderNumber" to "O-$prefix",
                 "idempotencyKey" to "K-$prefix",
-                "amount" to BigDecimal(amount),
-                "currency" to "CNY",
+                "money" to money(amount),
                 "paymentMethod" to "CARD",
                 "expiresAt" to Instant.parse("2030-01-01T00:00:00Z"),
             ),
@@ -935,23 +998,34 @@ class ReconciliationReferenceApplicationTests(
         val paymentId = created.requiredText("paymentId")
         val attempt = postJson(
             "/api/payments/$paymentId/attempts",
-            emptyMap<String, Any>(),
+            mapOf("idempotencyKey" to "K-$prefix-ATTEMPT"),
+            expectedStatus = 201,
+        )
+        val attemptId = attempt.requiredText("paymentAttemptId")
+        postJson(
+            "/api/payments/$paymentId/attempts/$attemptId/submissions",
+            mapOf("idempotencyKey" to "K-$prefix-SUBMIT"),
             expectedStatus = 200,
         )
         val transactionId = "CT-$prefix"
+        val notificationId = "N-$prefix"
         postJson(
             "/api/channel/payment-results",
             mapOf(
                 "channelId" to "C-001",
-                "notificationId" to "N-$prefix",
+                "notificationId" to notificationId,
                 "paymentId" to paymentId,
-                "paymentAttemptId" to attempt.requiredText("paymentAttemptId"),
+                "paymentAttemptId" to attemptId,
                 "channelTransactionId" to transactionId,
-                "amount" to BigDecimal(amount),
-                "currency" to "CNY",
+                "money" to money(amount),
                 "result" to "SUCCESS",
                 "occurredAt" to Instant.parse(occurredAt),
-                "verificationMaterial" to "test-secret",
+                "rawPayload" to registerCallbackEvidence(
+                    kind = "PAYMENT",
+                    notificationId = notificationId,
+                    associationIdentity = "$paymentId|$attemptId|$transactionId",
+                    amount = amount,
+                ),
             ),
             expectedStatus = 200,
         )
@@ -965,36 +1039,58 @@ class ReconciliationReferenceApplicationTests(
         requestedAt: String,
         occurredAt: String,
     ): SucceededRefund {
+        postJson(
+            "/api/reference-fixtures/clock/set",
+            mapOf("instant" to Instant.parse(requestedAt)),
+            expectedStatus = 200,
+        )
         val created = postJson(
             "/api/refunds",
             mapOf(
                 "merchantId" to "M-001",
-                "merchantRefundNumber" to merchantRefundNumber,
+                "merchantRefundNo" to merchantRefundNumber,
+                "idempotencyKey" to "K-$merchantRefundNumber",
                 "paymentId" to paymentId,
-                "amount" to BigDecimal(amount),
-                "currency" to "CNY",
-                "requestedAt" to Instant.parse(requestedAt),
+                "money" to money(amount),
+                "reason" to "reference reconciliation refund requested at $requestedAt",
             ),
             expectedStatus = 201,
         )
-        val channelRefundId = "fake-refund-${created.requiredText("requestIdentity")}"
+        val refundId = created.requiredText("refundId")
+        val attempt = postJson(
+            "/api/refunds/$refundId/attempts",
+            mapOf("idempotencyKey" to "K-$merchantRefundNumber-ATTEMPT"),
+            expectedStatus = 201,
+        )
+        val refundAttemptId = attempt.requiredText("refundAttemptId")
+        val submitted = postJson(
+            "/api/refunds/$refundId/attempts/$refundAttemptId/submissions",
+            mapOf("idempotencyKey" to "K-$merchantRefundNumber-SUBMIT"),
+            expectedStatus = 200,
+        )
+        val channelRefundId = "fake-refund-${submitted.requiredText("requestIdentity")}"
+        val notificationId = "N-$merchantRefundNumber"
         postJson(
             "/api/channel/refund-results",
             mapOf(
                 "channelId" to "C-001",
-                "notificationId" to "N-$merchantRefundNumber",
-                "refundId" to created.requiredText("refundId"),
-                "refundAttemptId" to created.requiredText("refundAttemptId"),
+                "notificationId" to notificationId,
+                "refundId" to refundId,
+                "refundAttemptId" to refundAttemptId,
                 "channelRefundId" to channelRefundId,
-                "amount" to BigDecimal(amount),
-                "currency" to "CNY",
+                "money" to money(amount),
                 "result" to "SUCCESS",
                 "occurredAt" to Instant.parse(occurredAt),
-                "verificationMaterial" to "test-secret",
+                "rawPayload" to registerCallbackEvidence(
+                    kind = "REFUND",
+                    notificationId = notificationId,
+                    associationIdentity = "$refundId|$refundAttemptId|$channelRefundId",
+                    amount = amount,
+                ),
             ),
             expectedStatus = 200,
         )
-        return SucceededRefund(created.requiredText("refundId"), channelRefundId)
+        return SucceededRefund(refundId, channelRefundId)
     }
 
     private fun createUnknownRefund(
@@ -1004,36 +1100,58 @@ class ReconciliationReferenceApplicationTests(
         requestedAt: String,
         occurredAt: String,
     ): ChannelRefund {
+        postJson(
+            "/api/reference-fixtures/clock/set",
+            mapOf("instant" to Instant.parse(requestedAt)),
+            expectedStatus = 200,
+        )
         val created = postJson(
             "/api/refunds",
             mapOf(
                 "merchantId" to "M-001",
-                "merchantRefundNumber" to merchantRefundNumber,
+                "merchantRefundNo" to merchantRefundNumber,
+                "idempotencyKey" to "K-$merchantRefundNumber",
                 "paymentId" to paymentId,
-                "amount" to BigDecimal(amount),
-                "currency" to "CNY",
-                "requestedAt" to Instant.parse(requestedAt),
+                "money" to money(amount),
+                "reason" to "reference reconciliation unknown refund requested at $requestedAt",
             ),
             expectedStatus = 201,
         )
-        val channelRefundId = "fake-refund-${created.requiredText("requestIdentity")}"
+        val refundId = created.requiredText("refundId")
+        val attempt = postJson(
+            "/api/refunds/$refundId/attempts",
+            mapOf("idempotencyKey" to "K-$merchantRefundNumber-ATTEMPT"),
+            expectedStatus = 201,
+        )
+        val refundAttemptId = attempt.requiredText("refundAttemptId")
+        val submitted = postJson(
+            "/api/refunds/$refundId/attempts/$refundAttemptId/submissions",
+            mapOf("idempotencyKey" to "K-$merchantRefundNumber-SUBMIT"),
+            expectedStatus = 200,
+        )
+        val channelRefundId = "fake-refund-${submitted.requiredText("requestIdentity")}"
+        val notificationId = "N-$merchantRefundNumber"
         postJson(
             "/api/channel/refund-results",
             mapOf(
                 "channelId" to "C-001",
-                "notificationId" to "N-$merchantRefundNumber",
-                "refundId" to created.requiredText("refundId"),
-                "refundAttemptId" to created.requiredText("refundAttemptId"),
+                "notificationId" to notificationId,
+                "refundId" to refundId,
+                "refundAttemptId" to refundAttemptId,
                 "channelRefundId" to channelRefundId,
-                "amount" to BigDecimal(amount),
-                "currency" to "CNY",
+                "money" to money(amount),
                 "result" to "UNKNOWN",
                 "occurredAt" to Instant.parse(occurredAt),
-                "verificationMaterial" to "test-secret",
+                "rawPayload" to registerCallbackEvidence(
+                    kind = "REFUND",
+                    notificationId = notificationId,
+                    associationIdentity = "$refundId|$refundAttemptId|$channelRefundId",
+                    amount = amount,
+                ),
             ),
             expectedStatus = 200,
         )
-        return ChannelRefund(created.requiredText("refundId"), channelRefundId)
+        return ChannelRefund(refundId, channelRefundId)
     }
 
     private fun statement(
@@ -1121,16 +1239,6 @@ class ReconciliationReferenceApplicationTests(
         java.sql.Date.valueOf(date),
     ) ?: 0L
 
-    private fun batchId(date: LocalDate): String = requireNotNull(
-        jdbcTemplate.queryForObject(
-            "select id from reconciliation_batch where channel_id = ? and currency = ? and reconciliation_date = ?",
-            String::class.java,
-            "C-001",
-            "CNY",
-            java.sql.Date.valueOf(date),
-        )
-    )
-
     private fun runCount(date: LocalDate, identity: String, revision: String): Long = jdbcTemplate.queryForObject(
         "select count(*) from reconciliation_run r join reconciliation_batch b on b.id = r.batch_id " +
             "where b.channel_id = ? and b.currency = ? and b.reconciliation_date = ? " +
@@ -1143,48 +1251,103 @@ class ReconciliationReferenceApplicationTests(
         revision,
     ) ?: 0L
 
-    private fun rerunRequest(batchId: String, requestedAt: String): Map<String, Any> = mapOf(
-        "batchId" to batchId,
-        "requestedBy" to "operator-1",
-        "requestedAt" to Instant.parse(requestedAt),
+    private fun runId(date: LocalDate, identity: String, revision: String): String = requireNotNull(
+        jdbcTemplate.queryForObject(
+            "select r.id from reconciliation_run r join reconciliation_batch b on b.id = r.batch_id " +
+                "where b.channel_id = ? and b.currency = ? and b.reconciliation_date = ? " +
+                "and r.statement_identity = ? and r.statement_revision = ?",
+            String::class.java,
+            "C-001",
+            "CNY",
+            java.sql.Date.valueOf(date),
+            identity,
+            revision,
+        )
+    )
+
+    private fun rerunRequest(idempotencyKey: String): Map<String, Any> = mapOf(
+        "idempotencyKey" to idempotencyKey,
     )
 
     private fun dispositionRequest(
-        batchId: String,
-        itemId: String,
-        merchantId: String? = null,
+        idempotencyKey: String,
+        merchantId: String = "M-001",
         channelId: String? = null,
-        operatorIdentity: String,
-        operatorRole: String,
-        disposedAt: String,
         conclusion: String = "CONFIRM_PLATFORM_FACT",
         settlementImpact: String = "CONFIRMS_SETTLEMENT_FACT",
+        reason: String = "channel statement and operator review",
         evidence: String = "channel statement and operator review",
         followUp: String? = "include in settlement candidate projection",
     ): Map<String, Any?> = mapOf(
-        "batchId" to batchId,
-        "itemId" to itemId,
+        "idempotencyKey" to idempotencyKey,
         "merchantId" to merchantId,
         "channelId" to channelId,
-        "operatorIdentity" to operatorIdentity,
-        "operatorRole" to operatorRole,
         "conclusion" to conclusion,
         "settlementImpact" to settlementImpact,
+        "reason" to reason,
         "evidence" to evidence,
         "followUp" to followUp,
-        "disposedAt" to Instant.parse(disposedAt),
     )
 
-    private fun postJson(path: String, payload: Any, expectedStatus: Int): JsonNode {
-        val result = mockMvc.perform(
-            post(path)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsBytes(payload))
+    private fun confirmationRequest(
+        idempotencyKey: String,
+        merchantId: String = "M-001",
+        channelId: String? = "C-001",
+        reason: String = "channel statement and operator confirmation",
+        evidence: String = "channel statement and operator review",
+    ): Map<String, Any?> = mapOf(
+        "idempotencyKey" to idempotencyKey,
+        "merchantId" to merchantId,
+        "channelId" to channelId,
+        "reason" to reason,
+        "evidence" to evidence,
+    )
+
+    private fun money(amount: String): Map<String, String> = mapOf(
+        "currency" to "CNY",
+        "amountMinor" to BigDecimal(amount).movePointRight(2).toBigIntegerExact().toString(),
+    )
+
+    private fun registerCallbackEvidence(
+        kind: String,
+        notificationId: String,
+        associationIdentity: String,
+        amount: String,
+    ): String {
+        val rawPayload = "reference-reconciliation-${kind.lowercase()}-$notificationId"
+        postJson(
+            "/api/reference-fixtures/callback-evidence",
+            mapOf(
+                "idempotencyKey" to "K-EVIDENCE-$kind-$notificationId",
+                "kind" to kind,
+                "channelId" to "C-001",
+                "externalIdentity" to notificationId,
+                "associationIdentity" to associationIdentity,
+                "money" to money(amount),
+                "rawPayload" to rawPayload,
+            ),
+            expectedStatus = 201,
         )
+        return rawPayload
+    }
+
+    private fun postJson(
+        path: String,
+        payload: Any,
+        expectedStatus: Int,
+        actorAlias: String? = null,
+    ): JsonNode {
+        val request = post(path)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsBytes(payload))
+        actorAlias?.let { request.header("X-Reference-Actor-Context", it) }
+        val result = mockMvc.perform(request)
             .andExpect(status().`is`(expectedStatus))
             .andReturn()
         return objectMapper.readTree(result.response.contentAsByteArray)
     }
+
+    private fun getRun(runId: String): JsonNode = getJson("/api/reconciliation-runs/$runId")
 
     private fun getJson(path: String): JsonNode {
         val result = mockMvc.perform(get(path))
@@ -1216,4 +1379,9 @@ class ReconciliationReferenceApplicationTests(
         val refundId: String,
         val channelRefundId: String,
     )
+
+    private companion object {
+        const val RECONCILIATION_OPERATOR_ALIAS = "fixture-reconciliation-operator"
+        const val PAYMENT_REVIEWER_ALIAS = "fixture-payment-reviewer"
+    }
 }

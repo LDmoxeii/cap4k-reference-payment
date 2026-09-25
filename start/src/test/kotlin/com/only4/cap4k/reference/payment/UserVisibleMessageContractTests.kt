@@ -24,21 +24,23 @@ class UserVisibleMessageContractTests {
             .doesNotContain("failure.message ?: failure::class.simpleName")
             .doesNotContain("channel gateway failed:")
 
-        val gatewayCommands = listOf(
-            root.resolve("application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/attempt/StartPaymentAttemptCmd.kt"),
-            root.resolve("application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/refund/create/CreateRefundCmd.kt"),
-        ).associateWith(Files::readString)
-        gatewayCommands.forEach { (path, source) ->
+        val gatewayCommands = mapOf(
+            root.resolve("application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/payment/attempt/SubmitPaymentAttemptCmd.kt") to "safeDiagnostic",
+            root.resolve("application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/refund/attempt/SubmitRefundAttemptCmd.kt") to "refundGatewaySummary",
+        )
+        gatewayCommands.forEach { (path, safeMapper) ->
+            val source = Files.readString(path)
             assertThat(source)
                 .describedAs("$path 不得把 provider diagnostic 直接传入用户可见或持久化 sink")
                 .doesNotContain("diagnosticSummary = gateway.diagnosticSummary")
+                .doesNotContain("diagnosticSummary = channelResult.diagnosticSummary")
                 .doesNotContain("gateway.failureCode ?: \"CHANNEL_REJECTED\",\n                    gateway.diagnosticSummary")
                 .doesNotContain("listOfNotNull(\n                        gateway.failureCode ?: \"CHANNEL_REJECTED\",\n                        gateway.diagnosticSummary")
-            assertThat(Regex("gateway\\.diagnosticSummary").findAll(source).count())
+            assertThat(Regex("(?:gateway|channelResult)\\??\\.diagnosticSummary").findAll(source).count())
                 .describedAs("$path 中 raw provider diagnostic 只允许出现于日志隔离点")
                 .isEqualTo(1)
             assertThat(source).contains("原始诊断仅记录日志")
-            assertThat(source).contains("safeDiagnostic")
+            assertThat(source).contains(safeMapper)
         }
         val userVisibleAssignment = Regex(
             """(?:message|diagnosticSummary|rejectionSummary|conflictSummary|blockingReason|lastReviewSummary|failureSummary)\s*=\s*"([^"\n]*)""""

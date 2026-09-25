@@ -53,12 +53,20 @@ data class ChannelResultRecordingOutcome(
     init {
         require(notificationReceiveCount >= 1)
         require(disposition.isTerminal())
-        require((disposition == ChannelResultDisposition.ATTEMPT_NOT_FOUND) == (attemptStatus == null))
+        require(disposition != ChannelResultDisposition.ATTEMPT_NOT_FOUND || attemptStatus == null)
+        require(
+            attemptStatus != null || disposition in setOf(
+                ChannelResultDisposition.ATTEMPT_NOT_FOUND,
+                ChannelResultDisposition.ACCEPTED_DUPLICATE,
+                ChannelResultDisposition.REJECTED_DUPLICATE,
+            ),
+        )
         require(rejected == !rejectionSummary.isNullOrBlank())
         require(conflicting == !conflictSummary.isNullOrBlank())
         require(!successFactFormedNow || disposition == ChannelResultDisposition.SUCCESS_ACCEPTED)
         require(!duplicate || !successFactFormedNow)
         require(disposition != ChannelResultDisposition.SUCCESS_ACCEPTED || (paymentStatus == PaymentStatus.SUCCEEDED && attemptStatus == PaymentAttemptStatus.SUCCEEDED))
         require(disposition != ChannelResultDisposition.FAILURE_ACCEPTED || attemptStatus == PaymentAttemptStatus.FAILED)
+        require(disposition != ChannelResultDisposition.UNKNOWN_ACCEPTED || (paymentStatus == PaymentStatus.RESULT_UNKNOWN && attemptStatus == PaymentAttemptStatus.RESULT_UNKNOWN))
     }
 }

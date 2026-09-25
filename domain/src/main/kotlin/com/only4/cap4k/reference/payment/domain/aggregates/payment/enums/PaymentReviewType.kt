@@ -28,7 +28,9 @@ enum class PaymentReviewType(
 
     NOTIFICATION_PAYLOAD_CONFLICT(5, "同一通知身份被用于不同载荷"),
 
-    MERCHANT_ORDER_SUCCESS_CONFLICT(6, "另一支付单已占有该商户订单的已接受成功声明");
+    MERCHANT_ORDER_SUCCESS_CONFLICT(6, "另一支付单已占有该商户订单的已接受成功声明"),
+
+    CONCURRENT_ATTEMPT_RISK(7, "存在 in-flight 或 unknown 尝试时以显式风险说明创建新尝试");
 
     companion object {
         private val enumMap: Map<Int, PaymentReviewType> = entries.associateBy { it.value }

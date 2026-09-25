@@ -10,9 +10,11 @@
       { "name": "eventIdentity", "type": "String" },
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "merchantId", "type": "String" },
-      { "name": "channelId", "type": "String" },
+      { "name": "executionChannelId", "type": "String?" },
       { "name": "currency", "type": "String" },
       { "name": "netAmount", "type": "Big_decimal" },
+      { "name": "periodStart", "type": "java.time.LocalDateTime" },
+      { "name": "periodEnd", "type": "java.time.LocalDateTime" },
       { "name": "completedAt", "type": "java.time.LocalDateTime" }
     ],
     "resultFields": [

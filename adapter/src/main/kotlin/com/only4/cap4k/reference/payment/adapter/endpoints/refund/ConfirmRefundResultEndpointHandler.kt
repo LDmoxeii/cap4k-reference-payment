@@ -2,6 +2,8 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.refund
 
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
+import com.only4.cap4k.reference.payment.adapter.contract.ReferenceContractStatusMapper
+import com.only4.cap4k.reference.payment.adapter.endpoints.toDomainAmount
 import com.only4.cap4k.reference.payment.application.commands.refund.result.ConfirmRefundResultCmd
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.contract.endpoints.refund.api.ConfirmRefundResultEndpoint
@@ -10,25 +12,30 @@ import org.springframework.stereotype.Component
 @Component
 class ConfirmRefundResultEndpointHandler : EndpointHandler<ConfirmRefundResultEndpoint.Request, ConfirmRefundResultEndpoint.Response> {
     override fun handle(request: ConfirmRefundResultEndpoint.Request): ConfirmRefundResultEndpoint.Response {
-        val outcome = Mediator.commands.send(
+        val commandResponse = Mediator.commands.send(
             ConfirmRefundResultCmd.Request(
                 channelId = request.channelId,
                 notificationId = request.notificationId,
                 refundId = RefundId.parse(request.refundId),
                 refundAttemptId = request.refundAttemptId,
                 channelRefundId = request.channelRefundId,
-                amount = request.amount,
-                currency = request.currency,
+                amount = request.money.toDomainAmount(),
+                currency = request.money.currency,
                 result = request.result,
                 occurredAt = request.occurredAt,
-                verificationMaterial = request.verificationMaterial,
+                rawPayload = request.rawPayload,
             )
-        ).outcome
+        )
+        val outcome = commandResponse.outcome
         return ConfirmRefundResultEndpoint.Response(
-            refundStatus = outcome.refundStatus.name,
-            attemptStatus = outcome.attemptStatus?.name,
+            refundStatus = ReferenceContractStatusMapper.refundStatus(outcome.refundStatus),
+            finality = ReferenceContractStatusMapper.refundFinality(
+                outcome.refundStatus,
+                settlementBlocked = outcome.conflicting || outcome.reviewRequiredNow,
+            ),
+            attemptStatus = outcome.attemptStatus?.let(ReferenceContractStatusMapper::refundAttemptStatus),
             notificationReceiveCount = outcome.notificationReceiveCount,
-            disposition = outcome.disposition.name,
+            disposition = ReferenceContractStatusMapper.refundDisposition(outcome.disposition),
             duplicate = outcome.duplicate,
             accepted = outcome.accepted,
             rejected = outcome.rejected,
@@ -38,6 +45,7 @@ class ConfirmRefundResultEndpointHandler : EndpointHandler<ConfirmRefundResultEn
             reviewRequiredNow = outcome.reviewRequiredNow,
             rejectionSummary = outcome.rejectionSummary,
             conflictSummary = outcome.conflictSummary,
+            receipt = commandResponse.receipt,
         )
     }
 }

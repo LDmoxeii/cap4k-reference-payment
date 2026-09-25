@@ -1,5 +1,23 @@
 [
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.AuthoritativeBillJpaRepositoryAdapter",
+    "aggregate": "AuthoritativeBill",
+    "name": "AuthoritativeBillRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.ManualReviewItemJpaRepositoryAdapter",
+    "aggregate": "ManualReviewItem",
+    "name": "ManualReviewItemRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.MerchantChannelConfigurationJpaRepositoryAdapter",
     "aggregate": "MerchantChannelConfiguration",
     "name": "MerchantChannelConfigurationRepository",
@@ -9,9 +27,36 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.MerchantNotificationJpaRepositoryAdapter",
+    "aggregate": "MerchantNotification",
+    "name": "MerchantNotificationRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.MerchantSettlementJpaRepositoryAdapter",
     "aggregate": "MerchantSettlement",
     "name": "MerchantSettlementRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.OperationJpaRepositoryAdapter",
+    "aggregate": "Operation",
+    "name": "OperationRepository",
+    "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
+    "description": "",
+    "type": "repository",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.adapter.domain.repositories.PaymentChannelResultReceiptJpaRepositoryAdapter",
+    "aggregate": "PaymentChannelResultReceipt",
+    "name": "PaymentChannelResultReceiptRepository",
     "packageName": "com.only4.cap4k.reference.payment.adapter.domain.repositories",
     "description": "",
     "type": "repository",
@@ -45,6 +90,60 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill.SAuthoritativeBill",
+    "aggregate": "AuthoritativeBill",
+    "name": "SAuthoritativeBill",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill",
+    "description": "权威账单：按渠道和稳定账单身份保存当前不可回退修订指针、读取诊断和信号历史",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill.SBillAvailableSignal",
+    "aggregate": "AuthoritativeBill",
+    "name": "SBillAvailableSignal",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill",
+    "description": "账单可用信号：保存稳定信号身份、版本声明、读取次数和可诊断失败，不以信号正文替代权威账单",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill.SBillRevision",
+    "aggregate": "AuthoritativeBill",
+    "name": "SBillRevision",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill",
+    "description": "不可变权威账单修订：保存完整性、原始证据、指纹、发布时间及逐行证据",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill.SBillRevisionRecord",
+    "aggregate": "AuthoritativeBill",
+    "name": "SBillRevisionRecord",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.authoritative_bill",
+    "description": "账单修订逐行不可变证据：稳定记录身份、交易身份、金额、状态、时间和原始证据",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.manual_review_item.SManualReviewItem",
+    "aggregate": "ManualReviewItem",
+    "name": "SManualReviewItem",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.manual_review_item",
+    "description": "统一人工核对事项：由支付、退款、对账和结算的原始事实稳定触发，保存阻断范围、关联和追加处置",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.manual_review_item.SManualReviewResolution",
+    "aggregate": "ManualReviewItem",
+    "name": "SManualReviewResolution",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.manual_review_item",
+    "description": "人工核对事项处置历史：仅追加可信责任人、结论、原因和证据，不覆盖来源业务事实",
+    "type": "schema",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration.SMerchantChannelConfiguration",
     "aggregate": "MerchantChannelConfiguration",
     "name": "SMerchantChannelConfiguration",
@@ -54,11 +153,29 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_notification.SMerchantNotification",
+    "aggregate": "MerchantNotification",
+    "name": "SMerchantNotification",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_notification",
+    "description": "商户通知意图：冻结来源事实、身份和内容，投递失败不影响来源业务事实",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_notification.SMerchantNotificationDeliveryAttempt",
+    "aggregate": "MerchantNotification",
+    "name": "SMerchantNotificationDeliveryAttempt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_notification",
+    "description": "商户通知投递尝试：同一通知与内容下追加每次投递结果",
+    "type": "schema",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement.SMerchantSettlement",
     "aggregate": "MerchantSettlement",
     "name": "SMerchantSettlement",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
-    "description": "商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期",
+    "description": "商户结算单：按 merchant+currency+settlementPeriod 唯一冻结跨渠道结算构成；渠道仅保留在线项和执行证据中",
     "type": "schema",
     "root": false
   },
@@ -76,7 +193,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SSettlementLine",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
-    "description": "结算明细：保存一条被纳入结算的支付、退款或对账确认来源及其费用快照",
+    "description": "结算候选快照：保存纳入或排除判断、来源事实及费用证据；只有 INCLUDED 参与结算金额与消费身份",
     "type": "schema",
     "root": false
   },
@@ -86,6 +203,15 @@
     "name": "SSettlementResultReceipt",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.merchant_settlement",
     "description": "结算结果回执：保存渠道出款回调的稳定身份、金额、结果和重复/矛盾证据",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.operation.SOperation",
+    "aggregate": "Operation",
+    "name": "SOperation",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.operation",
+    "description": "统一命令受理记录：按 merchant、命令类型和幂等键保存稳定受理、资源引用与读取语义",
     "type": "schema",
     "root": false
   },
@@ -131,6 +257,24 @@
     "name": "SPaymentReviewDecision",
     "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
     "description": "支付复核决定：保存授权操作人对复核案件作出的追加式裁决证据",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment.SPaymentSubmissionReceipt",
+    "aggregate": "Payment",
+    "name": "SPaymentSubmissionReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment",
+    "description": "支付渠道提交收件：保存提交前冻结身份、一次渠道调用的受理/拒绝/未知证据，不形成支付成功事实",
+    "type": "schema",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain._share.meta.payment_channel_result_receipt.SPaymentChannelResultReceipt",
+    "aggregate": "PaymentChannelResultReceipt",
+    "name": "SPaymentChannelResultReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain._share.meta.payment_channel_result_receipt",
+    "description": "支付渠道结果权威收件：独立于目标聚合保存全部外部结果，使未知 payment/attempt 引用仍可按 external identity 查询",
     "type": "schema",
     "root": false
   },
@@ -207,6 +351,132 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.AuthoritativeBill",
+    "aggregate": "AuthoritativeBill",
+    "name": "AuthoritativeBill",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "权威账单：按渠道和稳定账单身份保存当前不可回退修订指针、读取诊断和信号历史",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.AuthoritativeBillId",
+    "aggregate": "AuthoritativeBill",
+    "name": "AuthoritativeBillId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillAvailableSignal",
+    "aggregate": "AuthoritativeBill",
+    "name": "BillAvailableSignal",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "账单可用信号：保存稳定信号身份、版本声明、读取次数和可诊断失败，不以信号正文替代权威账单",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillAvailableSignalId",
+    "aggregate": "AuthoritativeBill",
+    "name": "BillAvailableSignalId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillRevision",
+    "aggregate": "AuthoritativeBill",
+    "name": "BillRevision",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "不可变权威账单修订：保存完整性、原始证据、指纹、发布时间及逐行证据",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillRevisionId",
+    "aggregate": "AuthoritativeBill",
+    "name": "BillRevisionId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillRevisionRecord",
+    "aggregate": "AuthoritativeBill",
+    "name": "BillRevisionRecord",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "账单修订逐行不可变证据：稳定记录身份、交易身份、金额、状态、时间和原始证据",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillRevisionRecordId",
+    "aggregate": "AuthoritativeBill",
+    "name": "BillRevisionRecordId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.factory.AuthoritativeBillFactory",
+    "aggregate": "AuthoritativeBill",
+    "name": "AuthoritativeBillFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item.ManualReviewItem",
+    "aggregate": "ManualReviewItem",
+    "name": "ManualReviewItem",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item",
+    "description": "统一人工核对事项：由支付、退款、对账和结算的原始事实稳定触发，保存阻断范围、关联和追加处置",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item.ManualReviewItemId",
+    "aggregate": "ManualReviewItem",
+    "name": "ManualReviewItemId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item.ManualReviewResolution",
+    "aggregate": "ManualReviewItem",
+    "name": "ManualReviewResolution",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item",
+    "description": "人工核对事项处置历史：仅追加可信责任人、结论、原因和证据，不覆盖来源业务事实",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item.ManualReviewResolutionId",
+    "aggregate": "ManualReviewItem",
+    "name": "ManualReviewResolutionId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item.factory.ManualReviewItemFactory",
+    "aggregate": "ManualReviewItem",
+    "name": "ManualReviewItemFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.manual_review_item.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfiguration",
     "aggregate": "MerchantChannelConfiguration",
     "name": "MerchantChannelConfiguration",
@@ -234,11 +504,56 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.MerchantNotification",
+    "aggregate": "MerchantNotification",
+    "name": "MerchantNotification",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification",
+    "description": "商户通知意图：冻结来源事实、身份和内容，投递失败不影响来源业务事实",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.MerchantNotificationDeliveryAttempt",
+    "aggregate": "MerchantNotification",
+    "name": "MerchantNotificationDeliveryAttempt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification",
+    "description": "商户通知投递尝试：同一通知与内容下追加每次投递结果",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.MerchantNotificationDeliveryAttemptId",
+    "aggregate": "MerchantNotification",
+    "name": "MerchantNotificationDeliveryAttemptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.MerchantNotificationId",
+    "aggregate": "MerchantNotification",
+    "name": "MerchantNotificationId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.factory.MerchantNotificationFactory",
+    "aggregate": "MerchantNotification",
+    "name": "MerchantNotificationFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlement",
     "aggregate": "MerchantSettlement",
     "name": "MerchantSettlement",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement",
-    "description": "商户结算单：冻结结算构成并汇总毛额、手续费、调整额、净额与执行生命周期",
+    "description": "商户结算单：按 merchant+currency+settlementPeriod 唯一冻结跨渠道结算构成；渠道仅保留在线项和执行证据中",
     "type": "entity",
     "root": true
   },
@@ -274,7 +589,7 @@
     "aggregate": "MerchantSettlement",
     "name": "SettlementLine",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement",
-    "description": "结算明细：保存一条被纳入结算的支付、退款或对账确认来源及其费用快照",
+    "description": "结算候选快照：保存纳入或排除判断、来源事实及费用证据；只有 INCLUDED 参与结算金额与消费身份",
     "type": "entity",
     "root": false
   },
@@ -310,6 +625,33 @@
     "aggregate": "MerchantSettlement",
     "name": "MerchantSettlementFactory",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.factory",
+    "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.operation.Operation",
+    "aggregate": "Operation",
+    "name": "Operation",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.operation",
+    "description": "统一命令受理记录：按 merchant、命令类型和幂等键保存稳定受理、资源引用与读取语义",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.operation.OperationId",
+    "aggregate": "Operation",
+    "name": "OperationId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.operation",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.operation.factory.OperationFactory",
+    "aggregate": "Operation",
+    "name": "OperationFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.operation.factory",
     "description": "",
     "type": "factory",
     "root": false
@@ -405,11 +747,56 @@
     "root": false
   },
   {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentSubmissionReceipt",
+    "aggregate": "Payment",
+    "name": "PaymentSubmissionReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "支付渠道提交收件：保存提交前冻结身份、一次渠道调用的受理/拒绝/未知证据，不形成支付成功事实",
+    "type": "entity",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentSubmissionReceiptId",
+    "aggregate": "Payment",
+    "name": "PaymentSubmissionReceiptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment",
+    "description": "",
+    "type": "strong-id",
+    "root": false
+  },
+  {
     "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.factory.PaymentFactory",
     "aggregate": "Payment",
     "name": "PaymentFactory",
     "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment.factory",
     "description": "",
+    "type": "factory",
+    "root": false
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment_channel_result_receipt.PaymentChannelResultReceipt",
+    "aggregate": "PaymentChannelResultReceipt",
+    "name": "PaymentChannelResultReceipt",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment_channel_result_receipt",
+    "description": "支付渠道结果权威收件：独立于目标聚合保存全部外部结果，使未知 payment/attempt 引用仍可按 external identity 查询",
+    "type": "entity",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment_channel_result_receipt.PaymentChannelResultReceiptId",
+    "aggregate": "PaymentChannelResultReceipt",
+    "name": "PaymentChannelResultReceiptId",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment_channel_result_receipt",
+    "description": "",
+    "type": "strong-id",
+    "root": true
+  },
+  {
+    "carrierQualifiedName": "com.only4.cap4k.reference.payment.domain.aggregates.payment_channel_result_receipt.factory.PaymentChannelResultReceiptFactory",
+    "aggregate": "PaymentChannelResultReceipt",
+    "name": "PaymentChannelResultReceiptFactory",
+    "packageName": "com.only4.cap4k.reference.payment.domain.aggregates.payment_channel_result_receipt.factory",
+    "description": "支付渠道结果权威收件：独立于目标聚合保存全部外部结果，使未知 payment/attempt 引用仍可按 external identity 查询",
     "type": "factory",
     "root": false
   },

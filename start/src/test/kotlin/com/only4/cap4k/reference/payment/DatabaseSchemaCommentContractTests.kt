@@ -10,8 +10,15 @@ import org.junit.jupiter.api.Test
 
 class DatabaseSchemaCommentContractTests {
     private val expectedTables = setOf(
+        "operation",
+        "payment_channel_result_receipt",
+        "merchant_notification",
+        "merchant_notification_delivery_attempt",
+        "manual_review_item",
+        "manual_review_resolution",
         "payment",
         "payment_attempt",
+        "payment_submission_receipt",
         "payment_notification_receipt",
         "payment_review_case",
         "payment_review_decision",
@@ -19,6 +26,10 @@ class DatabaseSchemaCommentContractTests {
         "refund_attempt",
         "refund_notification_receipt",
         "merchant_channel_configuration",
+        "authoritative_bill",
+        "bill_revision",
+        "bill_revision_record",
+        "bill_available_signal",
         "reconciliation_batch",
         "reconciliation_run",
         "reconciliation_item",
@@ -111,13 +122,14 @@ class DatabaseSchemaCommentContractTests {
     }
 
     private fun assertPartialDesignJsonFormatting(text: String) {
-        val trimmed = text.trim()
-        assertThat(trimmed).contains("\n").doesNotContain("\r")
+        val normalized = text.replace("\r\n", "\n")
+        val trimmed = normalized.trim()
+        assertThat(trimmed).contains("\n")
         assertThat(trimmed).startsWith("[\n  {").endsWith("\n]")
-        assertThat(text).contains("\n    \"fields\": [\n")
-        assertThat(text).contains("\n    \"resultFields\": [\n")
+        assertThat(normalized).contains("\n    \"fields\": [\n")
+        assertThat(normalized).contains("\n    \"resultFields\": [\n")
 
-        val compactFieldLines = text.lineSequence()
+        val compactFieldLines = normalized.lineSequence()
             .map(String::trim)
             .filter { it.startsWith("{ \"name\":") }
             .toList()

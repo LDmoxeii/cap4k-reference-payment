@@ -12,14 +12,20 @@ class MerchantSettlementEndpointHttpConfigurationContractTest {
     @Test
     fun `handwritten bindings retain all six merchant settlement routes`() {
         assertSpecial("prepareMerchantSettlementHttpBinding", "POST", "/api/merchant-settlements", 201, listOf("request.body(PrepareMerchantSettlementEndpoint.Request::class)"))
-        assertSpecial("confirmMerchantSettlementHttpBinding", "POST", "/api/merchant-settlements/{settlementId}/confirmations", 200, listOf("request.body(ConfirmMerchantSettlementEndpoint.Request::class)", "settlementId = request.path(\"settlementId\", String::class)"))
+        assertSystemCommandDoesNotBindActor("prepareMerchantSettlementHttpBinding")
+        assertSpecial("confirmMerchantSettlementHttpBinding", "POST", "/api/merchant-settlements/{settlementId}/confirmations", 200, listOf("request.body(ConfirmMerchantSettlementEndpoint.Request::class)", "actorContextResolver.bind(", "settlementId = request.path(\"settlementId\", String::class)"))
         assertSpecial("startMerchantSettlementExecutionHttpBinding", "POST", "/api/merchant-settlements/{settlementId}/executions", 200, listOf("request.body(StartMerchantSettlementExecutionEndpoint.Request::class)", "settlementId = request.path(\"settlementId\", String::class)"))
+        assertSystemCommandDoesNotBindActor("startMerchantSettlementExecutionHttpBinding")
         val resultBody = functionBody("confirmMerchantSettlementResultHttpBinding")
         assertContains(resultBody, "EndpointMvcBinding.json(")
         assertContains(resultBody, "method = HttpMethod.POST")
         assertContains(resultBody, "path = \"/api/channel/settlement-results\"")
-        assertSpecial("voidMerchantSettlementHttpBinding", "POST", "/api/merchant-settlements/{settlementId}/voids", 200, listOf("request.body(VoidMerchantSettlementEndpoint.Request::class)", "settlementId = request.path(\"settlementId\", String::class)"))
+        assertSpecial("voidMerchantSettlementHttpBinding", "POST", "/api/merchant-settlements/{settlementId}/voids", 200, listOf("request.body(VoidMerchantSettlementEndpoint.Request::class)", "actorContextResolver.bind(", "settlementId = request.path(\"settlementId\", String::class)"))
         assertSpecial("getMerchantSettlementHttpBinding", "GET", "/api/merchant-settlements/{settlementId}", 200, listOf("GetMerchantSettlementEndpoint.Request(request.path(\"settlementId\", String::class))"))
+        val listBody = functionBody("listMerchantSettlementsHttpBinding")
+        assertContains(listBody, "EndpointMvcBinding.json(")
+        assertContains(listBody, "method = HttpMethod.POST")
+        assertContains(listBody, "path = \"/api/merchant-settlements/search\"")
     }
 
     private fun assertSpecial(functionName: String, method: String, path: String, status: Int, evidence: List<String>) {
@@ -30,6 +36,14 @@ class MerchantSettlementEndpointHttpConfigurationContractTest {
         assertContains(body, "responsePolicy = EndpointMvcResponsePolicy.response(status = $status)")
         assertContains(body, "requestMapper = EndpointMvcRequestMapper")
         evidence.forEach { assertContains(body, it) }
+    }
+
+    private fun assertSystemCommandDoesNotBindActor(functionName: String) {
+        val body = functionBody(functionName)
+        assertTrue(
+            "actorContextResolver.bind(" !in body,
+            "$functionName is a system command and must not require X-Reference-Actor-Context",
+        )
     }
 
     private fun functionBody(functionName: String): String {

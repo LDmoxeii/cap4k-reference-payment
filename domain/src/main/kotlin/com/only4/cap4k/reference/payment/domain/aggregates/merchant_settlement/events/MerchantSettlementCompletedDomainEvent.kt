@@ -22,9 +22,12 @@ class MerchantSettlementCompletedDomainEvent(
     val eventIdentity: String,
     val merchantSettlementId: MerchantSettlementId,
     val merchantId: String,
-    val channelId: String,
+    /** 执行渠道仅为执行证据；不定义结算 scope。 */
+    val executionChannelId: String?,
     val currency: String,
     val netAmount: BigDecimal,
+    val periodStart: LocalDateTime,
+    val periodEnd: LocalDateTime,
     val completedAt: LocalDateTime
 ) {
 }

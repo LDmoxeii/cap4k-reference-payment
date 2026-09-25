@@ -9,6 +9,11 @@ import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.ddd.domain.repo.schema.and
 import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.channel.PullChannelStatement
 import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.platform.LoadPlatformReconciliationFacts
+import com.only4.cap4k.reference.payment.application.manual_review.ManualReviewSupport
+import com.only4.cap4k.reference.payment.application.manual_review.openReconciliationDifferenceReview
+import com.only4.cap4k.reference.payment.application.manual_review.openStatementFetchFailureReview
+import com.only4.cap4k.reference.payment.application.commands.merchant_notification.MerchantNotificationService
+import com.only4.cap4k.reference.payment.application.commands.merchant_notification.notifyCompletedReconciliationRun
 import com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch.SReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.appendReconciliationRun
@@ -34,7 +39,10 @@ import org.springframework.stereotype.Service
 object RunDailyReconciliationCmd {
 
     @Service
-    class Handler : CommandHandler<Request, Response> {
+    class Handler(
+        private val manualReviewSupport: ManualReviewSupport,
+        private val notifications: MerchantNotificationService,
+    ) : CommandHandler<Request, Response> {
         /**
          * ordinary scheduler 只负责发送该 Command。Handler 以 channel/currency/business-date 幂等装载批次，
          * 再分别调用权威账单 Pull 与平台事实投影；任一 provider 失败都保存受控中文阻断摘要，
@@ -87,6 +95,12 @@ object RunDailyReconciliationCmd {
                 facts,
                 LocalDateTime.ofInstant(command.triggeredAt, ZoneOffset.UTC),
             )
+            if (!result.idempotentReplay) {
+                result.run.reconciliationItems
+                    .filter { it.settlementBlocked }
+                    .forEach { manualReviewSupport.openReconciliationDifferenceReview(batch, result.run, it) }
+                notifications.notifyCompletedReconciliationRun(batch, result.run)
+            }
             return Response(
                 reconciliationBatchId = batch.id,
                 runId = result.run.id.toString(),
@@ -106,6 +120,7 @@ object RunDailyReconciliationCmd {
             val failedAt = LocalDateTime.ofInstant(triggeredAt, ZoneOffset.UTC)
             log.warn("日终对账拉取账单或平台事实失败：batchId={}", batch.id, failure)
             batch.markStatementFetchFailed(failedAt, "渠道账单或平台资金事实暂时不可用")
+            manualReviewSupport.openStatementFetchFailureReview(batch)
             return Response(
                 reconciliationBatchId = batch.id,
                 runId = null,

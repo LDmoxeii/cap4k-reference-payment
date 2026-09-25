@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:merchant-notification.retry",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.merchant_notification.RetryMerchantNotificationCmd.Request",
+      "name": "RetryMerchantNotificationCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.merchant_notification.RetryMerchantNotificationCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:merchant-notification.retry",
+      "name": "merchant-notification.retry [POST /api/merchant-notifications/{notificationId}/retries]",
+      "fullName": "endpoint-http:merchant-notification.retry",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:merchant-notification.retry",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.merchant_notification.RetryMerchantNotificationCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

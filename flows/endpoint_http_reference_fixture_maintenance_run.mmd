@@ -1,0 +1,11 @@
+flowchart TD
+  N1["ReviewUnknownMerchantSettlementsCmd.Request"]
+  N2["ExpirePaymentsCmd.Request"]
+  N3["RunDailyReconciliationCmd.Request"]
+  N4["ReviewPendingRefundsCmd.Request"]
+  N5["reference-fixture.maintenance.run [POST /api/reference-fixtures/maintenance]"]
+  N5 -->|EndpointHttpBindingToCommand| N1
+  N5 -->|EndpointHttpBindingToCommand| N2
+  N5 -->|EndpointHttpBindingToCommand| N3
+  N5 -->|EndpointHttpBindingToCommand| N4
+

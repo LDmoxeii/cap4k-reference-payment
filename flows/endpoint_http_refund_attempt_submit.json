@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:refund.attempt.submit",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.refund.attempt.SubmitRefundAttemptCmd.Request",
+      "name": "SubmitRefundAttemptCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.refund.attempt.SubmitRefundAttemptCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:refund.attempt.submit",
+      "name": "refund.attempt.submit [POST /api/refunds/{refundId}/attempts/{refundAttemptId}/submissions]",
+      "fullName": "endpoint-http:refund.attempt.submit",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:refund.attempt.submit",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.refund.attempt.SubmitRefundAttemptCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

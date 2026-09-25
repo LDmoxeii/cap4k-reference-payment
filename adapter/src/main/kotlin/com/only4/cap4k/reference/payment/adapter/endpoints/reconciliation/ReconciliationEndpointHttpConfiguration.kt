@@ -3,58 +3,100 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.reconciliation
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcBinding
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcRequestMapper
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcResponsePolicy
-import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.DisposeReconciliationDifferenceEndpoint
-import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.GetReconciliationBatchEndpoint
-import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.RerunReconciliationBatchEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.GetReconciliationRunEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.ListReconciliationRunsEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.RerunReconciliationRunEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.DisposeReconciliationRunDifferenceEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.ConfirmReconciliationFactEndpoint
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceActorContextResolver
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 
 @Configuration(proxyBeanMethods = false)
-class ReconciliationEndpointHttpConfiguration {
+class ReconciliationEndpointHttpConfiguration(
+    private val actorContextResolver: ReferenceActorContextResolver,
+) {
     @Bean
-    fun getReconciliationBatchHttpBinding(): EndpointMvcBinding<GetReconciliationBatchEndpoint.Request, GetReconciliationBatchEndpoint.Response> =
+    fun getReconciliationRunHttpBinding(): EndpointMvcBinding<GetReconciliationRunEndpoint.Request, GetReconciliationRunEndpoint.Response> =
         EndpointMvcBinding.special(
-            operationName = GetReconciliationBatchEndpoint.OPERATION_NAME,
-            requestType = GetReconciliationBatchEndpoint.Request::class,
-            responseType = GetReconciliationBatchEndpoint.Response::class,
+            operationName = GetReconciliationRunEndpoint.OPERATION_NAME,
+            requestType = GetReconciliationRunEndpoint.Request::class,
+            responseType = GetReconciliationRunEndpoint.Response::class,
             method = HttpMethod.GET,
-            path = "/api/reconciliation-batches/{batchId}",
+            path = "/api/reconciliation-runs/{runId}",
             requestMapper = EndpointMvcRequestMapper { request ->
-                GetReconciliationBatchEndpoint.Request(request.path("batchId", String::class))
+                GetReconciliationRunEndpoint.Request(request.path("runId", String::class))
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
         )
 
     @Bean
-    fun rerunReconciliationBatchHttpBinding(): EndpointMvcBinding<RerunReconciliationBatchEndpoint.Request, RerunReconciliationBatchEndpoint.Response> =
-        EndpointMvcBinding.special(
-            operationName = RerunReconciliationBatchEndpoint.OPERATION_NAME,
-            requestType = RerunReconciliationBatchEndpoint.Request::class,
-            responseType = RerunReconciliationBatchEndpoint.Response::class,
+    fun listReconciliationRunsHttpBinding(): EndpointMvcBinding<ListReconciliationRunsEndpoint.Request, ListReconciliationRunsEndpoint.Response> =
+        EndpointMvcBinding.json(
+            operationName = ListReconciliationRunsEndpoint.OPERATION_NAME,
+            requestType = ListReconciliationRunsEndpoint.Request::class,
+            responseType = ListReconciliationRunsEndpoint.Response::class,
             method = HttpMethod.POST,
-            path = "/api/reconciliation-batches/{batchId}/reruns",
+            path = "/api/reconciliation-runs/search",
+        )
+
+    @Bean
+    fun rerunReconciliationRunHttpBinding(): EndpointMvcBinding<RerunReconciliationRunEndpoint.Request, RerunReconciliationRunEndpoint.Response> =
+        EndpointMvcBinding.special(
+            operationName = RerunReconciliationRunEndpoint.OPERATION_NAME,
+            requestType = RerunReconciliationRunEndpoint.Request::class,
+            responseType = RerunReconciliationRunEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/reconciliation-runs/{runId}/reruns",
             requestMapper = EndpointMvcRequestMapper { request ->
-                request.body(RerunReconciliationBatchEndpoint.Request::class).copy(
-                    batchId = request.path("batchId", String::class)
+                request.body(RerunReconciliationRunEndpoint.Request::class).copy(
+                    runId = request.path("runId", String::class),
                 )
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
         )
 
     @Bean
-    fun disposeReconciliationDifferenceHttpBinding(): EndpointMvcBinding<DisposeReconciliationDifferenceEndpoint.Request, DisposeReconciliationDifferenceEndpoint.Response> =
+    fun disposeReconciliationRunDifferenceHttpBinding(): EndpointMvcBinding<DisposeReconciliationRunDifferenceEndpoint.Request, DisposeReconciliationRunDifferenceEndpoint.Response> =
         EndpointMvcBinding.special(
-            operationName = DisposeReconciliationDifferenceEndpoint.OPERATION_NAME,
-            requestType = DisposeReconciliationDifferenceEndpoint.Request::class,
-            responseType = DisposeReconciliationDifferenceEndpoint.Response::class,
+            operationName = DisposeReconciliationRunDifferenceEndpoint.OPERATION_NAME,
+            requestType = DisposeReconciliationRunDifferenceEndpoint.Request::class,
+            responseType = DisposeReconciliationRunDifferenceEndpoint.Response::class,
             method = HttpMethod.POST,
-            path = "/api/reconciliation-items/{itemId}/dispositions",
+            path = "/api/reconciliation-runs/{runId}/differences/{itemId}/dispositions",
             requestMapper = EndpointMvcRequestMapper { request ->
-                request.body(DisposeReconciliationDifferenceEndpoint.Request::class).copy(
-                    itemId = request.path("itemId", String::class)
+                val body = request.body(DisposeReconciliationRunDifferenceEndpoint.Request::class)
+                actorContextResolver.bind(
+                    runCatching { request.header(ReferenceActorContextResolver.HEADER_NAME) }.getOrNull(),
+                )
+                body.copy(
+                    runId = request.path("runId", String::class),
+                    itemId = request.path("itemId", String::class),
                 )
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
         )
+
+    @Bean
+    fun confirmReconciliationFactHttpBinding(): EndpointMvcBinding<ConfirmReconciliationFactEndpoint.Request, ConfirmReconciliationFactEndpoint.Response> =
+        EndpointMvcBinding.special(
+            operationName = ConfirmReconciliationFactEndpoint.OPERATION_NAME,
+            requestType = ConfirmReconciliationFactEndpoint.Request::class,
+            responseType = ConfirmReconciliationFactEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/reconciliation-runs/{runId}/differences/{itemId}/confirmations",
+            requestMapper = EndpointMvcRequestMapper { request ->
+                val body = request.body(ConfirmReconciliationFactEndpoint.Request::class)
+                actorContextResolver.bind(
+                    runCatching { request.header(ReferenceActorContextResolver.HEADER_NAME) }.getOrNull(),
+                )
+                body.copy(
+                    runId = request.path("runId", String::class),
+                    itemId = request.path("itemId", String::class),
+                )
+            },
+            responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
+        )
+
 }

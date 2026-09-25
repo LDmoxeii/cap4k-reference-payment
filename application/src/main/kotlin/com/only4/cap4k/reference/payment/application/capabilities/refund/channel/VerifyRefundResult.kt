@@ -2,6 +2,7 @@ package com.only4.cap4k.reference.payment.application.capabilities.refund.channe
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityCall
+import java.math.BigDecimal
 
 @DesignBlockMetadata(
     tag = "capability",
@@ -27,9 +28,25 @@ object VerifyRefundResult {
          */
         val payload: String,
         /**
-         * 核验材料
+         * 退款标识
          */
-        val verificationMaterial: String
+        val refundId: String,
+        /**
+         * 退款尝试标识
+         */
+        val refundAttemptId: String,
+        /**
+         * 渠道退款标识
+         */
+        val channelRefundId: String,
+        /**
+         * 金额
+         */
+        val amount: BigDecimal,
+        /**
+         * 币种
+         */
+        val currency: String,
     ) : CapabilityCall<Response>
 
     data class Response(

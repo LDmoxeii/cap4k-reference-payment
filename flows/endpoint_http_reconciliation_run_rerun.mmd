@@ -1,0 +1,5 @@
+flowchart TD
+  N1["RerunReconciliationBatchCmd.Request"]
+  N2["reconciliation.run.rerun [POST /api/reconciliation-runs/{runId}/reruns]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

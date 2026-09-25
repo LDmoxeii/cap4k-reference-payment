@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.jakarta.persistence)
     implementation(libs.spring.context)
     implementation(libs.spring.data.jpa)
+    implementation(libs.jackson.databind)
 
     testImplementation(kotlin("test"))
     testRuntimeOnly(libs.junit.platform.launcher)

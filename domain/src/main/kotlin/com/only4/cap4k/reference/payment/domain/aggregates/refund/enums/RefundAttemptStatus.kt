@@ -16,6 +16,12 @@ enum class RefundAttemptStatus(
     val description: String
 ) {
 
+    CREATED(5, "退款尝试已创建，尚未提交给渠道"),
+
+    SUBMITTED(6, "退款尝试已提交给渠道，等待渠道受理结果"),
+
+    ACCEPTED(7, "渠道已受理退款尝试，等待最终退款结果"),
+
     PROCESSING(0, "渠道退款尝试正在处理中"),
 
     SUCCEEDED(1, "渠道退款尝试已成功完成"),

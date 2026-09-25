@@ -38,13 +38,13 @@ class MerchantSettlementBehaviorTest {
         // Given：同一结算周期分别准备正、零、负三种净额，观察候选资格与划拨副作用。
         val positive = settlement("127.00")
         // When：确认正净额、确认零净额、确认负净额；只有正净额允许后续执行划拨。
-        assertThat(positive.confirmComposition(OPERATOR, ROLE, NOW)).isEqualTo(MerchantSettlementStatus.CONFIRMED)
+        assertThat(positive.confirmComposition(OPERATOR, ROLE, NOW, "reviewed", "ledger-1")).isEqualTo(MerchantSettlementStatus.CONFIRMED)
         assertThat(positive.compositionFrozen).isTrue()
         assertThat(positive.confirmedBy).isEqualTo(OPERATOR)
         assertThat(positive.settledFactFormed).isFalse()
 
         val zero = settlement("0.00")
-        assertThat(zero.confirmComposition(OPERATOR, ROLE, NOW)).isEqualTo(MerchantSettlementStatus.SUCCEEDED)
+        assertThat(zero.confirmComposition(OPERATOR, ROLE, NOW, "reviewed", "ledger-1")).isEqualTo(MerchantSettlementStatus.SUCCEEDED)
         assertThat(zero.settledFactFormed).isTrue()
         assertThat(zero.completedAt).isEqualTo(NOW)
         assertThat(zero.settlementExecutionAttempts).isEmpty()
@@ -55,7 +55,7 @@ class MerchantSettlementBehaviorTest {
 
         // Then：结算状态、compositionFrozen、settled fact、execution attempt 与 Domain Event 数量共同构成证据。
         val negative = settlement("-30.00")
-        assertThat(negative.confirmComposition(OPERATOR, ROLE, NOW)).isEqualTo(MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED)
+        assertThat(negative.confirmComposition(OPERATOR, ROLE, NOW, "reviewed", "ledger-1")).isEqualTo(MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED)
         assertThat(negative.settlementLines).hasSize(1)
         assertThatThrownBy { negative.startAttempt() }
             .isInstanceOf(IllegalArgumentException::class.java)
@@ -156,6 +156,84 @@ class MerchantSettlementBehaviorTest {
     }
 
     @Test
+    @DisplayName("PAY-AC-097 — UNKNOWN 在原执行身份上收敛为渠道最终结果")
+    fun `trusted final callback converges unknown under the original attempt identity`() {
+        val successSettlement = confirmedSettlement()
+        val successAttempt = successSettlement.startAcceptedAttempt()
+
+        val unknown = successSettlement.recordResult(
+            successAttempt,
+            result = "UNKNOWN",
+            notificationId = "N-U",
+            fingerprint = "fp-u",
+        )
+        val unknownReplay = successSettlement.recordResult(
+            successAttempt,
+            result = "UNKNOWN",
+            notificationId = "N-U",
+            fingerprint = "fp-u",
+            receivedAt = NOW.plusMinutes(3),
+        )
+        val convergedSuccess = successSettlement.recordResult(
+            successAttempt,
+            result = "SUCCESS",
+            notificationId = "N-S",
+            fingerprint = "fp-s",
+            receivedAt = NOW.plusMinutes(4),
+        )
+
+        assertThat(unknown.disposition).isEqualTo(SettlementResultDisposition.UNKNOWN_ACCEPTED)
+        assertThat(unknownReplay.disposition).isEqualTo(SettlementResultDisposition.ACCEPTED_DUPLICATE)
+        assertThat(convergedSuccess.disposition).isEqualTo(SettlementResultDisposition.SUCCESS_ACCEPTED)
+        assertThat(convergedSuccess.settledFactFormedNow).isTrue()
+        assertThat(successSettlement.status).isEqualTo(MerchantSettlementStatus.SUCCEEDED)
+        assertThat(successSettlement.settlementExecutionAttempts).containsExactly(successAttempt)
+        assertThat(successAttempt.status).isEqualTo(SettlementExecutionAttemptStatus.SUCCEEDED)
+        assertThat(successAttempt.finalResult).isEqualTo(SettlementExecutionFinalResult.SUCCESS)
+        assertThat(successAttempt.settlementResultReceipts).hasSize(2)
+        assertThat(successAttempt.settlementResultReceipts.first().receiveCount).isEqualTo(2)
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
+
+        val lateFailure = successSettlement.recordResult(
+            successAttempt,
+            result = "FAILED",
+            notificationId = "N-LATE-F",
+            fingerprint = "fp-late-f",
+            receivedAt = NOW.plusMinutes(5),
+        )
+        assertThat(lateFailure.disposition).isEqualTo(SettlementResultDisposition.CONFLICT)
+        assertThat(successSettlement.status).isEqualTo(MerchantSettlementStatus.SUCCEEDED)
+        assertThat(successAttempt.finalResult).isEqualTo(SettlementExecutionFinalResult.SUCCESS)
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
+
+        val failedSettlement = confirmedSettlement().also {
+            it.id = MerchantSettlementId.parse("018f22a0-0000-7000-8000-000000000003")
+        }
+        val failedAttempt = failedSettlement.startAcceptedAttempt()
+        failedSettlement.recordResult(
+            failedAttempt,
+            result = "UNKNOWN",
+            notificationId = "N-U-F",
+            fingerprint = "fp-u-f",
+        )
+        val convergedFailure = failedSettlement.recordResult(
+            failedAttempt,
+            result = "FAILED",
+            notificationId = "N-F",
+            fingerprint = "fp-f",
+            receivedAt = NOW.plusMinutes(4),
+        )
+
+        assertThat(convergedFailure.disposition).isEqualTo(SettlementResultDisposition.FAILURE_ACCEPTED)
+        assertThat(failedSettlement.status).isEqualTo(MerchantSettlementStatus.FAILED)
+        assertThat(failedSettlement.settlementExecutionAttempts).containsExactly(failedAttempt)
+        assertThat(failedAttempt.status).isEqualTo(SettlementExecutionAttemptStatus.FAILED)
+        assertThat(failedAttempt.finalResult).isEqualTo(SettlementExecutionFinalResult.FAILED)
+        assertThat(failedAttempt.settlementResultReceipts).hasSize(2)
+        assertThat(domainEvents.attached.filterIsInstance<MerchantSettlementCompletedDomainEvent>()).hasSize(1)
+    }
+
+    @Test
     @DisplayName("PAY-AC-067/068 — 未确认结算的追加式调整链")
     fun `unconfirmed settlement can return for adjustment and link a fresh predecessor chain`() {
         val previous = settlement("127.00")
@@ -201,21 +279,40 @@ class MerchantSettlementBehaviorTest {
         assertThat(replacement.settlementLines.single().effectiveConsumptionIdentity)
             .isEqualTo(firstConsumptionIdentity)
 
-        replacement.voidBeforeExecution(OPERATOR, ROLE, "replacement cancelled", NOW.plusMinutes(1))
+        replacement.voidBeforeExecution(OPERATOR, ROLE, "replacement cancelled", NOW.plusMinutes(1), "ledger-1")
         assertThatThrownBy { replacement.activateEffectiveOwnership() }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("不能激活有效所有权")
     }
 
     @Test
+    @DisplayName("PAY-AC-061/096 — 排除候选有稳定原因且不进入金额或消费身份")
+    fun `excluded candidate remains in frozen detail without changing money or ownership`() {
+        val settlement = settlement("127.00", withExcluded = true)
+        val excluded = settlement.settlementLines.single { it.decision == "EXCLUDED" }
+
+        assertThat(settlement.eligibleCount).isEqualTo(1)
+        assertThat(settlement.excludedCount).isEqualTo(1)
+        assertThat(settlement.netAmount).isEqualByComparingTo("127.00")
+        assertThat(excluded.sourceFactIdentity).isEqualTo("FACT-EXCLUDED")
+        assertThat(excluded.reasonCode).isEqualTo("UNRESOLVED_RECONCILIATION")
+        assertThat(excluded.effectiveConsumptionIdentity).isNull()
+
+        settlement.confirmComposition(OPERATOR, ROLE, NOW, "reviewed", "ledger-1")
+        assertThat(settlement.compositionFrozen).isTrue()
+        assertThat(settlement.netAmount).isEqualByComparingTo("127.00")
+        assertThat(excluded.effectiveConsumptionIdentity).isNull()
+    }
+
+    @Test
     @DisplayName("PAY-AC-086 — 最小领域操作员权限守卫（非完整 RBAC）")
     fun `only authorized operators may confirm adjudicate or void`() {
         val prepared = settlement("10.00")
-        assertThatThrownBy { prepared.confirmComposition(OPERATOR, "VIEWER", NOW) }
+        assertThatThrownBy { prepared.confirmComposition(OPERATOR, "VIEWER", NOW, "reviewed", "ledger-1") }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("无权处理商户结算")
 
-        prepared.voidBeforeExecution(OPERATOR, ROLE, "merchant correction", NOW)
+        prepared.voidBeforeExecution(OPERATOR, ROLE, "merchant correction", NOW, "ledger-1")
         assertThat(prepared.status).isEqualTo(MerchantSettlementStatus.VOIDED)
         assertThat(prepared.effectiveScopeIdentity).isNull()
         assertThat(prepared.settlementLines.single().effectiveConsumptionIdentity).isNull()
@@ -224,13 +321,13 @@ class MerchantSettlementBehaviorTest {
         assertThat(prepared.replacementSettlementId).isEqualTo(replacementId)
 
         val confirmed = confirmedSettlement()
-        assertThatThrownBy { confirmed.voidBeforeExecution(OPERATOR, ROLE, "too late", NOW.plusMinutes(1)) }
+        assertThatThrownBy { confirmed.voidBeforeExecution(OPERATOR, ROLE, "too late", NOW.plusMinutes(1), "ledger-1") }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("不能作废")
     }
 
     private fun confirmedSettlement(): MerchantSettlement = settlement("127.00").also {
-        it.confirmComposition(OPERATOR, ROLE, NOW)
+        it.confirmComposition(OPERATOR, ROLE, NOW, "reviewed", "ledger-1")
     }
 
     private fun MerchantSettlement.startAttempt(requestIdentity: String = "REQ-1"): SettlementExecutionAttempt =
@@ -241,6 +338,7 @@ class MerchantSettlementBehaviorTest {
             reviewAfterMinutes = 30,
             executionGroupIdentity = "GROUP-1",
             requestIdentity = requestIdentity,
+            executionChannelId = "C-001",
         ).also { attempt ->
             attempt.id = SettlementExecutionAttemptId.parse("018f22a0-0000-7000-8000-000000000010")
         }
@@ -273,7 +371,7 @@ class MerchantSettlementBehaviorTest {
         verificationSummary = "verified",
     )
 
-    private fun settlement(net: String): MerchantSettlement {
+    private fun settlement(net: String, withExcluded: Boolean = false): MerchantSettlement {
         val netAmount = BigDecimal(net)
         val transactionKind = if (netAmount.signum() < 0) ReconciliationTransactionKind.REFUND else ReconciliationTransactionKind.PAYMENT
         val grossAmount = netAmount.abs()
@@ -313,7 +411,7 @@ class MerchantSettlementBehaviorTest {
         return MerchantSettlementFactory().create(
             MerchantSettlementFactory.Payload(
                 merchantId = "M-001",
-                channelId = "C-001",
+                executionChannelId = null,
                 currency = "CNY",
                 periodStart = NOW.toLocalDate().atStartOfDay(),
                 periodEnd = NOW.toLocalDate().plusDays(1).atStartOfDay(),
@@ -322,7 +420,7 @@ class MerchantSettlementBehaviorTest {
                 effectiveScopeIdentity = "SCOPE-1",
                 status = MerchantSettlementStatus.PREPARED,
                 eligibleCount = 1,
-                excludedCount = 0,
+                excludedCount = if (withExcluded) 1 else 0,
                 blockerSummary = null,
                 paymentGrossAmount = if (transactionKind == ReconciliationTransactionKind.PAYMENT) grossAmount else BigDecimal.ZERO,
                 refundGrossAmount = if (transactionKind == ReconciliationTransactionKind.REFUND) grossAmount else BigDecimal.ZERO,
@@ -342,7 +440,16 @@ class MerchantSettlementBehaviorTest {
                 lastRejectionSummary = null,
                 lastConflictSummary = null,
                 lastReviewSummary = null,
-                settlementLines = listOf(line),
+                settlementLines = listOf(line) + if (withExcluded) listOf(
+                    line.copy(
+                        lineIdentity = "LINE-EXCLUDED",
+                        sourceFactIdentity = "FACT-EXCLUDED",
+                        decision = "EXCLUDED",
+                        reasonCode = "UNRESOLVED_RECONCILIATION",
+                        effectiveConsumptionIdentity = null,
+                        signedNetAmount = BigDecimal("500.00"),
+                    )
+                ) else emptyList(),
             )
         ).also {
             it.id = MerchantSettlementId.parse("018f22a0-0000-7000-8000-000000000001")

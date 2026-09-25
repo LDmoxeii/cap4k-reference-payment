@@ -31,7 +31,11 @@ object PullChannelStatement {
         /**
          * 业务时区
          */
-        val businessTimezone: String
+        val businessTimezone: String,
+        /**
+         * Signal/rerun 可以约束为读取某份权威账单；为空时由 provider 按 scope 选择当前账单。
+         */
+        val statementIdentity: String? = null,
     ) : CapabilityCall<Response>
 
     data class Response(

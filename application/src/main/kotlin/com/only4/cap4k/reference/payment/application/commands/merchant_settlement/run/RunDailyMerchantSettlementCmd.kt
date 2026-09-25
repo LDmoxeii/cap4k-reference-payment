@@ -22,14 +22,19 @@ object RunDailyMerchantSettlementCmd {
     @Service
     class Handler : CommandHandler<Request, Response> {
         override fun handle(command: Request): Response {
-            val settlementDate = command.triggeredAt.atZone(ZoneId.of(BUSINESS_TIMEZONE)).toLocalDate().minusDays(1)
+            val zone = ZoneId.of(BUSINESS_TIMEZONE)
+            val settlementDate = command.triggeredAt.atZone(zone).toLocalDate().minusDays(1)
+            val periodStart = settlementDate.atStartOfDay(zone).toInstant()
+            val periodEnd = settlementDate.plusDays(1).atStartOfDay(zone).toInstant()
             val prepared = Mediator.commands.send(
                 PrepareMerchantSettlementCmd.Request(
                     merchantId = command.merchantId,
-                    channelId = command.channelId,
                     currency = command.currency,
-                    settlementDate = settlementDate,
+                    periodStart = periodStart,
+                    periodEnd = periodEnd,
+                    businessTimezone = BUSINESS_TIMEZONE,
                     requestedBy = "daily-settlement-scheduler",
+                    idempotencyKey = "daily:$periodStart:$periodEnd:${command.merchantId.trim()}:${command.currency.trim().uppercase()}",
                     requestedAt = command.triggeredAt,
                     predecessorSettlementId = null,
                 )
@@ -43,10 +48,6 @@ object RunDailyMerchantSettlementCmd {
          * 商户标识
          */
         val merchantId: String,
-        /**
-         * 渠道标识
-         */
-        val channelId: String,
         /**
          * 币种
          */

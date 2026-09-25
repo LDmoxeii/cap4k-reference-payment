@@ -7,20 +7,23 @@ import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.ddd.domain.repo.schema.and
 import com.only4.cap4k.reference.payment.application.capabilities.payment.channel.VerifyPaymentResult
 import com.only4.cap4k.reference.payment.application.capabilities.payment.order.SerializeMerchantOrderSuccess
-import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundException
+import com.only4.cap4k.reference.payment.application.manual_review.ManualReviewSupport
+import com.only4.cap4k.reference.payment.application.manual_review.openPaymentReview
+import com.only4.cap4k.reference.payment.application.commands.merchant_notification.MerchantNotificationService
+import com.only4.cap4k.reference.payment.application.operations.OperationSupport
+import com.only4.cap4k.reference.payment.application.reference.ReferencePolicyService
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration.SMerchantChannelConfiguration
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.MerchantChannelConfigurationId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
-import com.only4.cap4k.reference.payment.domain.aggregates.payment.SettlementFeeRule
+import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.ChannelResultDisposition
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.recordChannelResult
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome
-import com.only4.cap4k.reference.payment.domain.values.Money
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDateTime
@@ -31,7 +34,7 @@ import java.time.ZoneOffset
     name = "ConfirmPaymentResult",
     packageName = "payment.result",
     description = "Record, verify, deduplicate, and adjudicate a channel payment result",
-    aggregates = ["Payment"],
+    aggregates = ["Payment", "PaymentChannelResultReceipt"],
     family = "command"
 )
 object ConfirmPaymentResultCmd {
@@ -39,6 +42,11 @@ object ConfirmPaymentResultCmd {
     @Service
     class Handler(
         private val clock: Clock,
+        private val referencePolicy: ReferencePolicyService,
+        private val manualReviewSupport: ManualReviewSupport,
+        private val notifications: MerchantNotificationService,
+        private val operations: OperationSupport,
+        private val resultReceipts: PaymentChannelResultReceiptService,
     ) : CommandHandler<Request, Response> {
 
         /**
@@ -47,7 +55,7 @@ object ConfirmPaymentResultCmd {
          * 配置归属、渠道、币种和支付方式任一不一致都拒绝，防止伪造可信成功进入聚合。
          */
         override fun handle(command: Request): Response {
-            val payload = listOf(
+            val payload = command.rawPayload?.takeIf { it.isNotBlank() } ?: listOf(
                 command.channelId,
                 command.notificationId,
                 command.paymentId,
@@ -58,17 +66,85 @@ object ConfirmPaymentResultCmd {
                 command.result,
                 command.occurredAt.toString(),
             ).joinToString("|")
+            val operationIdentity = operations.canonicalHash(
+                command.channelId.trim(),
+                command.notificationId.trim(),
+                command.paymentId.toString(),
+                command.paymentAttemptId.trim(),
+                command.channelTransactionId.trim(),
+                command.amount.stripTrailingZeros().toPlainString(),
+                command.currency.trim().uppercase(),
+                command.result.trim().uppercase(),
+                command.occurredAt.toString(),
+                payload,
+            )
+            val receivedAt = Instant.now(clock)
             val verification = Mediator.capabilities.call(
                 VerifyPaymentResult.Request(
                     channelId = command.channelId,
                     notificationId = command.notificationId,
                     payload = payload,
-                    verificationMaterial = command.verificationMaterial,
+                    paymentId = command.paymentId.toString(),
+                    paymentAttemptId = command.paymentAttemptId,
+                    channelTransactionId = command.channelTransactionId,
+                    amount = command.amount,
+                    currency = command.currency,
                 )
             )
-            val payment = Mediator.repositories.findOne(
-                SPayment.predicateById(command.paymentId)
-            ) ?: throw PaymentNotFoundException(command.paymentId)
+            val payment = Mediator.repositories.findOne(SPayment.predicateById(command.paymentId))
+            if (payment == null) {
+                val summary = "支付 ${command.paymentId} 不存在，渠道结果按未知引用保留"
+                val resultReceipt = resultReceipts.record(
+                    command.toReceiptRequest(
+                        rawEvidence = payload,
+                        receivedAt = receivedAt,
+                        verified = verification.verified,
+                        verificationSummary = verification.verificationSummary,
+                        disposition = "UNKNOWN_REFERENCE",
+                        rejectionSummary = summary,
+                    ),
+                )
+                val operationScope = "reference-channel:${command.channelId.trim()}"
+                val acceptedOperation = operations.replayOrNull(
+                    merchantId = operationScope,
+                    commandType = COMMAND_TYPE,
+                    idempotencyKey = operationIdentity,
+                    canonicalRequestHash = operationIdentity,
+                )
+                val receipt = acceptedOperation?.let { operations.receipt(it, replay = true) }
+                    ?: operations.accept(
+                        merchantId = operationScope,
+                        commandType = COMMAND_TYPE,
+                        idempotencyKey = operationIdentity,
+                        canonicalRequestHash = operationIdentity,
+                        resourceType = "ChannelResultReceipt",
+                        resourceId = resultReceipt.id.toString(),
+                        resourceUrl = receiptResourceUrl(command.notificationId, command.channelId),
+                    )
+                return Response(
+                    outcome = ChannelResultRecordingOutcome(
+                        paymentStatus = PaymentStatus.RESULT_UNKNOWN,
+                        attemptStatus = null,
+                        notificationReceiveCount = resultReceipt.receiveCount,
+                        disposition = if (resultReceipt.receiveCount > 1) {
+                            ChannelResultDisposition.REJECTED_DUPLICATE
+                        } else {
+                            ChannelResultDisposition.ATTEMPT_NOT_FOUND
+                        },
+                        rejectionSummary = summary,
+                        conflictSummary = null,
+                        successFactFormedNow = false,
+                        settlementEligible = false,
+                    ),
+                    receipt = receipt,
+                )
+            }
+            val acceptedOperation = operations.replayOrNull(
+                merchantId = payment.merchantId,
+                commandType = COMMAND_TYPE,
+                idempotencyKey = operationIdentity,
+                canonicalRequestHash = operationIdentity,
+            )
             val paymentAttemptId = PaymentAttemptId.parse(command.paymentAttemptId)
             val attempt = payment.attempts.firstOrNull { it.id == paymentAttemptId }
             val trustworthySuccess = command.result.trim().equals("SUCCESS", ignoreCase = true) && verification.verified
@@ -112,19 +188,9 @@ object ConfirmPaymentResultCmd {
                 require(configuration.paymentMethod == payment.paymentMethod) {
                     "支付尝试 ${attempt.id} 引用了其他支付方式的配置"
                 }
-                SettlementFeeRule(
-                    configurationId = configuration.id.toString(),
-                    basisPoints = configuration.settlementFeeBasisPoints,
-                    fixedFeeAmount = configuration.settlementFixedFeeAmount,
-                    roundingMode = try {
-                        RoundingMode.valueOf(configuration.settlementFeeRoundingMode.trim().uppercase())
-                    } catch (_: IllegalArgumentException) {
-                        throw IllegalArgumentException(
-                            "不支持的结算手续费舍入模式：${configuration.settlementFeeRoundingMode}"
-                        )
-                    },
-                    currencyPrecision = Money.fractionDigits(payment.currency),
-                )
+                // The active channel is still checked for ownership and routing compatibility,
+                // but a reference payment-success fact snapshots the effective ReferencePolicy.
+                referencePolicy.settlementFeeRule(payment.currency)
             } else {
                 null
             }
@@ -137,13 +203,55 @@ object ConfirmPaymentResultCmd {
                 currency = command.currency.uppercase(),
                 result = command.result,
                 occurredAt = LocalDateTime.ofInstant(command.occurredAt, ZoneOffset.UTC),
-                receivedAt = LocalDateTime.ofInstant(Instant.now(clock), ZoneOffset.UTC),
+                receivedAt = LocalDateTime.ofInstant(receivedAt, ZoneOffset.UTC),
                 verified = verification.verified,
                 verificationSummary = verification.verificationSummary,
                 settlementFeeRule = settlementFeeRule,
                 merchantOrderSuccessAvailable = merchantOrderSuccessAvailable,
             )
-            return Response(outcome = decision)
+            // The aggregate owns the review case and its eligibility effect.  The ManualReviewItem
+            // is only the authoritative operator work queue for that exact existing review fact.
+            decision.reviewIdentity?.let { manualReviewSupport.openPaymentReview(payment, it) }
+            if (decision.successFactFormedNow) {
+                notifications.createAndDeliver(
+                    MerchantNotificationService.Intent(
+                        merchantId = payment.merchantId,
+                        sourceKind = "PAYMENT",
+                        sourceFactIdentity = requireNotNull(payment.merchantSuccessNotificationIntentIdentity),
+                        paymentId = payment.id,
+                        content = mapOf(
+                            "merchantId" to payment.merchantId,
+                            "paymentId" to payment.id.toString(),
+                            "merchantOrderNo" to payment.merchantOrderNumber,
+                            "channelTransactionId" to requireNotNull(payment.channelTransactionId),
+                            "amount" to payment.amount.toPlainString(),
+                            "currency" to payment.currency,
+                            "status" to payment.status.name,
+                        ),
+                    ),
+                )
+            }
+            val resultReceipt = resultReceipts.record(
+                command.toReceiptRequest(
+                    rawEvidence = payload,
+                    receivedAt = receivedAt,
+                    verified = verification.verified,
+                    verificationSummary = verification.verificationSummary,
+                    disposition = publicDisposition(decision.disposition),
+                    rejectionSummary = decision.rejectionSummary ?: decision.conflictSummary,
+                ),
+            )
+            val receipt = acceptedOperation?.let { operations.receipt(it, replay = true) }
+                ?: operations.accept(
+                    merchantId = payment.merchantId,
+                    commandType = COMMAND_TYPE,
+                    idempotencyKey = operationIdentity,
+                    canonicalRequestHash = operationIdentity,
+                    resourceType = "ChannelResultReceipt",
+                    resourceId = resultReceipt.id.toString(),
+                    resourceUrl = receiptResourceUrl(command.notificationId, command.channelId),
+                )
+            return Response(outcome = decision, receipt = receipt)
         }
     }
 
@@ -184,16 +292,58 @@ object ConfirmPaymentResultCmd {
          * 发生时间
          */
         val occurredAt: Instant,
-        /**
-         * 核验材料
-         */
-        val verificationMaterial: String
+        /** callback 的 canonical raw payload；验真结论不来自调用方。 */
+        val rawPayload: String? = null,
     ) : Command<Response>
 
     data class Response(
         /**
          * 结果
          */
-        val outcome: ChannelResultRecordingOutcome
+        val outcome: ChannelResultRecordingOutcome,
+        val receipt: OperationReceipt,
     )
+
+    private const val COMMAND_TYPE = "ReceivePaymentChannelResult"
+
+    private fun Request.toReceiptRequest(
+        rawEvidence: String,
+        receivedAt: Instant,
+        verified: Boolean,
+        verificationSummary: String?,
+        disposition: String,
+        rejectionSummary: String?,
+    ) = PaymentChannelResultReceiptService.RecordRequest(
+        channelId = channelId,
+        resultIdentity = notificationId,
+        rawEvidence = rawEvidence,
+        paymentId = paymentId,
+        paymentAttemptId = paymentAttemptId,
+        channelTransactionId = channelTransactionId,
+        verified = verified,
+        verificationSummary = verificationSummary,
+        outcome = result,
+        amount = amount,
+        currency = currency,
+        occurredAt = occurredAt,
+        receivedAt = receivedAt,
+        disposition = disposition,
+        rejectionSummary = rejectionSummary,
+    )
+
+    private fun publicDisposition(disposition: ChannelResultDisposition): String = when (disposition) {
+        ChannelResultDisposition.SUCCESS_ACCEPTED,
+        ChannelResultDisposition.FAILURE_ACCEPTED,
+        ChannelResultDisposition.UNKNOWN_ACCEPTED -> "ACCEPTED"
+        ChannelResultDisposition.ACCEPTED_DUPLICATE,
+        ChannelResultDisposition.REJECTED_DUPLICATE -> "DUPLICATE"
+        ChannelResultDisposition.REJECTED -> "REJECTED_INVALID"
+        ChannelResultDisposition.ATTEMPT_NOT_FOUND -> "UNKNOWN_REFERENCE"
+        ChannelResultDisposition.LATE -> "LATE"
+        ChannelResultDisposition.CONFLICT -> "CONFLICTING"
+        ChannelResultDisposition.RECEIVED -> error("non-terminal payment result disposition")
+    }
+
+    private fun receiptResourceUrl(resultIdentity: String, channelId: String): String =
+        "/api/channel/payment-results/$resultIdentity/receipts?channelId=$channelId"
 }

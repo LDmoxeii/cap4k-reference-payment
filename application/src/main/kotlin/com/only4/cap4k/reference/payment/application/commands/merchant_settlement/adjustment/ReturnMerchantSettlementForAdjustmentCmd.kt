@@ -14,7 +14,6 @@ import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.e
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.linkReplacement
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.returnForAdjustment
 import java.time.Instant
-import java.time.ZoneId
 import java.time.ZoneOffset
 import org.springframework.stereotype.Service
 
@@ -41,17 +40,15 @@ object ReturnMerchantSettlementForAdjustmentCmd {
                 reason = command.reason,
                 returnedAt = returnedAt.atOffset(ZoneOffset.UTC).toLocalDateTime(),
             )
-            val settlementDate = previous.periodStart
-                .toInstant(ZoneOffset.UTC)
-                .atZone(ZoneId.of(previous.businessTimezone))
-                .toLocalDate()
             val prepared = Mediator.commands.send(
                 PrepareMerchantSettlementCmd.Request(
                     merchantId = previous.merchantId,
-                    channelId = previous.channelId,
                     currency = previous.currency,
-                    settlementDate = settlementDate,
+                    periodStart = previous.periodStart.toInstant(ZoneOffset.UTC),
+                    periodEnd = previous.periodEnd.toInstant(ZoneOffset.UTC),
+                    businessTimezone = previous.businessTimezone,
                     requestedBy = command.operatorIdentity,
+                    idempotencyKey = "adjustment:${previous.id}",
                     requestedAt = returnedAt,
                     predecessorSettlementId = previous.id,
                 )

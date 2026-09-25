@@ -2,6 +2,8 @@ package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 
 import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.endpoint.EndpointHandler
+import com.only4.cap4k.reference.payment.adapter.contract.ReferenceContractStatusMapper
+import com.only4.cap4k.reference.payment.adapter.endpoints.toContractMoney
 import com.only4.cap4k.reference.payment.application.queries.payment.read.GetPaymentQry
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.GetPaymentEndpoint
@@ -13,11 +15,26 @@ class GetPaymentEndpointHandler : EndpointHandler<GetPaymentEndpoint.Request, Ge
         val r = Mediator.queries.ask(GetPaymentQry.Request(PaymentId.parse(request.paymentId)))
         return GetPaymentEndpoint.Response(
             paymentId = r.paymentId.toString(), merchantId = r.merchantId, merchantOrderNumber = r.merchantOrderNumber,
-            amount = r.amount, currency = r.currency, paymentMethod = r.paymentMethod, status = r.status,
+            money = r.amount.toContractMoney(r.currency), paymentMethod = r.paymentMethod, status = publicPaymentStatus(r.status),
+            finality = ReferenceContractStatusMapper.paymentFinality(r.status, r.settlementBlocked, r.blockingReviewCount),
             createdAt = r.createdAt, expiresAt = r.expiresAt, succeededAt = r.succeededAt,
             closedAt = r.closedAt, closeReason = r.closeReason, channelTransactionId = r.channelTransactionId,
-            reservedRefundAmount = r.reservedRefundAmount, successfulRefundAmount = r.successfulRefundAmount,
-            refundableAmount = r.refundableAmount, attemptCount = r.attemptCount,
+            feeSnapshot = r.feeSnapshot?.let { fee ->
+                GetPaymentEndpoint.Response.FeeSnapshot(
+                    feeRate = fee.feeRate, basisPoints = fee.basisPoints,
+                    fixedFeeMoney = fee.fixedFeeAmount.toContractMoney(r.currency),
+                    roundingMode = fee.roundingMode, currencyPrecision = fee.currencyPrecision,
+                    calculationMoney = fee.calculationAmount.toContractMoney(r.currency),
+                    feeMoney = fee.feeAmount.toContractMoney(r.currency), formedAt = fee.formedAt,
+                )
+            },
+            refundBudget = GetPaymentEndpoint.Response.RefundBudget(
+                originalAmount = r.amount.toContractMoney(r.currency),
+                succeededAmount = r.successfulRefundAmount.toContractMoney(r.currency),
+                reservedAmount = r.reservedRefundAmount.toContractMoney(r.currency),
+                availableAmount = r.refundableAmount.toContractMoney(r.currency),
+            ),
+            attemptCount = r.attemptCount,
             notificationReceiveCount = r.notificationReceiveCount,
             rejectedNotificationCount = r.rejectedNotificationCount,
             conflictingNotificationCount = r.conflictingNotificationCount,
@@ -35,6 +52,9 @@ class GetPaymentEndpointHandler : EndpointHandler<GetPaymentEndpoint.Request, Ge
                 GetPaymentEndpoint.Response.PaymentAttemptSummary(
                     paymentAttemptId = a.paymentAttemptId, channelId = a.channelId, status = a.status,
                     requestIdentity = a.requestIdentity, initiatedAt = a.initiatedAt,
+                    submissionIdentity = a.submissionIdentity, submittedAt = a.submittedAt,
+                    acceptedAt = a.acceptedAt, completedAt = a.completedAt,
+                    interactionInformation = a.interactionInformation, riskReason = a.riskReason,
                     channelTransactionId = a.channelTransactionId, finalResult = a.finalResult,
                     resultOccurredAt = a.resultOccurredAt, notificationReceiveCount = a.notificationReceiveCount,
                     notificationFirstReceivedAt = a.notificationFirstReceivedAt,
@@ -44,14 +64,22 @@ class GetPaymentEndpointHandler : EndpointHandler<GetPaymentEndpoint.Request, Ge
                     conflictingNotificationCount = a.conflictingNotificationCount,
                     verdictSummary = a.verdictSummary, rejectionSummary = a.rejectionSummary,
                     conflictSummary = a.conflictSummary,
+                    submissionReceipts = a.submissionReceipts.map { s ->
+                        GetPaymentEndpoint.Response.SubmissionReceiptSummary(
+                            submissionIdentity = s.submissionIdentity, requestIdentity = s.requestIdentity,
+                            channelId = s.channelId, submittedAt = s.submittedAt, outcome = s.outcome,
+                            channelReference = s.channelReference, diagnosticSummary = s.diagnosticSummary,
+                        )
+                    },
                     notificationReceipts = a.notificationReceipts.map { n ->
                         GetPaymentEndpoint.Response.NotificationReceiptSummary(
                             notificationIdentity = n.notificationIdentity, payloadIdentity = n.payloadIdentity,
                             channelId = n.channelId, channelTransactionId = n.channelTransactionId,
-                            amount = n.amount, currency = n.currency, result = n.result, occurredAt = n.occurredAt,
+                            money = n.amount.toContractMoney(n.currency), result = n.result, occurredAt = n.occurredAt,
                             firstReceivedAt = n.firstReceivedAt, lastReceivedAt = n.lastReceivedAt,
                             receiveCount = n.receiveCount, verified = n.verified, accepted = n.accepted,
-                            decision = n.decision, verdictSummary = n.verdictSummary,
+                            decision = ReferenceContractStatusMapper.paymentDisposition(n.decision),
+                            verdictSummary = n.verdictSummary,
                             rejectionSummary = n.rejectionSummary, conflictSummary = n.conflictSummary,
                         )
                     },

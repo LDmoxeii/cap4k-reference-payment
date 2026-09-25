@@ -45,7 +45,7 @@ class IntegrationEventContractTest {
             eventIdentity = "settlement-completed-1",
             settlementId = "settlement-1",
             merchantId = "M-001",
-            channelId = "C-001",
+            executionChannelId = "C-001",
             currency = "CNY",
             netAmount = BigDecimal("127.00"),
             completedAt = Instant.parse("2026-08-22T00:15:00Z"),

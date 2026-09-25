@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:manual-review.resolve",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.manual_review.ResolveManualReviewCmd.Request",
+      "name": "ResolveManualReviewCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.manual_review.ResolveManualReviewCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:manual-review.resolve",
+      "name": "manual-review.resolve [POST /api/manual-reviews/{reviewId}/resolutions]",
+      "fullName": "endpoint-http:manual-review.resolve",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:manual-review.resolve",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.manual_review.ResolveManualReviewCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

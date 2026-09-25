@@ -2,7 +2,9 @@ package com.only4.cap4k.reference.payment.contract.endpoints.refund.api
 
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.contract.EndpointRequest
-import java.math.BigDecimal
+import com.only4.cap4k.reference.payment.contract.common.ChannelResultDisposition
+import com.only4.cap4k.reference.payment.contract.common.Finality
+import com.only4.cap4k.reference.payment.contract.common.Money
 import java.time.Instant
 
 /**
@@ -45,13 +47,17 @@ object GetRefundEndpoint {
          */
         val merchantRefundNumber: String,
         /**
+         * 退款申请幂等键
+         */
+        val idempotencyKey: String,
+        /**
          * 金额
          */
-        val amount: BigDecimal,
+        val money: Money,
         /**
-         * 币种
+         * 退款申请原因
          */
-        val currency: String,
+        val reason: String,
         /**
          * 支付方式
          */
@@ -60,6 +66,8 @@ object GetRefundEndpoint {
          * 状态
          */
         val status: String,
+        /** Whether the refund can still advance automatically. */
+        val finality: Finality,
         /**
          * 请求时间
          */
@@ -83,19 +91,19 @@ object GetRefundEndpoint {
         /**
          * 渠道标识
          */
-        val channelId: String,
+        val channelId: String?,
         /**
          * 渠道配置标识
          */
-        val channelConfigurationId: String,
+        val channelConfigurationId: String?,
         /**
          * 渠道
          */
-        val channelConfigurationSnapshot: String,
+        val channelConfigurationSnapshot: String?,
         /**
          * 请求身份
          */
-        val requestIdentity: String,
+        val requestIdentity: String?,
         /**
          * 渠道退款标识
          */
@@ -243,11 +251,7 @@ object GetRefundEndpoint {
             /**
              * 金额
              */
-            val amount: BigDecimal,
-            /**
-             * 币种
-             */
-            val currency: String,
+            val money: Money,
             /**
              * 结果
              */
@@ -279,7 +283,7 @@ object GetRefundEndpoint {
             /**
              * 决策
              */
-            val decision: String,
+            val decision: ChannelResultDisposition,
             /**
              * 判定摘要
              */

@@ -10,6 +10,19 @@ projection_policy:
 phase: build
 build_authorized: true
 
+unified_reference_contract:
+  source_project: D:/code/GitHub/payment-product-template
+  source_commit: 3b66db675356e77c720081e0410baf444b7baa9c
+  business_requirement_count: 62
+  acceptance_count: 67
+  business_requirement_status: verified
+  acceptance_status: verified
+  automation_evidence: domain, JPA/UoW, endpoint contract, HTTP binding and application tests
+  real_http_evidence_id: PAY-EV-037
+  clean_loop_count: 2
+  clean_loop_repeatable: true
+  production_strengthening_boundary: authentication, production RBAC and tenant isolation, production database deployment/migration, persistent Inbox, multi-instance scheduler lease, cross-service exactly-once, production gateway/security/rate-limit/secret management, real channel certificates/bills/fund movement
+
 status_vocabulary:
   planned: target mapping exists but implementation has not started
   not-built: no implementation or verifiable evidence exists
@@ -19,457 +32,656 @@ requirements:
   PAY-BR-001:
     source: docs/requirements/business/payment-rules.md#pay-br-001
     acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003]
-    status: planned
+    status: verified
   PAY-BR-002:
     source: docs/requirements/business/payment-rules.md#pay-br-002
     acceptance_ids: [PAY-AC-002, PAY-AC-003]
-    status: planned
+    status: verified
   PAY-BR-003:
     source: docs/requirements/business/payment-rules.md#pay-br-003
     acceptance_ids: [PAY-AC-011]
-    status: planned
+    status: verified
   PAY-BR-004:
     source: docs/requirements/business/payment-rules.md#pay-br-004
     acceptance_ids: [PAY-AC-005]
-    status: planned
+    status: verified
   PAY-BR-005:
     source: docs/requirements/business/payment-rules.md#pay-br-005
     acceptance_ids: [PAY-AC-026]
-    status: planned
+    status: verified
   PAY-BR-006:
     source: docs/requirements/business/payment-rules.md#pay-br-006
     acceptance_ids: [PAY-AC-068]
-    status: planned
+    status: verified
   PAY-BR-010:
     source: docs/requirements/business/payment-rules.md#pay-br-010
     acceptance_ids: [PAY-AC-012]
-    status: planned
+    status: verified
   PAY-BR-011:
     source: docs/requirements/business/payment-rules.md#pay-br-011
     acceptance_ids: [PAY-AC-013]
-    status: planned
+    status: verified
   PAY-BR-012:
     source: docs/requirements/business/payment-rules.md#pay-br-012
     acceptance_ids: [PAY-AC-012, PAY-AC-020, PAY-AC-027, PAY-AC-040, PAY-AC-060]
-    status: planned
+    status: verified
   PAY-BR-013:
     source: docs/requirements/business/payment-rules.md#pay-br-013
     acceptance_ids: [PAY-AC-060]
-    status: planned
+    status: verified
   PAY-BR-014:
     source: docs/requirements/business/payment-rules.md#pay-br-014
     acceptance_ids: [PAY-AC-014, PAY-AC-060]
-    status: planned
+    status: verified
   PAY-BR-015:
     source: docs/requirements/business/payment-rules.md#pay-br-015
     acceptance_ids: [PAY-AC-060]
-    status: planned
+    status: verified
   PAY-BR-020:
     source: docs/requirements/business/payment-rules.md#pay-br-020
     acceptance_ids: [PAY-AC-001, PAY-AC-084]
-    status: planned
+    status: verified
   PAY-BR-021:
     source: docs/requirements/business/payment-rules.md#pay-br-021
     acceptance_ids: [PAY-AC-004, PAY-AC-010, PAY-AC-083]
-    status: planned
+    status: verified
   PAY-BR-022:
     source: docs/requirements/business/payment-rules.md#pay-br-022
     acceptance_ids: [PAY-AC-010]
-    status: planned
+    status: verified
   PAY-BR-023:
     source: docs/requirements/business/payment-rules.md#pay-br-023
     acceptance_ids: [PAY-AC-005, PAY-AC-015]
-    status: planned
+    status: verified
   PAY-BR-024:
     source: docs/requirements/business/payment-rules.md#pay-br-024
     acceptance_ids: [PAY-AC-006]
-    status: planned
+    status: verified
   PAY-BR-025:
     source: docs/requirements/business/payment-rules.md#pay-br-025
     acceptance_ids: [PAY-AC-016]
-    status: planned
+    status: verified
   PAY-BR-026:
     source: docs/requirements/business/payment-rules.md#pay-br-026
     acceptance_ids: [PAY-AC-007, PAY-AC-008]
-    status: planned
+    status: verified
   PAY-BR-027:
     source: docs/requirements/business/payment-rules.md#pay-br-027
     acceptance_ids: [PAY-AC-009]
-    status: planned
+    status: verified
   PAY-BR-028:
     source: docs/requirements/business/payment-rules.md#pay-br-028
     acceptance_ids: [PAY-AC-017]
-    status: planned
+    status: verified
   PAY-BR-030:
     source: docs/requirements/business/payment-rules.md#pay-br-030
     acceptance_ids: [PAY-AC-020, PAY-AC-027]
-    status: planned
+    status: verified
   PAY-BR-031:
     source: docs/requirements/business/payment-rules.md#pay-br-031
     acceptance_ids: [PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023]
-    status: planned
+    status: verified
   PAY-BR-032:
     source: docs/requirements/business/payment-rules.md#pay-br-032
     acceptance_ids: [PAY-AC-023]
-    status: planned
+    status: verified
   PAY-BR-033:
     source: docs/requirements/business/payment-rules.md#pay-br-033
     acceptance_ids: [PAY-AC-028]
-    status: planned
+    status: verified
   PAY-BR-034:
     source: docs/requirements/business/payment-rules.md#pay-br-034
     acceptance_ids: [PAY-AC-024, PAY-AC-025]
-    status: planned
+    status: verified
   PAY-BR-035:
     source: docs/requirements/business/payment-rules.md#pay-br-035
     acceptance_ids: [PAY-AC-029]
-    status: planned
+    status: verified
   PAY-BR-036:
     source: docs/requirements/business/payment-rules.md#pay-br-036
     acceptance_ids: [PAY-AC-082]
-    status: planned
+    status: verified
   PAY-BR-040:
     source: docs/requirements/business/payment-rules.md#pay-br-040
     acceptance_ids: [PAY-AC-040, PAY-AC-045]
-    status: planned
+    status: verified
   PAY-BR-041:
     source: docs/requirements/business/payment-rules.md#pay-br-041
     acceptance_ids: [PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-047, PAY-AC-082]
-    status: planned
+    status: verified
   PAY-BR-042:
     source: docs/requirements/business/payment-rules.md#pay-br-042
     acceptance_ids: [PAY-AC-040, PAY-AC-043, PAY-AC-044]
-    status: planned
+    status: verified
   PAY-BR-043:
     source: docs/requirements/business/payment-rules.md#pay-br-043
     acceptance_ids: [PAY-AC-041, PAY-AC-042, PAY-AC-043]
-    status: planned
+    status: verified
   PAY-BR-044:
     source: docs/requirements/business/payment-rules.md#pay-br-044
     acceptance_ids: [PAY-AC-044, PAY-AC-045, PAY-AC-047, PAY-AC-082]
-    status: planned
+    status: verified
   PAY-BR-045:
     source: docs/requirements/business/payment-rules.md#pay-br-045
     acceptance_ids: [PAY-AC-041, PAY-AC-043, PAY-AC-061]
-    status: planned
+    status: verified
   PAY-BR-046:
     source: docs/requirements/business/payment-rules.md#pay-br-046
     acceptance_ids: [PAY-AC-046]
-    status: planned
+    status: verified
   PAY-BR-050:
     source: docs/requirements/business/payment-rules.md#pay-br-050
     acceptance_ids: [PAY-AC-060, PAY-AC-068]
-    status: planned
+    status: verified
   PAY-BR-051:
     source: docs/requirements/business/payment-rules.md#pay-br-051
     acceptance_ids: [PAY-AC-062]
-    status: planned
+    status: verified
   PAY-BR-052:
     source: docs/requirements/business/payment-rules.md#pay-br-052
     acceptance_ids: [PAY-AC-060, PAY-AC-083]
-    status: planned
+    status: verified
   PAY-BR-053:
     source: docs/requirements/business/payment-rules.md#pay-br-053
     acceptance_ids: [PAY-AC-067]
-    status: planned
+    status: verified
   PAY-BR-054:
     source: docs/requirements/business/payment-rules.md#pay-br-054
     acceptance_ids: [PAY-AC-064]
-    status: planned
+    status: verified
   PAY-BR-055:
     source: docs/requirements/business/payment-rules.md#pay-br-055
     acceptance_ids: [PAY-AC-065]
-    status: planned
+    status: verified
   PAY-BR-056:
     source: docs/requirements/business/payment-rules.md#pay-br-056
     acceptance_ids: [PAY-AC-066]
-    status: planned
+    status: verified
   PAY-BR-060:
     source: docs/requirements/business/payment-rules.md#pay-br-060
     acceptance_ids: [PAY-AC-080]
-    status: planned
+    status: verified
   PAY-BR-061:
     source: docs/requirements/business/payment-rules.md#pay-br-061
     acceptance_ids: [PAY-AC-044, PAY-AC-082, PAY-AC-086]
-    status: planned
+    status: verified
   PAY-BR-062:
     source: docs/requirements/business/payment-rules.md#pay-br-062
     acceptance_ids: [PAY-AC-047, PAY-AC-082]
-    status: planned
+    status: verified
   PAY-BR-063:
     source: docs/requirements/business/payment-rules.md#pay-br-063
     acceptance_ids: [PAY-AC-007, PAY-AC-040, PAY-AC-060, PAY-AC-085]
-    status: planned
+    status: verified
   PAY-BR-064:
     source: docs/requirements/business/payment-rules.md#pay-br-064
     acceptance_ids: [PAY-AC-084]
-    status: planned
+    status: verified
+  PAY-BR-065:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-090]
+    status: verified
+  PAY-BR-066:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-091, PAY-AC-092]
+    status: verified
+  PAY-BR-067:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-093]
+    status: verified
+  PAY-BR-068:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-100]
+    status: verified
+  PAY-BR-069:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-099]
+    status: verified
+  PAY-BR-070:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-087, PAY-AC-094]
+    status: verified
+  PAY-BR-071:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-045, PAY-AC-094]
+    status: verified
+  PAY-BR-072:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-095]
+    status: verified
+  PAY-BR-073:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-096]
+    status: verified
+  PAY-BR-074:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-063, PAY-AC-064, PAY-AC-097]
+    status: verified
+  PAY-BR-075:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-068, PAY-AC-098]
+    status: verified
+  PAY-BR-076:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-081, PAY-AC-088]
+    status: verified
+  PAY-BR-077:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-083]
+    status: verified
+  PAY-BR-078:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-101, PAY-AC-102]
+    status: verified
+  PAY-BR-079:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    acceptance_ids: [PAY-AC-103]
+    status: verified
+
+acceptance_to_requirements:
+  PAY-AC-001: [PAY-BR-001, PAY-BR-020]
+  PAY-AC-002: [PAY-BR-001, PAY-BR-002]
+  PAY-AC-003: [PAY-BR-001, PAY-BR-002]
+  PAY-AC-004: [PAY-BR-021]
+  PAY-AC-005: [PAY-BR-004, PAY-BR-023]
+  PAY-AC-006: [PAY-BR-024]
+  PAY-AC-007: [PAY-BR-026, PAY-BR-063]
+  PAY-AC-008: [PAY-BR-026]
+  PAY-AC-009: [PAY-BR-027]
+  PAY-AC-010: [PAY-BR-021, PAY-BR-022]
+  PAY-AC-011: [PAY-BR-003]
+  PAY-AC-012: [PAY-BR-010, PAY-BR-012]
+  PAY-AC-013: [PAY-BR-011]
+  PAY-AC-014: [PAY-BR-014]
+  PAY-AC-015: [PAY-BR-023]
+  PAY-AC-016: [PAY-BR-025]
+  PAY-AC-017: [PAY-BR-028]
+  PAY-AC-020: [PAY-BR-012, PAY-BR-030, PAY-BR-031]
+  PAY-AC-021: [PAY-BR-031]
+  PAY-AC-022: [PAY-BR-031]
+  PAY-AC-023: [PAY-BR-031, PAY-BR-032]
+  PAY-AC-024: [PAY-BR-034]
+  PAY-AC-025: [PAY-BR-034]
+  PAY-AC-026: [PAY-BR-005]
+  PAY-AC-027: [PAY-BR-012, PAY-BR-030]
+  PAY-AC-028: [PAY-BR-033]
+  PAY-AC-029: [PAY-BR-035]
+  PAY-AC-040: [PAY-BR-012, PAY-BR-040, PAY-BR-041, PAY-BR-042, PAY-BR-063]
+  PAY-AC-041: [PAY-BR-041, PAY-BR-043, PAY-BR-045]
+  PAY-AC-042: [PAY-BR-041, PAY-BR-043]
+  PAY-AC-043: [PAY-BR-041, PAY-BR-042, PAY-BR-043, PAY-BR-045]
+  PAY-AC-044: [PAY-BR-041, PAY-BR-042, PAY-BR-044, PAY-BR-061]
+  PAY-AC-045: [PAY-BR-040, PAY-BR-041, PAY-BR-044, PAY-BR-071]
+  PAY-AC-046: [PAY-BR-046]
+  PAY-AC-047: [PAY-BR-041, PAY-BR-044, PAY-BR-062]
+  PAY-AC-060: [PAY-BR-012, PAY-BR-013, PAY-BR-014, PAY-BR-015, PAY-BR-050, PAY-BR-052, PAY-BR-063]
+  PAY-AC-061: [PAY-BR-045]
+  PAY-AC-062: [PAY-BR-051]
+  PAY-AC-063: [PAY-BR-074]
+  PAY-AC-064: [PAY-BR-054, PAY-BR-074]
+  PAY-AC-065: [PAY-BR-055]
+  PAY-AC-066: [PAY-BR-056]
+  PAY-AC-067: [PAY-BR-053]
+  PAY-AC-068: [PAY-BR-006, PAY-BR-050, PAY-BR-075]
+  PAY-AC-080: [PAY-BR-060]
+  PAY-AC-081: [PAY-BR-076]
+  PAY-AC-082: [PAY-BR-036, PAY-BR-041, PAY-BR-044, PAY-BR-061, PAY-BR-062]
+  PAY-AC-083: [PAY-BR-021, PAY-BR-052, PAY-BR-077]
+  PAY-AC-084: [PAY-BR-020, PAY-BR-064]
+  PAY-AC-085: [PAY-BR-063]
+  PAY-AC-086: [PAY-BR-061]
+  PAY-AC-087: [PAY-BR-070]
+  PAY-AC-088: [PAY-BR-076]
+  PAY-AC-090: [PAY-BR-065]
+  PAY-AC-091: [PAY-BR-066]
+  PAY-AC-092: [PAY-BR-066]
+  PAY-AC-093: [PAY-BR-067]
+  PAY-AC-094: [PAY-BR-070, PAY-BR-071]
+  PAY-AC-095: [PAY-BR-072]
+  PAY-AC-096: [PAY-BR-073]
+  PAY-AC-097: [PAY-BR-074]
+  PAY-AC-098: [PAY-BR-075]
+  PAY-AC-099: [PAY-BR-069]
+  PAY-AC-100: [PAY-BR-068]
+  PAY-AC-101: [PAY-BR-078]
+  PAY-AC-102: [PAY-BR-078]
+  PAY-AC-103: [PAY-BR-079]
 
 acceptance:
   PAY-AC-001:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-001
     projection_ids: [PAY-CP-001, PAY-CP-005, PAY-CP-011]
-    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    evidence_ids: [PAY-EV-002, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-002:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-002
     projection_ids: [PAY-CP-001, PAY-CP-011]
-    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    evidence_ids: [PAY-EV-002, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-003:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-003
     projection_ids: [PAY-CP-001, PAY-CP-011]
-    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    evidence_ids: [PAY-EV-002, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-004:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-004
     projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-010]
-    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-037]
     status: verified
   PAY-AC-005:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-005
     projection_ids: [PAY-CP-001, PAY-CP-006]
-    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-037]
     status: verified
   PAY-AC-006:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-006
     projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-011]
-    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-019]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-007:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-007
     projection_ids: [PAY-CP-001, PAY-CP-007]
-    evidence_ids: [PAY-EV-013, PAY-EV-033]
+    evidence_ids: [PAY-EV-013, PAY-EV-033, PAY-EV-037]
     status: verified
   PAY-AC-008:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-008
     projection_ids: [PAY-CP-001, PAY-CP-007]
-    evidence_ids: [PAY-EV-013, PAY-EV-029, PAY-EV-033]
+    evidence_ids: [PAY-EV-013, PAY-EV-029, PAY-EV-033, PAY-EV-037]
     status: verified
   PAY-AC-009:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-009
     projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-007, PAY-CP-008]
-    evidence_ids: [PAY-EV-012, PAY-EV-013, PAY-EV-029, PAY-EV-030]
+    evidence_ids: [PAY-EV-012, PAY-EV-013, PAY-EV-029, PAY-EV-030, PAY-EV-037]
     status: verified
   PAY-AC-010:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-010
     projection_ids: [PAY-CP-001, PAY-CP-006, PAY-CP-008]
-    evidence_ids: [PAY-EV-012, PAY-EV-029, PAY-EV-030]
+    evidence_ids: [PAY-EV-012, PAY-EV-029, PAY-EV-030, PAY-EV-037]
     status: verified
   PAY-AC-011:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-011
     projection_ids: [PAY-CP-001, PAY-CP-011]
-    evidence_ids: [PAY-EV-019, PAY-EV-031, PAY-EV-033]
+    evidence_ids: [PAY-EV-019, PAY-EV-031, PAY-EV-033, PAY-EV-037]
     status: verified
   PAY-AC-012:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-012
     projection_ids: [PAY-CP-001, PAY-CP-011]
-    evidence_ids: [PAY-EV-002, PAY-EV-019]
+    evidence_ids: [PAY-EV-002, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-013:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-013
     projection_ids: [PAY-CP-001]
-    evidence_ids: [PAY-EV-002]
+    evidence_ids: [PAY-EV-002, PAY-EV-037]
     status: verified
   PAY-AC-014:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-014
     projection_ids: [PAY-CP-001, PAY-CP-004, PAY-CP-005]
-    evidence_ids: [PAY-EV-002, PAY-EV-009]
+    evidence_ids: [PAY-EV-002, PAY-EV-009, PAY-EV-037]
     status: verified
   PAY-AC-015:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-015
     projection_ids: [PAY-CP-001, PAY-CP-006]
-    evidence_ids: [PAY-EV-012, PAY-EV-029, PAY-EV-030]
+    evidence_ids: [PAY-EV-012, PAY-EV-029, PAY-EV-030, PAY-EV-037]
     status: verified
   PAY-AC-016:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-016
     projection_ids: [PAY-CP-001, PAY-CP-006]
-    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012]
+    evidence_ids: [PAY-EV-002, PAY-EV-011, PAY-EV-012, PAY-EV-037]
     status: verified
   PAY-AC-017:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-017
     projection_ids: [PAY-CP-001]
-    evidence_ids: [PAY-EV-002]
+    evidence_ids: [PAY-EV-002, PAY-EV-037]
     status: verified
   PAY-AC-020:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-020
     projection_ids: [PAY-CP-002, PAY-CP-010, PAY-CP-011]
-    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    evidence_ids: [PAY-EV-005, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-021:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-021
     projection_ids: [PAY-CP-002]
-    evidence_ids: [PAY-EV-005]
+    evidence_ids: [PAY-EV-005, PAY-EV-037]
     status: verified
   PAY-AC-022:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-022
     projection_ids: [PAY-CP-002, PAY-CP-011]
-    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    evidence_ids: [PAY-EV-005, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-023:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-023
     projection_ids: [PAY-CP-002]
-    evidence_ids: [PAY-EV-005]
+    evidence_ids: [PAY-EV-005, PAY-EV-037]
     status: verified
   PAY-AC-024:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-024
     projection_ids: [PAY-CP-002, PAY-CP-010]
-    evidence_ids: [PAY-EV-005, PAY-EV-018]
+    evidence_ids: [PAY-EV-005, PAY-EV-018, PAY-EV-037]
     status: verified
   PAY-AC-025:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-025
     projection_ids: [PAY-CP-002, PAY-CP-010]
-    evidence_ids: [PAY-EV-005, PAY-EV-018]
+    evidence_ids: [PAY-EV-005, PAY-EV-018, PAY-EV-037]
     status: verified
   PAY-AC-026:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-026
     projection_ids: [PAY-CP-002, PAY-CP-011]
-    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    evidence_ids: [PAY-EV-005, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-027:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-027
     projection_ids: [PAY-CP-002, PAY-CP-011]
-    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    evidence_ids: [PAY-EV-005, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-028:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-028
     projection_ids: [PAY-CP-002, PAY-CP-011]
-    evidence_ids: [PAY-EV-005, PAY-EV-019]
+    evidence_ids: [PAY-EV-005, PAY-EV-019, PAY-EV-037]
     status: verified
   PAY-AC-029:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-029
     projection_ids: [PAY-CP-002, PAY-CP-010]
-    evidence_ids: [PAY-EV-005, PAY-EV-018]
+    evidence_ids: [PAY-EV-005, PAY-EV-018, PAY-EV-037]
     status: verified
   PAY-AC-040:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-040
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-037]
     status: verified
   PAY-AC-041:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-041
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-037]
     status: verified
   PAY-AC-042:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-042
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-037]
     status: verified
   PAY-AC-043:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-043
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-037]
     status: verified
   PAY-AC-044:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-044
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-020]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-020, PAY-EV-037]
     status: verified
   PAY-AC-045:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-045
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-037]
     status: verified
   PAY-AC-046:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-046
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-037]
     status: verified
   PAY-AC-047:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-047
     projection_ids: [PAY-CP-003, PAY-CP-008]
-    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-020]
+    evidence_ids: [PAY-EV-007, PAY-EV-014, PAY-EV-015, PAY-EV-020, PAY-EV-037]
     status: verified
   PAY-AC-060:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-060
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-061:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-061
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-062:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-062
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-063:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-063
     projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010]
-    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017, PAY-EV-037]
     status: verified
   PAY-AC-064:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-064
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017, PAY-EV-037]
     status: verified
   PAY-AC-065:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-065
     projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010]
-    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-017, PAY-EV-037]
     status: verified
   PAY-AC-066:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-066
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-067:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-067
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-068:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-068
     projection_ids: [PAY-CP-004, PAY-CP-009]
-    evidence_ids: [PAY-EV-009, PAY-EV-016]
+    evidence_ids: [PAY-EV-009, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-080:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-080
     projection_ids: [PAY-CP-011, PAY-CP-012]
-    evidence_ids: [PAY-EV-019, PAY-EV-026]
-    status: planned
+    evidence_ids: [PAY-EV-019, PAY-EV-037]
+    status: verified
   PAY-AC-081:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-081
     projection_ids: [PAY-CP-006, PAY-CP-010, PAY-CP-012]
-    evidence_ids: [PAY-EV-020, PAY-EV-025]
-    status: planned
+    evidence_ids: [PAY-EV-020, PAY-EV-037]
+    status: verified
   PAY-AC-082:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-082
     projection_ids: [PAY-CP-003, PAY-CP-008, PAY-CP-012]
-    evidence_ids: [PAY-EV-007, PAY-EV-020]
+    evidence_ids: [PAY-EV-007, PAY-EV-020, PAY-EV-037]
     status: verified
   PAY-AC-083:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-083
     projection_ids: [PAY-CP-001, PAY-CP-002, PAY-CP-003, PAY-CP-004, PAY-CP-014]
-    evidence_ids: [PAY-EV-022, PAY-EV-027]
+    evidence_ids: [PAY-EV-022, PAY-EV-027, PAY-EV-037]
     status: verified
   PAY-AC-084:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-084
     projection_ids: [PAY-CP-005, PAY-CP-011]
-    evidence_ids: [PAY-EV-010, PAY-EV-026]
-    status: planned
+    evidence_ids: [PAY-EV-037]
+    status: verified
   PAY-AC-085:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-085
     projection_ids: [PAY-CP-007, PAY-CP-008, PAY-CP-009, PAY-CP-014]
-    evidence_ids: [PAY-EV-013, PAY-EV-014, PAY-EV-016]
+    evidence_ids: [PAY-EV-013, PAY-EV-014, PAY-EV-016, PAY-EV-037]
     status: verified
   PAY-AC-086:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-086
     projection_ids: [PAY-CP-005, PAY-CP-011, PAY-CP-012]
-    evidence_ids: [PAY-EV-026]
-    status: planned
+    evidence_ids: [PAY-EV-037]
+    status: verified
   PAY-AC-087:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-087
     projection_ids: [PAY-CP-003, PAY-CP-008, PAY-CP-010]
-    evidence_ids: [PAY-EV-018, PAY-EV-020, PAY-EV-028]
+    evidence_ids: [PAY-EV-018, PAY-EV-020, PAY-EV-028, PAY-EV-037]
     status: verified
   PAY-AC-088:
     source: docs/requirements/acceptance/payment-scenarios.md#pay-ac-088
     projection_ids: [PAY-CP-004, PAY-CP-009, PAY-CP-010, PAY-CP-012]
-    evidence_ids: [PAY-EV-017, PAY-EV-018, PAY-EV-020]
+    evidence_ids: [PAY-EV-017, PAY-EV-018, PAY-EV-020, PAY-EV-037]
+    status: verified
+  PAY-AC-090:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-091:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-092:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-093:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-094:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-095:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-096:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-097:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-098:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-099:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-100:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-101:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-102:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
+    status: verified
+  PAY-AC-103:
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    projection_ids: [PAY-CP-017]
+    evidence_ids: [PAY-EV-037]
     status: verified
 
 projections:
@@ -480,7 +692,7 @@ projections:
     acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-007, PAY-AC-008, PAY-AC-009, PAY-AC-010, PAY-AC-011, PAY-AC-012, PAY-AC-013, PAY-AC-014, PAY-AC-015, PAY-AC-016, PAY-AC-017, PAY-AC-083]
     target_surfaces: [Runtime, Generator, Analyzer]
     evidence_ids: [PAY-EV-001, PAY-EV-002, PAY-EV-003, PAY-EV-013, PAY-EV-029, PAY-EV-031, PAY-EV-033]
-    status: planned
+    status: verified
   PAY-CP-002:
     title: Refund aggregate and partial refund lifecycle
     source: docs/requirements/projection/cap4k-current.md#pay-cp-002
@@ -488,7 +700,7 @@ projections:
     acceptance_ids: [PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023, PAY-AC-024, PAY-AC-025, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-029, PAY-AC-083]
     target_surfaces: [Runtime, Generator, Analyzer]
     evidence_ids: [PAY-EV-004, PAY-EV-005]
-    status: planned
+    status: verified
   PAY-CP-003:
     title: ReconciliationBatch and ReconciliationItem aggregate
     source: docs/requirements/projection/cap4k-current.md#pay-cp-003
@@ -512,7 +724,7 @@ projections:
     acceptance_ids: [PAY-AC-001, PAY-AC-014, PAY-AC-084, PAY-AC-086]
     target_surfaces: [Runtime, Generator, Analyzer]
     evidence_ids: [PAY-EV-010]
-    status: planned
+    status: verified
   PAY-CP-006:
     title: Payment callback flow
     source: docs/requirements/projection/cap4k-current.md#pay-cp-006
@@ -520,7 +732,7 @@ projections:
     acceptance_ids: [PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-009, PAY-AC-010, PAY-AC-015, PAY-AC-016, PAY-AC-081]
     target_surfaces: [Runtime, Analyzer, IntegrationEvent, Endpoint]
     evidence_ids: [PAY-EV-011, PAY-EV-012, PAY-EV-029, PAY-EV-032]
-    status: planned
+    status: verified
   PAY-CP-007:
     title: Payment timeout continuation
     source: docs/requirements/projection/cap4k-current.md#pay-cp-007
@@ -549,7 +761,7 @@ projections:
     title: Integration Event boundary
     source: docs/requirements/projection/cap4k-current.md#pay-cp-010
     business_requirement_ids: [PAY-BR-012, PAY-BR-021, PAY-BR-030, PAY-BR-031, PAY-BR-034, PAY-BR-035, PAY-BR-055]
-    acceptance_ids: [PAY-AC-087, PAY-AC-088]
+    acceptance_ids: [PAY-AC-081, PAY-AC-087, PAY-AC-088]
     regression_acceptance_ids: [PAY-AC-004, PAY-AC-020, PAY-AC-024, PAY-AC-025, PAY-AC-029, PAY-AC-063, PAY-AC-065]
     target_surfaces: [Runtime, IntegrationEvent]
     evidence_ids: [PAY-EV-017, PAY-EV-018, PAY-EV-020, PAY-EV-028]
@@ -561,7 +773,7 @@ projections:
     acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-006, PAY-AC-011, PAY-AC-012, PAY-AC-020, PAY-AC-022, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-080, PAY-AC-084, PAY-AC-086]
     target_surfaces: [Runtime, Endpoint]
     evidence_ids: [PAY-EV-019, PAY-EV-031, PAY-EV-032]
-    status: planned
+    status: verified
   PAY-CP-012:
     title: Runtime capability closure
     source: docs/requirements/projection/cap4k-current.md#pay-cp-012
@@ -597,6 +809,14 @@ projections:
     target_surfaces: [AgentFacts]
     evidence_ids: [PAY-EV-024]
     status: planned
+  PAY-CP-017:
+    title: Unified reference backend contract closure
+    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    business_requirement_ids: [PAY-BR-001, PAY-BR-002, PAY-BR-003, PAY-BR-004, PAY-BR-005, PAY-BR-006, PAY-BR-010, PAY-BR-011, PAY-BR-012, PAY-BR-013, PAY-BR-014, PAY-BR-015, PAY-BR-020, PAY-BR-021, PAY-BR-022, PAY-BR-023, PAY-BR-024, PAY-BR-025, PAY-BR-026, PAY-BR-027, PAY-BR-028, PAY-BR-030, PAY-BR-031, PAY-BR-032, PAY-BR-033, PAY-BR-034, PAY-BR-035, PAY-BR-036, PAY-BR-040, PAY-BR-041, PAY-BR-042, PAY-BR-043, PAY-BR-044, PAY-BR-045, PAY-BR-046, PAY-BR-050, PAY-BR-051, PAY-BR-052, PAY-BR-053, PAY-BR-054, PAY-BR-055, PAY-BR-056, PAY-BR-060, PAY-BR-061, PAY-BR-062, PAY-BR-063, PAY-BR-064, PAY-BR-065, PAY-BR-066, PAY-BR-067, PAY-BR-068, PAY-BR-069, PAY-BR-070, PAY-BR-071, PAY-BR-072, PAY-BR-073, PAY-BR-074, PAY-BR-075, PAY-BR-076, PAY-BR-077, PAY-BR-078, PAY-BR-079]
+    acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-007, PAY-AC-008, PAY-AC-009, PAY-AC-010, PAY-AC-011, PAY-AC-012, PAY-AC-013, PAY-AC-014, PAY-AC-015, PAY-AC-016, PAY-AC-017, PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023, PAY-AC-024, PAY-AC-025, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-029, PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-046, PAY-AC-047, PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-080, PAY-AC-081, PAY-AC-082, PAY-AC-083, PAY-AC-084, PAY-AC-085, PAY-AC-086, PAY-AC-087, PAY-AC-088, PAY-AC-090, PAY-AC-091, PAY-AC-092, PAY-AC-093, PAY-AC-094, PAY-AC-095, PAY-AC-096, PAY-AC-097, PAY-AC-098, PAY-AC-099, PAY-AC-100, PAY-AC-101, PAY-AC-102, PAY-AC-103]
+    target_surfaces: [Runtime, Endpoint, Evidence]
+    evidence_ids: [PAY-EV-037]
+    status: verified
 
 build_slices:
   B1:
@@ -822,14 +1042,22 @@ evidence:
     status: verified
   PAY-EV-010:
     kind: channel-configuration-test
-    path: planned
-    status: not-built
+    path: scripts/acceptance/PayAcScenarios.psm1
+    related_paths:
+      - start/src/test/resources/reference-http/pay-ac-scenarios.json
+      - start/src/test/kotlin/com/only4/cap4k/reference/payment/PaymentTestEvidenceCatalogContractTests.kt
+      - application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/reference_fixture/channel/ConfigureReferenceMerchantChannelCmd.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/reference_fixture/ReferenceLifecycleFixtureEndpointHandlers.kt
+      - domain/src/main/kotlin/com/only4/cap4k/reference/payment/domain/aggregates/merchant_channel_configuration/MerchantChannelConfigurationBehavior.kt
+    command: .\gradlew.bat :start:test --tests "*PaymentTestEvidenceCatalogContractTests.PAY-AC-084 HTTP scenario rejects retired routing and preserves history" --no-daemon --console=plain
+    result: the executable PAY-AC-084 process-out HTTP scenario configures an ACTIVE channel, forms historical payment facts, retires the channel through the trusted reference fixture, rejects new routing with NO_ELIGIBLE_CHANNEL, and asserts the historical attempt and fee snapshot remain unchanged; the registry/harness contract test fails if those assertions disappear
+    status: verified
   PAY-EV-011:
     kind: callback-endpoint-contract
     path: contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/ConfirmPaymentResultEndpoint.kt
     related_paths:
       - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/CreatePaymentEndpoint.kt
-      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/StartPaymentAttemptEndpoint.kt
+      - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/PaymentAttemptEndpoints.kt
       - contract/src/main/kotlin/com/only4/cap4k/reference/payment/contract/endpoints/payment/api/GetPaymentEndpoint.kt
       - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/ConfirmPaymentResultEndpointHandler.kt
       - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/payment/PaymentEndpointHttpConfiguration.kt
@@ -1026,8 +1254,15 @@ evidence:
     status: verified
   PAY-EV-025:
     kind: merchant-notification-reliability-test
-    path: planned
-    status: not-built
+    path: start/src/test/kotlin/com/only4/cap4k/reference/payment/MerchantNotificationReferenceApplicationTests.kt
+    related_paths:
+      - application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/merchant_notification/MerchantNotificationService.kt
+      - application/src/main/kotlin/com/only4/cap4k/reference/payment/application/commands/merchant_notification/RetryMerchantNotificationCmd.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/endpoints/merchant_notification/MerchantNotificationEndpointHandlers.kt
+      - adapter/src/main/kotlin/com/only4/cap4k/reference/payment/adapter/application/capabilities/merchant_notification/sender/SendMerchantNotificationHandler.kt
+    command: .\gradlew.bat :start:test --tests "*MerchantNotificationReferenceApplicationTests" --no-daemon --console=plain
+    result: Spring HTTP/JPA tests cover failed delivery, stable accepted retry, frozen notification identity/content, terminal UNKNOWN rejection, authoritative list filtering and cursor binding without claiming cross-service exactly-once
+    status: verified
   PAY-EV-026:
     kind: authorization-and-tenant-isolation-test
     path: planned
@@ -1158,15 +1393,94 @@ evidence:
     command: .\gradlew.bat :start:test --tests "*TraceabilityContractTests" --no-daemon --console=plain
     result: 1 traceability contract test / 0 failures; duplicate YAML keys, invalid IDs/statuses/references, missing sources/anchors, unverified evidence on verified acceptance, non-portable evidence paths, broken verified slice closure, and accidental promotion of deferred acceptance/evidence/projection boundaries are rejected
     status: verified
+  PAY-EV-037:
+    kind: unified-reference-real-http-acceptance
+    path: build/reference-http-evidence/final-all-67-20260924-v4/summary.json
+    source_commit: "3b66db675356e77c720081e0410baf444b7baa9c"
+    build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a"
+    boot_jar_sha256: "4667ea4f2fd2f57a720018c90f2108441c423784f6e9dff9f13771c14e162c93"
+    summary_sha256: "12d388a23efb5a7f68acc5bed63d5e1569c6a18744519539e171c4d6c4caac1b"
+    related_paths:
+      - scripts/acceptance/run-pay-ac-http.ps1
+      - scripts/acceptance/PayAcHttpSuite.psm1
+      - scripts/acceptance/PayAcScenarios.psm1
+      - scripts/acceptance/reference-integration-event-sink.ps1
+      - start/src/test/resources/reference-http/pay-ac-scenarios.json
+    scenario_evidence:
+      PAY-AC-001: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-001.json, sha256: "e387785e94a513a8e03e75d2aa52ddcf353ab3f4da3ff2fa25a890aef0dd1f2c", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-002: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-002.json, sha256: "007228c7669a59636bdba4cb3e79b20c7bdda22901f9f02b0430f30f1ccc0770", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-003: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-003.json, sha256: "973a70165c435d668a397a2fff5bdaf6b14b20af072834869a5a57df878b892c", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-004: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-004.json, sha256: "6ce7a37fc3849019ec0311bd2d6b20fa637c138b60e2e4f2e8b9befee510a09b", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-005: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-005.json, sha256: "1b22453e16af68348d2437c8926e06362486dbb05974e06fb4387275cff58ece", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-006: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-006.json, sha256: "581f79b8824e976c3cd37205f1edaad9e5d12e24a864739d3e4246a0c3e9a09c", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-007: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-007.json, sha256: "bc24cc0fbc6565ad2b5a4072ff9dce5928727b5c2395a58b8c1fa157671cbc17", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-008: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-008.json, sha256: "4d5250da4a1f4679ae73fb0063b1e0605c8a18bc0854cbe83ac95e30c8844de7", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-009: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-009.json, sha256: "f74d6a21286d6e455edb722008e5a3cce31c66a33776d68f103b5b0adf70c73a", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-010: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-010.json, sha256: "0b509e44b6bf978771939d2cca1dc69067eb6d3147c4ce65a5f9654bcba35488", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-011: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-011.json, sha256: "75e1126d3fa138ac322082048fc3ef851c192cc9fc172bf0687dd26c5208546e", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-012: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-012.json, sha256: "825d1d4da516e1f69a62ad614870106ce318ed018681620cf82baa6767be29e1", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-013: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-013.json, sha256: "c2eb6661fb3e35c16e8ea7254bf8101a9ed29f9fcd93593d647dad505ea85b0d", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-014: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-014.json, sha256: "f32f381e52051c924801fc8e55a3405df42efd2af557b347e5223af20a1cb2e0", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-015: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-015.json, sha256: "0c49d81865f7175a2efa8a8d1a41a1bb43f5a0dddaaebd9b0c9b8db6cb769977", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-016: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-016.json, sha256: "3eec3a38ef584e73252425a9818d822ea7f8ed08625229923c2851bed036a823", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-017: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-017.json, sha256: "28600771650688487d7e9fe5022d53e686cb6bf30afa9f44b0c2d228c4b5435d", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-020: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-020.json, sha256: "af424c86da256ceac9646c495cd79a1d4dfa533fd4d1ab4532039666ffd8da0c", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-021: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-021.json, sha256: "a90a53814f1b4dfa30a60838846af3539c5f1d63ef0d7b7f90cd91e1f58ee04b", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-022: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-022.json, sha256: "076a9a14c373b3e8273ec1c313920b3328bc8e51b42c90152638f62bb0232645", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-023: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-023.json, sha256: "f14ba8c5fd971ea22bb19e7fbe2c23ec15ac2336ca8b98fb237edb68b50fdea4", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-024: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-024.json, sha256: "7f811166e0cc9c8be02e087f15fc11b26741aa4d78ff655ed98f618d649a170a", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-025: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-025.json, sha256: "b990d01f82bad062aa1a68f7c625e450681973a392a065d583edacb5e6c7cb70", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-026: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-026.json, sha256: "2d18b35ddf0503a719a704373aba9d4589f06c0e769b49d72a1753e5c4d5cb72", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-027: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-027.json, sha256: "b67f83ab16a1735f78ae88bdc8565191ebdaf41d1235273c1fb397f818999aec", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-028: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-028.json, sha256: "f1c12fea336f5d230bf252e1810b3eb1945bccb11898d4d68f4cc376de7930d0", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-029: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-029.json, sha256: "7f3ef2e3f1bab3b1bcc061f90ffd0f7b6c11756dca81f92331c389e678c96dcc", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-040: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-040.json, sha256: "f7f5aa9f0508dcdad865016bce9b9031ee2f331dde461abfebf5d062420d69d7", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-041: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-041.json, sha256: "9b2fa6b347fd83f179ccd2848dc1a1eb148d1699ee16a2ed1cd60fb352291da6", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-042: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-042.json, sha256: "3e076287a5d0ffab6647a92a3606a2132a62cbe88e63563e9eab3a82ef5ee2a2", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-043: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-043.json, sha256: "c8ae219909ac3091a21ed5a364d845d99d57e77b056fb06c6f74588ab7673215", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-044: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-044.json, sha256: "c5dbb4389569397ff98fab29b78c0293d7b4b1892fc58dfa59a30b1d497229c5", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-045: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-045.json, sha256: "e807dfd24946d295129d30128df752c6bdfc5fffd7c9a2c65305ea5aad652251", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-046: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-046.json, sha256: "1f0e7dd8e52389e2957768b0d9361d544df0c49fc2a5a9faf890f3baa2216dda", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-047: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-047.json, sha256: "657defeb814c0109a9c3162c08a9597b96d4d339d4e1b999b126af2af290d82f", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-060: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-060.json, sha256: "6ca669827832a23c19b46b0957a8001d795c53a59926120f2c1405a911d9746d", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-061: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-061.json, sha256: "04969a5b65645093fd27530bd2b1bc72bada2514e16771ae5fb5297a6caafe9e", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-062: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-062.json, sha256: "cf9f204f8b313a008807af5ada9ed5824d740a2211d617453497eac442c24352", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-063: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-063.json, sha256: "d6c78642e1215600bef1698efbdc12e3e0a1b4d3b7d427a29dde58f46eff6823", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-064: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-064.json, sha256: "a189bdb8e06cc65c6dba4d14f5fc24fa0248d7f25d45f9d057b6b22fcbbe6311", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-065: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-065.json, sha256: "85b6fb08bf2cbda94000b08877d78d36d274695719b69ab9ddb6ce98fe5a01eb", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-066: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-066.json, sha256: "2239775e1c3c73c722c344a095e7a2d3a927a68e51089c412f1e473703dfe397", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-067: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-067.json, sha256: "d4ef599a43aa3ae53c7efa51e694f59efc0dda991c76af0ca3567336fab85775", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-068: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-068.json, sha256: "88412dbedd7c5bfd7ac40482cd2fc374c6727428ca27d80368d14930ad943834", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-080: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-080.json, sha256: "a6602b8e469795dfc3b051c4839cc224fbfc94b5cb2c8695ce1e35bdc7d704f5", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-081: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-081.json, sha256: "d4d4284b9f43454768e49d2d5a705e3a1241fc8eae1ac70313903552e35fd01f", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-082: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-082.json, sha256: "80a8e373bd58d85d96280711759c401c929238fa888ce65ca663b07d4639a064", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-083: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-083.json, sha256: "c9e86158e5fade338d303fe8d604ee4c2a9aaef8a211c42658c89d34b2794db0", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-084: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-084.json, sha256: "378a963ebc3370d6c38c8ff6f784e237b1828042f94c8de61f6a81f15ed6b55b", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-085: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-085.json, sha256: "c632d6d21410553b54df9108610507b9521b04243621c8e6f1224a92e71ad83d", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-086: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-086.json, sha256: "b54151423f22472f60d7431d3593643ba79a890ced53919e352ba1f81bac9176", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-087: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-087.json, sha256: "66c187bc19322fba082c217a81a55b3770d33653b1415f78fba3d8cf011c789e", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-088: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-088.json, sha256: "eb7569c14860b7a7cfb84abea3fdaf9c2679e7093016c323778419225bfd4815", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-090: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-090.json, sha256: "30b3db93ef0316c36dc8bba669e51c66731660b01ebdd39230f2af10f7a2e1df", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-091: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-091.json, sha256: "4ee58ed3fc9817af015da63bfea63f5f575d6e2bddc107ed2a894772336847c8", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-092: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-092.json, sha256: "28b857dd9ea8924ac78a50da19b6c991580deaa618b0cced28923f5c397c289f", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-093: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-093.json, sha256: "8cb34b7c0ef72b719fe4922a7328450eec063d051530cc935ea456aa70cc54cb", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-094: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-094.json, sha256: "fc207c8200543e214080076d385b69322afc6d49cd9b274d7d2ccbb6254660b7", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-095: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-095.json, sha256: "7502fb424aeb486993a3fb2005032fead93bbee1d5fb7b1529b2566ca24a708c", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-096: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-096.json, sha256: "d76a25ff09bb48c922d363403c5c380cac9e18250611b80154837b9b49ff381f", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-097: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-097.json, sha256: "0a2a66c5351ee46a619b615d709e7a32a99660736f6ab69020181b516e45c227", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-098: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-098.json, sha256: "b8d03465244fbfd06d567357c914fafbc27a0ce2cbf5de0e1e661844119d47ff", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-099: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-099.json, sha256: "099ce257efb6ca3f7ba60ef7cb9ec20129a7ab09fabf5282a12d2dba2ad773da", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-100: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-100.json, sha256: "4e41d671daad27375f7183d1aedc070ec74ba26e81139a570e7dfb1630de702e", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-101: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-101.json, sha256: "5caac343a76f0d491e9424b4b2741c50bba7ae5be93c2126c15547d3076c3d47", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-102: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-102.json, sha256: "e0cd4a2e8518ccb7b0e2447b6f75ca0458c0be68edad094d78d75cc79604d679", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+      PAY-AC-103: { status: verified, path: build/reference-http-evidence/final-all-67-20260924-v4/PAY-AC-103.json, sha256: "9e8c56a5b0d9bb5cff9b726884d6adfad25c160056d58ae040cd7a5c774e9cac", build_revision: "6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a" }
+    command: .\scripts\acceptance\run-pay-ac-http.ps1 -Port 18100 -EvidenceRoot build\reference-http-evidence\final-all-67-20260924-v4
+    result: 67/67 PAY-AC passed with 915 recorded assertions and 1537 real HTTP interactions through an independently started CAP4K JVM and process-out HTTP client; every item contains request/response, assertion, public-query observation, distinct service/client PID, build revision 6feb6cce1ee0a9a6b4ee3bf0ef3b459b53884a54+dirty-e62fbc2188ce949a and bootJar SHA-256 4667ea4f2fd2f57a720018c90f2108441c423784f6e9dff9f13771c14e162c93; two additional clean JVM/H2 loops passed with 36 assertions and identical digest 28ff20853d607ff63fdf600b64e9f904ac314315a1082cb465f93468d89617d6; summary SHA-256 12d388a23efb5a7f68acc5bed63d5e1569c6a18744519539e171c4d6c4caac1b
+    status: verified
 
 known_gaps:
-  - B5 adds a ChannelStatementAvailable HTTP Integration Event availability signal while preserving PullChannelStatement as the authoritative statement source; scheduler and manual rerun remain independent fallback and recovery entries rather than one stitched exactly-once flow.
-  - B5 outbound MerchantSettlementCompleted uses cap4k JPA reliable-event state and HTTP handoff/retry, but the controllable test-only receiver is not a production merchant-notification service and does not prove downstream business completion.
-  - Published cap4k 2.0.1 does not expose the current mainline Pipeline DSL used by B1-B5; published-coordinate cold start remains deferred to B6.
-  - Current Analyzer output proves thirteen independent Endpoint HTTP Actor-to-Command roots, five Time roots, and one Integration Event root. Command/Query/Capability/Domain Event anchors and Aggregate element structure are reviewed through independent Drawing Board partitions; hidden handlers/entity methods, runtime state transitions, delivery-state machines, and cross-entry process stitching remain outside the default Flow contract.
-  - Agent Snapshot remains partial only because the DB source is live external input whose freshness is intentionally UNKNOWN; ordinary plan evidence is readable, ownership contains 197 items, Analyzer is ok with 46 available outputs, and diagnostics are empty with zero errors, INVALID entries, or plan-evidence-invalid warnings.
-  - Reliable Command, broker transport, generic Inbox, broadcast/discovery, persistent business scheduling, cross-instance lease/exactly-once, production authentication/signing, real payment/refund/statement/bank/clearing protocols, sensitive-data storage, negative-net recovery, weekly settlement, and production merchant notification remain outside B1-B5 plus #4.
-  - Reconciliation and merchant-settlement composite uniqueness is enforced by the runtime H2 schema where the current aggregate generator does not emit the required composite or effective-slot constraints; generated entity ownership is not altered.
-  - flows/index.json inputDirs remain machine-local locator metadata and are not treated as portable committed evidence; stable identity is tracked upstream.
-  - Jimmer projection and only-engine addon verification remain explicitly deferred.
-  - GitHub #8 final composition closes accepted-lineage and reference evidence only; it does not promote any planned Runtime, Generator, Analyzer, Pipeline, AgentFacts, scheduling, transport, production-provider, or published-coordinate capability.
+  - 登录、JWT/OIDC、生产 RBAC、真实双人授权与生产商户隔离不在本 reference 交付中；reference actor context 只提供可选择、可复核的可信测试身份。
+  - 生产数据库部署、历史迁移、重启恢复、持久化 Inbox、多实例 scheduler lease 与跨服务 exactly-once 未交付。
+  - 生产 gateway、正式 CORS/CSRF、限流、TLS、Secret Manager、真实渠道证书、真实账单下载和真实资金移动未交付。
+  - 本地可靠事件保留为 CAP4K 学习能力，没有扩展为通用消息平台；独立 204 sink 只证明当前运行期稳定交付身份与重试，不宣称下游业务 exactly-once。
+  - H2、reference policy、逻辑时钟、脚本化渠道/账单/executor/notification fixture 只用于确定性学习和验收，不是生产基础设施或生产政策。

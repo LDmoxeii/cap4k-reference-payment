@@ -65,11 +65,11 @@ data class SettlementCandidateFact(
     /**
      * 对账批次标识
      */
-    val reconciliationBatchId: ReconciliationBatchId,
+    val reconciliationBatchId: ReconciliationBatchId?,
     /**
      * 对账运行标识
      */
-    val reconciliationRunId: String,
+    val reconciliationRunId: String?,
     /**
      * 对账条目标识
      */
@@ -141,5 +141,7 @@ data class SettlementCandidateFact(
     /**
      * 调整证据
      */
-    val adjustmentEvidence: String?
+    val adjustmentEvidence: String?,
+    val decision: String = "INCLUDED",
+    val reasonCode: String = "ELIGIBLE",
 )

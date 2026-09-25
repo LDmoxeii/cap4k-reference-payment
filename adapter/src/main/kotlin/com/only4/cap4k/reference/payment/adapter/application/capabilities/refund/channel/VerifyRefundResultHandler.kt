@@ -3,7 +3,9 @@ package com.only4.cap4k.reference.payment.adapter.application.capabilities.refun
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityHandler
 import com.only4.cap4k.reference.payment.application.capabilities.refund.channel.VerifyRefundResult
-import org.springframework.beans.factory.annotation.Value
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackEvidenceInput
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackKind
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackVerifier
 import org.springframework.stereotype.Service
 
 @Service
@@ -16,11 +18,27 @@ import org.springframework.stereotype.Service
     family = "capability-handler"
 )
 class VerifyRefundResultHandler(
-    @param:Value("\${payment.sandbox.channel-id}") private val trustedChannelId: String,
-    @param:Value("\${payment.sandbox.verification-secret}") private val verificationSecret: String
+    private val verifier: ReferenceCallbackVerifier,
 ) : CapabilityHandler<VerifyRefundResult.Request, VerifyRefundResult.Response> {
-    override fun call(request: VerifyRefundResult.Request) = VerifyRefundResult.Response(
-        request.channelId == trustedChannelId && request.verificationMaterial == verificationSecret && request.notificationId.isNotBlank() && request.payload.isNotBlank(),
-        "沙箱签名核验"
-    )
+    override fun call(request: VerifyRefundResult.Request): VerifyRefundResult.Response {
+        val verification = verifier.verify(
+            ReferenceCallbackEvidenceInput(
+                kind = ReferenceCallbackKind.REFUND,
+                channelId = request.channelId,
+                externalIdentity = request.notificationId,
+                associationIdentity = listOf(
+                    request.refundId,
+                    request.refundAttemptId,
+                    request.channelRefundId,
+                ).joinToString("|"),
+                amount = request.amount,
+                currency = request.currency,
+                canonicalPayload = request.payload,
+            ),
+        )
+        return VerifyRefundResult.Response(
+            verified = verification.verified,
+            verificationSummary = verification.reason,
+        )
+    }
 }

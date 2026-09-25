@@ -5,6 +5,8 @@ import com.only4.cap4k.ddd.core.Mediator
 import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.reference.payment.application.errors.ReconciliationBatchNotFoundException
+import com.only4.cap4k.reference.payment.application.operations.OperationSupport
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch.SReconciliationBatch
 import com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefund
@@ -15,6 +17,7 @@ import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationDispositionCreation
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationItem
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.appendDisposition
+import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.requireDispositionEligible
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.recalculateCompletion
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.DispositionAuthorization
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.enums.ReconciliationDispositionConclusion
@@ -37,7 +40,9 @@ import org.springframework.stereotype.Service
 object DisposeReconciliationDifferenceCmd {
 
     @Service
-    class Handler : CommandHandler<Request, Response> {
+    class Handler(
+        private val operationSupport: OperationSupport,
+    ) : CommandHandler<Request, Response> {
         /**
          * 所有处置尝试都进入 append-only 审计：未授权请求写入 DENIED 记录，授权结论才可能解决差异。
          * 需要形成 confirmation 时，先从 Payment/Refund 弱引用推导 merchant/channel；只有没有弱引用时才接受
@@ -45,49 +50,143 @@ object DisposeReconciliationDifferenceCmd {
          */
         override fun handle(command: Request): Response {
             require(command.operatorIdentity.isNotBlank()) { "操作员身份不能为空" }
+            require(command.operatorRole.trim().uppercase() == AUTHORIZED_OPERATOR_ROLE) {
+                "当前 reference actor 不能处置对账差异"
+            }
+            require(command.reason.isNotBlank()) { "处置原因不能为空" }
             require(command.evidence.isNotBlank()) { "证据不能为空" }
+            val idempotencyKey = command.idempotencyKey.trim()
+            require(idempotencyKey.isNotBlank()) { "幂等键不能为空" }
             val batch = Mediator.repositories.findOne(
                 SReconciliationBatch.predicateById(command.reconciliationBatchId)
             ) ?: throw ReconciliationBatchNotFoundException(command.reconciliationBatchId)
-            val item = batch.reconciliationRuns.asSequence()
-                .flatMap { it.reconciliationItems.asSequence() }
-                .firstOrNull { it.id.toString() == command.itemId }
+            val runAndItem = batch.reconciliationRuns.asSequence()
+                .flatMap { run -> run.reconciliationItems.asSequence().map { run to it } }
+                .firstOrNull { (_, item) -> item.id.toString() == command.itemId }
                 ?: throw IllegalArgumentException("对账批次 ${command.reconciliationBatchId} 中未找到差异项 ${command.itemId}")
+            val (run, item) = runAndItem
+            command.runId?.let { require(it.trim() == run.id.toString()) { "对账差异不属于指定运行" } }
             val disposedAt = LocalDateTime.ofInstant(command.disposedAt, ZoneOffset.UTC)
-            val authorized = command.operatorRole.trim().uppercase() == AUTHORIZED_OPERATOR_ROLE
-            val conclusion = if (authorized) enumValue<ReconciliationDispositionConclusion>(command.conclusion, "conclusion") else null
+            val requestedConclusion = enumValue<ReconciliationDispositionConclusion>(command.conclusion, "conclusion")
+            val conclusion = requestedConclusion
             val impact = enumValue<SettlementImpact>(command.settlementImpact, "settlementImpact")
+            val merchantScope = merchantScope(item, command)
+            val commandType = if (command.confirmationOnly) CONFIRM_COMMAND_TYPE else DISPOSE_COMMAND_TYPE
+            val normalizedReason = command.reason.trim()
+            val normalizedFollowUp = command.followUp?.trim()?.takeIf(String::isNotBlank) ?: normalizedReason
+            val requestHash = operationSupport.canonicalHash(
+                batch.id.toString(), command.runId?.trim(), item.id.toString(),
+                command.merchantId?.trim()?.takeIf(String::isNotBlank),
+                command.channelId?.trim()?.takeIf(String::isNotBlank),
+                requestedConclusion.name,
+                impact.name, normalizedReason, command.evidence.trim(),
+                normalizedFollowUp,
+                command.operatorIdentity.trim(),
+            )
+            operationSupport.replayOrNull(merchantScope, commandType, idempotencyKey, requestHash)?.let { operation ->
+                return restore(batch, operation.resourceId, command.confirmationOnly, operationSupport.receipt(operation, replay = true))
+            }
 
-            val confirmation = if (authorized && conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT) {
+            val confirmation = if (conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT) {
                 confirmationFor(batch, item, command, disposedAt)
             } else null
+            if (command.confirmationOnly) requireNotNull(confirmation) { "确认事实未创建" }
+            val creation = ReconciliationDispositionCreation(
+                operatorIdentity = command.operatorIdentity.trim(),
+                operatorRole = command.operatorRole.trim(),
+                authorizationResult = DispositionAuthorization.AUTHORIZED,
+                status = ReconciliationDispositionStatus.APPLIED,
+                conclusion = conclusion,
+                settlementImpact = impact,
+                reason = normalizedReason,
+                evidence = command.evidence.trim(),
+                followUp = normalizedFollowUp,
+                disposedAt = disposedAt,
+            )
+            batch.requireDispositionEligible(item.differenceIdentity, creation, confirmation)
             val disposition = batch.appendDisposition(
                 differenceIdentity = item.differenceIdentity,
-                creation = ReconciliationDispositionCreation(
-                    operatorIdentity = command.operatorIdentity.trim(),
-                    operatorRole = command.operatorRole.trim(),
-                    authorizationResult = if (authorized) DispositionAuthorization.AUTHORIZED else DispositionAuthorization.DENIED,
-                    status = if (authorized) ReconciliationDispositionStatus.APPLIED else ReconciliationDispositionStatus.REJECTED,
-                    conclusion = conclusion,
-                    settlementImpact = impact,
-                    evidence = command.evidence.trim(),
-                    followUp = command.followUp?.trim()?.takeIf { it.isNotBlank() },
-                    disposedAt = disposedAt,
-                ),
+                creation = creation,
                 confirmation = confirmation,
             )
             batch.recalculateCompletion(disposedAt)
             val confirmationFact = item.reconciliationConfirmationFacts.lastOrNull()
                 ?.takeIf { confirmation != null && it.sourceDifferenceIdentity == item.differenceIdentity }
+            val resourceId = if (command.confirmationOnly) requireNotNull(confirmationFact).id.toString()
+                else disposition.id.toString()
+            val receipt = operationSupport.accept(
+                merchantId = merchantScope,
+                commandType = commandType,
+                idempotencyKey = idempotencyKey,
+                canonicalRequestHash = requestHash,
+                resourceType = if (command.confirmationOnly) "FactConfirmation" else "DifferenceDisposition",
+                resourceId = resourceId,
+                resourceUrl = "/api/reconciliation-runs/${run.id}",
+            )
+            return restore(batch, resourceId, command.confirmationOnly, receipt)
+        }
 
+        private fun merchantScope(item: ReconciliationItem, command: Request): String {
+            val paymentMerchant = item.paymentId?.let { paymentId ->
+                Mediator.repositories.findOne(SPayment.predicateById(paymentId))?.merchantId
+                    ?: throw IllegalArgumentException("对账差异引用的支付单 $paymentId 不存在")
+            }
+            val refundMerchant = item.refundId?.let { refundId ->
+                Mediator.repositories.findOne(SRefund.predicateById(refundId))?.merchantId
+                    ?: throw IllegalArgumentException("对账差异引用的退款单 $refundId 不存在")
+            }
+            if (paymentMerchant != null && refundMerchant != null) {
+                require(paymentMerchant == refundMerchant) { "对账差异的商户归属存在冲突" }
+            }
+            val explicit = command.merchantId?.trim()?.takeIf(String::isNotBlank)
+            val inferred = paymentMerchant ?: refundMerchant
+            if (inferred != null && explicit != null) require(inferred == explicit) { "显式商户与弱引用归属不一致" }
+            return inferred ?: explicit ?: OPERATION_SCOPE
+        }
+
+        private fun restore(
+            batch: ReconciliationBatch,
+            resourceId: String,
+            confirmationOnly: Boolean,
+            receipt: OperationReceipt,
+        ): Response {
+            val item = batch.reconciliationRuns.asSequence()
+                .flatMap { it.reconciliationItems.asSequence() }
+                .firstOrNull { candidate ->
+                    if (confirmationOnly) candidate.reconciliationConfirmationFacts.any { it.id.toString() == resourceId }
+                    else candidate.reconciliationDispositions.any { it.id.toString() == resourceId }
+                } ?: throw IllegalStateException("Operation ${receipt.operationId} 引用的对账资源不存在")
+            val confirmationIndex = item.reconciliationConfirmationFacts.indexOfFirst { it.id.toString() == resourceId }
+            val disposition = if (confirmationOnly) {
+                item.reconciliationDispositions.filter {
+                    it.authorizationResult == DispositionAuthorization.AUTHORIZED &&
+                        it.conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT
+                }.getOrNull(confirmationIndex)
+            } else item.reconciliationDispositions.firstOrNull { it.id.toString() == resourceId }
+            val saved = requireNotNull(disposition) { "Operation 对应的处置记录不存在" }
+            val confirmationId = if (confirmationOnly) resourceId else if (
+                saved.conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT &&
+                saved.authorizationResult == DispositionAuthorization.AUTHORIZED
+            ) {
+                val index = item.reconciliationDispositions.takeWhile { it.id != saved.id }.count {
+                    it.authorizationResult == DispositionAuthorization.AUTHORIZED &&
+                        it.conclusion == ReconciliationDispositionConclusion.CONFIRM_PLATFORM_FACT
+                }
+                item.reconciliationConfirmationFacts.getOrNull(index)?.id?.toString()
+            } else null
             return Response(
-                dispositionId = disposition.id.toString(),
-                authorization = disposition.authorizationResult.name,
-                status = disposition.status.name,
-                confirmationFactId = confirmationFact?.id?.toString(),
+                dispositionId = saved.id.toString(),
+                authorization = saved.authorizationResult.name,
+                status = saved.status.name,
+                confirmationFactId = confirmationId,
                 batchStatus = batch.status.name,
                 settlementBlocked = batch.settlementBlocked,
                 blockingReason = batch.blockingReason,
+                actorId = saved.operatorIdentity,
+                reason = saved.reason,
+                evidence = saved.evidence,
+                disposedAt = saved.disposedAt.toInstant(ZoneOffset.UTC),
+                receipt = receipt,
             )
         }
 
@@ -215,6 +314,9 @@ object DisposeReconciliationDifferenceCmd {
          * 操作员身份
          */
         val operatorIdentity: String,
+        val idempotencyKey: String,
+        val runId: String? = null,
+        val confirmationOnly: Boolean = false,
         /**
          * 操作员角色
          */
@@ -231,6 +333,10 @@ object DisposeReconciliationDifferenceCmd {
          * 证据
          */
         val evidence: String,
+        /**
+         * 处置原因
+         */
+        val reason: String,
         /**
          * 后续动作
          */
@@ -269,10 +375,18 @@ object DisposeReconciliationDifferenceCmd {
         /**
          * 原因
          */
-        val blockingReason: String?
+        val blockingReason: String?,
+        val actorId: String,
+        val reason: String,
+        val evidence: String,
+        val disposedAt: Instant,
+        val receipt: OperationReceipt,
     )
 
     private const val AUTHORIZED_OPERATOR_ROLE = "RECONCILIATION_OPERATOR"
+    private const val DISPOSE_COMMAND_TYPE = "DisposeReconciliationDifference"
+    private const val CONFIRM_COMMAND_TYPE = "ConfirmReconciliationFact"
+    private const val OPERATION_SCOPE = "reference-reconciliation"
 
     private inline fun <reified E : Enum<E>> enumValue(value: String, field: String): E =
         try {

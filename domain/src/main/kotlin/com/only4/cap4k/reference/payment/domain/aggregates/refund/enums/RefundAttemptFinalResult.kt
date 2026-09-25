@@ -20,7 +20,9 @@ enum class RefundAttemptFinalResult(
 
     FAILED(1, "渠道已返回并通过验证的退款失败结果"),
 
-    GATEWAY_REJECTED(2, "网关在处理前拒绝了退款请求");
+    GATEWAY_REJECTED(2, "网关在处理前拒绝了退款请求"),
+
+    RETRYABLE_FAILURE(3, "本次渠道尝试失败但 policy 允许使用新 attempt 重试");
 
     companion object {
         private val enumMap: Map<Int, RefundAttemptFinalResult> = entries.associateBy { it.value }

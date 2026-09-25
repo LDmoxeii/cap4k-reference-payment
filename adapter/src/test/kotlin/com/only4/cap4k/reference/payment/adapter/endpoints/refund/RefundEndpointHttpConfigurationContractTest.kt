@@ -14,12 +14,28 @@ class RefundEndpointHttpConfigurationContractTest {
     @Test
     fun `handwritten refund bindings retain method path status and mapper contracts`() {
         assertBinding(
-            functionName = "createRefundHttpBinding",
+            functionName = "requestRefundHttpBinding",
             factory = "special",
             method = "POST",
             path = "/api/refunds",
             status = 201,
-            mapperEvidence = "request.body(CreateRefundEndpoint.Request::class)",
+            mapperEvidence = "request.body(RequestRefundEndpoint.Request::class)",
+        )
+        assertBinding(
+            functionName = "createRefundAttemptHttpBinding",
+            factory = "special",
+            method = "POST",
+            path = "/api/refunds/{refundId}/attempts",
+            status = 201,
+            mapperEvidence = "idempotencyKey = body.idempotencyKey",
+        )
+        assertBinding(
+            functionName = "submitRefundAttemptHttpBinding",
+            factory = "special",
+            method = "POST",
+            path = "/api/refunds/{refundId}/attempts/{refundAttemptId}/submissions",
+            status = 200,
+            mapperEvidence = "refundAttemptId = request.path(\"refundAttemptId\", String::class)",
         )
         assertBinding(
             functionName = "confirmRefundResultHttpBinding",
@@ -36,6 +52,14 @@ class RefundEndpointHttpConfigurationContractTest {
             path = "/api/refunds/{refundId}",
             status = 200,
             mapperEvidence = "request.path(\"refundId\", String::class)",
+        )
+        assertBinding(
+            functionName = "listRefundsHttpBinding",
+            factory = "json",
+            method = "POST",
+            path = "/api/refunds/search",
+            status = null,
+            mapperEvidence = null,
         )
     }
 

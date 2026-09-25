@@ -22,7 +22,6 @@ private const val SETTLEMENT_OPERATOR_ROLE = "SETTLEMENT_OPERATOR"
 fun MerchantSettlement.onCreate() {
     require(periodEnd > periodStart) { "结算周期结束时间必须晚于开始时间" }
     require(merchantId.isNotBlank()) { "商户身份不能为空" }
-    require(channelId.isNotBlank()) { "渠道身份不能为空" }
     require(currency.isNotBlank()) { "币种不能为空" }
     require(scopeIdentity.isNotBlank()) { "结算范围身份不能为空" }
     requireTotalsMatchLines()
@@ -39,20 +38,26 @@ fun MerchantSettlement.confirmComposition(
     operatorIdentity: String,
     operatorRole: String,
     confirmedAt: LocalDateTime,
+    reason: String,
+    evidence: String,
 ): MerchantSettlementStatus {
     requireAuthorized(operatorIdentity, operatorRole)
+    require(reason.isNotBlank()) { "确认原因不能为空" }
+    require(evidence.isNotBlank()) { "确认证据不能为空" }
     require(status in setOf(
         MerchantSettlementStatus.PREPARED,
         MerchantSettlementStatus.REVIEW_REQUIRED,
         MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED,
     )) { "结算单 $id 当前状态为 $status，不能确认组成" }
     require(!compositionFrozen) { "结算单 $id 的组成已经冻结" }
-    require(settlementLines.isNotEmpty()) { "结算单 $id 没有结算明细" }
+    require(settlementLines.any { it.decision == "INCLUDED" }) { "结算单 $id 没有纳入的结算明细" }
     requireTotalsMatchLines()
 
     compositionFrozen = true
     confirmedBy = operatorIdentity.trim()
     this.confirmedAt = confirmedAt
+    confirmedReason = reason.trim()
+    confirmedEvidence = evidence.trim()
     status = when {
         netAmount.signum() < 0 -> MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED
         netAmount.signum() == 0 -> {
@@ -75,6 +80,7 @@ fun MerchantSettlement.startExecutionAttempt(
     reviewAfterMinutes: Int,
     executionGroupIdentity: String,
     requestIdentity: String,
+    executionChannelId: String,
 ): SettlementExecutionAttempt {
     requireAuthorized(operatorIdentity, operatorRole)
     require(compositionFrozen) { "结算单 $id 的组成尚未确认" }
@@ -95,6 +101,14 @@ fun MerchantSettlement.startExecutionAttempt(
     require(reviewAfterMinutes > 0) { "结果复核阈值必须大于零分钟" }
     require(executionGroupIdentity.isNotBlank()) { "执行组身份不能为空" }
     require(requestIdentity.isNotBlank()) { "请求身份不能为空" }
+    require(executionChannelId.isNotBlank()) { "执行渠道身份不能为空" }
+    if (this.executionChannelId != null) {
+        require(this.executionChannelId == executionChannelId) {
+            "结算单 $id 的执行渠道快照不能改变"
+        }
+    } else {
+        this.executionChannelId = executionChannelId
+    }
     if (this.executionGroupIdentity != null) {
         require(this.executionGroupIdentity == executionGroupIdentity) {
             "结算单 $id 的执行组身份不能改变"
@@ -107,7 +121,7 @@ fun MerchantSettlement.startExecutionAttempt(
         attemptSequence = settlementExecutionAttempts.size + 1,
         executionGroupIdentity = executionGroupIdentity,
         requestIdentity = requestIdentity,
-        channelId = channelId,
+        channelId = executionChannelId,
         status = SettlementExecutionAttemptStatus.PROCESSING,
         initiatedAt = requestedAt,
         reviewAfterMinutesSnapshot = reviewAfterMinutes,
@@ -153,7 +167,8 @@ fun MerchantSettlement.rejectExecutionStart(
 
 /**
  * 追加并裁决资金划拨结果：notification identity 负责重放幂等，payload fingerprint 负责识别同 identity 冲突，
- * 首次可信成功才形成一次 settled fact；终态后的相反结果只追加 receipt 并进入复核，绝不回退成功。
+ * UNKNOWN 保留原 attempt 和执行身份等待后续可信 SUCCESS/FAILED 收敛；首次可信成功才形成一次 settled fact，
+ * 明确终态后的相反结果只追加 receipt 并进入复核，绝不回退成功。
  */
 fun MerchantSettlement.recordSettlementResult(
     attemptId: SettlementExecutionAttemptId,
@@ -250,7 +265,7 @@ fun MerchantSettlement.recordSettlementResult(
     }
 
     val priorFinal = attempt.finalResult
-    if (priorFinal != null) {
+    if (priorFinal != null && priorFinal != SettlementExecutionFinalResult.UNKNOWN) {
         val sameFinal = priorFinal.matches(normalizedResult)
         if (!sameFinal) {
             return markResultConflict(attempt, receipt, "迟到的 $normalizedResult 结果与已终结的 ${priorFinal.name} 执行尝试冲突")
@@ -258,6 +273,15 @@ fun MerchantSettlement.recordSettlementResult(
         receipt.accepted = true
         receipt.decision = SettlementResultDisposition.ACCEPTED_DUPLICATE
         return resultOutcome(attempt, SettlementResultDisposition.ACCEPTED_DUPLICATE)
+    }
+    if (priorFinal == SettlementExecutionFinalResult.UNKNOWN && normalizedResult == "UNKNOWN") {
+        receipt.accepted = true
+        receipt.decision = SettlementResultDisposition.ACCEPTED_DUPLICATE
+        return resultOutcome(
+            attempt,
+            SettlementResultDisposition.ACCEPTED_DUPLICATE,
+            reviewSummary = lastReviewSummary,
+        )
     }
 
     receipt.accepted = true
@@ -380,9 +404,11 @@ fun MerchantSettlement.voidBeforeExecution(
     operatorRole: String,
     reason: String,
     voidedAt: LocalDateTime,
+    evidence: String,
 ) {
     requireAuthorized(operatorIdentity, operatorRole)
     require(reason.isNotBlank()) { "作废原因不能为空" }
+    require(evidence.isNotBlank()) { "作废证据不能为空" }
     require(status in setOf(
         MerchantSettlementStatus.PREPARED,
         MerchantSettlementStatus.REVIEW_REQUIRED,
@@ -392,6 +418,7 @@ fun MerchantSettlement.voidBeforeExecution(
     status = MerchantSettlementStatus.VOIDED
     this.voidedBy = operatorIdentity.trim()
     this.voidReason = reason.trim()
+    this.voidEvidence = evidence.trim()
     this.voidedAt = voidedAt
     effectiveScopeIdentity = null
     settlementLines.forEach { it.effectiveConsumptionIdentity = null }
@@ -410,6 +437,7 @@ fun MerchantSettlement.returnForAdjustment(
         operatorRole = operatorRole,
         reason = "RETURN_FOR_ADJUSTMENT: ${reason.trim()}",
         voidedAt = returnedAt,
+        evidence = reason.trim(),
     )
 }
 
@@ -423,18 +451,18 @@ fun MerchantSettlement.activateEffectiveOwnership() {
         MerchantSettlementStatus.REVIEW_REQUIRED,
         MerchantSettlementStatus.NEGATIVE_REVIEW_REQUIRED,
     )) { "结算单 $id 当前状态为 $status，不能激活有效所有权" }
-    require(settlementLines.isNotEmpty()) { "结算单 $id 没有可激活的结算明细" }
+    require(settlementLines.any { it.decision == "INCLUDED" }) { "结算单 $id 没有可激活的结算明细" }
     require(effectiveScopeIdentity == null || effectiveScopeIdentity == scopeIdentity) {
         "结算单 $id 的有效范围身份不能改变"
     }
-    settlementLines.forEach { line ->
+    settlementLines.filter { it.decision == "INCLUDED" }.forEach { line ->
         val expected = stableIdentity("ACTIVE", line.sourceKind.name, line.sourceFactIdentity)
         require(line.effectiveConsumptionIdentity == null || line.effectiveConsumptionIdentity == expected) {
             "结算明细 ${line.id} 的有效消费身份不能改变"
         }
     }
     effectiveScopeIdentity = scopeIdentity
-    settlementLines.forEach { line ->
+    settlementLines.filter { it.decision == "INCLUDED" }.forEach { line ->
         line.effectiveConsumptionIdentity = stableIdentity("ACTIVE", line.sourceKind.name, line.sourceFactIdentity)
     }
 }
@@ -478,9 +506,11 @@ private fun MerchantSettlement.formSettledSuccess(completedAt: LocalDateTime): B
             eventIdentity = stableIdentity("MerchantSettlementCompleted:v1", id.toString()),
             merchantSettlementId = id,
             merchantId = merchantId,
-            channelId = channelId,
+            executionChannelId = executionChannelId,
             currency = currency,
             netAmount = netAmount,
+            periodStart = periodStart,
+            periodEnd = periodEnd,
             completedAt = completedAt,
         ),
         this,
@@ -505,20 +535,29 @@ private fun MerchantSettlement.requireAttempt(attemptId: SettlementExecutionAtte
  */
 private fun MerchantSettlement.requireTotalsMatchLines() {
     require(settlementLines.all { it.currency == currency }) { "所有结算明细必须使用结算币种 $currency" }
+    require(settlementLines.all { it.decision in setOf("INCLUDED", "EXCLUDED") && it.reasonCode.isNotBlank() }) {
+        "所有结算候选必须有判断和稳定原因代码"
+    }
+    require(settlementLines.filter { it.decision == "EXCLUDED" }.all { it.effectiveConsumptionIdentity == null }) {
+        "排除候选不得占用来源事实"
+    }
+    require(eligibleCount == settlementLines.count { it.decision == "INCLUDED" }) { "纳入候选数量与明细不一致" }
+    require(excludedCount == settlementLines.count { it.decision == "EXCLUDED" }) { "排除候选数量与明细不一致" }
+    val includedLines = settlementLines.filter { it.decision == "INCLUDED" }
     require(settlementLines.map { it.lineIdentity }.distinct().size == settlementLines.size) {
         "结算明细身份必须唯一"
     }
     require(settlementLines.map { it.sourceKind to it.sourceFactIdentity }.distinct().size == settlementLines.size) {
         "结算来源事实必须唯一"
     }
-    val calculatedPaymentGross = settlementLines.filter { it.transactionKind.name == "PAYMENT" }
+    val calculatedPaymentGross = includedLines.filter { it.sourceKind.name == "PAYMENT" }
         .fold(BigDecimal.ZERO) { total, line -> total + line.grossAmount }
-    val calculatedRefundGross = settlementLines.filter { it.transactionKind.name == "REFUND" }
+    val calculatedRefundGross = includedLines.filter { it.sourceKind.name == "REFUND" }
         .fold(BigDecimal.ZERO) { total, line -> total + line.grossAmount }
-    val calculatedFees = settlementLines.fold(BigDecimal.ZERO) { total, line -> total + line.feeAmount }
-    val calculatedAdjustments = settlementLines.filter { it.sourceKind.name == "ADJUSTMENT" }
+    val calculatedFees = includedLines.fold(BigDecimal.ZERO) { total, line -> total + line.feeAmount }
+    val calculatedAdjustments = includedLines.filter { it.sourceKind.name == "ADJUSTMENT" }
         .fold(BigDecimal.ZERO) { total, line -> total + line.signedNetAmount }
-    val calculatedNet = settlementLines.fold(BigDecimal.ZERO) { total, line -> total + line.signedNetAmount }
+    val calculatedNet = includedLines.fold(BigDecimal.ZERO) { total, line -> total + line.signedNetAmount }
     require(paymentGrossAmount.compareTo(calculatedPaymentGross) == 0) { "支付总额与结算明细汇总不一致" }
     require(refundGrossAmount.compareTo(calculatedRefundGross) == 0) { "退款总额与结算明细汇总不一致" }
     require(feeTotalAmount.compareTo(calculatedFees) == 0) { "手续费总额与结算明细汇总不一致" }

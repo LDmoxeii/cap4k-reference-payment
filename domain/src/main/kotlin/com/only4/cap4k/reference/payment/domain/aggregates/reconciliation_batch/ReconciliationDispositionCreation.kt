@@ -13,6 +13,7 @@ data class ReconciliationDispositionCreation(
     val status: ReconciliationDispositionStatus,
     val conclusion: ReconciliationDispositionConclusion?,
     val settlementImpact: SettlementImpact,
+    val reason: String,
     val evidence: String,
     val followUp: String?,
     val disposedAt: LocalDateTime

@@ -94,6 +94,7 @@ class GetReconciliationBatchQryHandler : QueryHandler<GetReconciliationBatchQry.
                                     status = disposition.status.name,
                                     conclusion = disposition.conclusion?.name,
                                     settlementImpact = disposition.settlementImpact.name,
+                                    reason = disposition.reason,
                                     evidence = disposition.evidence,
                                     followUp = disposition.followUp,
                                     disposedAt = disposition.disposedAt.toInstant(ZoneOffset.UTC),

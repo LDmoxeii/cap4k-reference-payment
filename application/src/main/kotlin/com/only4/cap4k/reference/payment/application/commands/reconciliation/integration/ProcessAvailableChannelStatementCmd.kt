@@ -9,6 +9,10 @@ import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.ddd.domain.repo.schema.and
 import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.channel.PullChannelStatement
 import com.only4.cap4k.reference.payment.application.capabilities.reconciliation.platform.LoadPlatformReconciliationFacts
+import com.only4.cap4k.reference.payment.application.manual_review.ManualReviewSupport
+import com.only4.cap4k.reference.payment.application.manual_review.openReconciliationDifferenceReview
+import com.only4.cap4k.reference.payment.application.commands.merchant_notification.MerchantNotificationService
+import com.only4.cap4k.reference.payment.application.commands.merchant_notification.notifyCompletedReconciliationRun
 import com.only4.cap4k.reference.payment.domain._share.meta.reconciliation_batch.SReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatch
 import com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.appendReconciliationRun
@@ -32,7 +36,10 @@ import org.springframework.stereotype.Service
 object ProcessAvailableChannelStatementCmd {
 
     @Service
-    class Handler : CommandHandler<Request, Response> {
+    class Handler(
+        private val manualReviewSupport: ManualReviewSupport,
+        private val notifications: MerchantNotificationService,
+    ) : CommandHandler<Request, Response> {
 
         /**
          * 入站事件只声明某个 statement revision 已可获取，不携带账单正文。
@@ -87,7 +94,7 @@ object ProcessAvailableChannelStatementCmd {
             )
 
             val statement = Mediator.capabilities.call(
-                PullChannelStatement.Request(channelId, currency, command.reconciliationDate, timezone)
+                PullChannelStatement.Request(channelId, currency, command.reconciliationDate, timezone, statementIdentity)
             ).statement
             require(statement.statementIdentity == statementIdentity) {
                 "实际拉取的账单身份 ${statement.statementIdentity} 与事件声明的 $statementIdentity 不一致"
@@ -107,6 +114,12 @@ object ProcessAvailableChannelStatementCmd {
                 platformFacts = facts,
                 startedAt = LocalDateTime.ofInstant(command.publishedAt, ZoneOffset.UTC),
             )
+            if (!result.idempotentReplay) {
+                result.run.reconciliationItems
+                    .filter { it.settlementBlocked }
+                    .forEach { manualReviewSupport.openReconciliationDifferenceReview(batch, result.run, it) }
+                notifications.notifyCompletedReconciliationRun(batch, result.run)
+            }
             return Response(
                 reconciliationBatchId = batch.id,
                 runId = result.run.id.toString(),

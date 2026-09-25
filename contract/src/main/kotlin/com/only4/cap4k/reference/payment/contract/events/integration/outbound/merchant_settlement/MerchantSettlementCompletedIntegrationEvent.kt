@@ -35,9 +35,9 @@ data class MerchantSettlementCompletedIntegrationEvent(
      */
     val merchantId: String,
     /**
-     * 渠道标识
+     * 执行渠道标识；不定义结算 scope
      */
-    val channelId: String,
+    val executionChannelId: String?,
     /**
      * 币种
      */

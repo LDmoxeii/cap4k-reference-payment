@@ -1,0 +1,5 @@
+flowchart TD
+  N1["RegisterAuthoritativeBillRevisionCmd.Request"]
+  N2["reference-fixture.bill-revision.register [POST /api/reference-fixtures/bills]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

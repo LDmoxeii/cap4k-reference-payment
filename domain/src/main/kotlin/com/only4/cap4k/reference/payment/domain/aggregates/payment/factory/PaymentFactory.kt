@@ -41,6 +41,7 @@ class PaymentFactory : AggregateFactory<PaymentFactory.Payload, Payment> {
         reviewCount = entityPayload.reviewCount,
         blockingReviewCount = entityPayload.blockingReviewCount,
         settlementFeeFactIdentity = entityPayload.settlementFeeFactIdentity,
+        settlementFeeRate = entityPayload.settlementFeeRate,
         settlementFeeBasisPoints = entityPayload.settlementFeeBasisPoints,
         settlementFixedFeeAmount = entityPayload.settlementFixedFeeAmount,
         settlementFeeRoundingMode = entityPayload.settlementFeeRoundingMode,
@@ -63,6 +64,12 @@ class PaymentFactory : AggregateFactory<PaymentFactory.Payload, Payment> {
         requestIdentity = creation.requestIdentity,
         status = creation.status,
         initiatedAt = creation.initiatedAt,
+        submissionIdentity = creation.submissionIdentity,
+        submittedAt = creation.submittedAt,
+        acceptedAt = creation.acceptedAt,
+        completedAt = creation.completedAt,
+        interactionInformation = creation.interactionInformation,
+        riskReason = creation.riskReason,
         channelTransactionId = creation.channelTransactionId,
         finalResult = creation.finalResult,
         resultOccurredAt = creation.resultOccurredAt,
@@ -78,7 +85,19 @@ class PaymentFactory : AggregateFactory<PaymentFactory.Payload, Payment> {
         conflictSummary = creation.conflictSummary,
     ).also { attempt ->
         creation.paymentNotificationReceipts.forEach { attempt.paymentNotificationReceipts.add(createReceipt(it)) }
+        creation.paymentSubmissionReceipts.forEach { attempt.paymentSubmissionReceipts.add(createSubmissionReceipt(it)) }
     }
+
+    private fun createSubmissionReceipt(c: PaymentSubmissionReceiptCreation): PaymentSubmissionReceipt =
+        PaymentSubmissionReceipt(
+            submissionIdentity = c.submissionIdentity,
+            requestIdentity = c.requestIdentity,
+            channelId = c.channelId,
+            submittedAt = c.submittedAt,
+            outcome = c.outcome,
+            channelReference = c.channelReference,
+            diagnosticSummary = c.diagnosticSummary,
+        )
 
     private fun createReceipt(c: PaymentNotificationReceiptCreation): PaymentNotificationReceipt =
         PaymentNotificationReceipt(
@@ -137,6 +156,7 @@ class PaymentFactory : AggregateFactory<PaymentFactory.Payload, Payment> {
         val reviewCount: Int = 0,
         val blockingReviewCount: Int = 0,
         val settlementFeeFactIdentity: String? = null,
+        val settlementFeeRate: BigDecimal? = null,
         val settlementFeeBasisPoints: Int? = null,
         val settlementFixedFeeAmount: BigDecimal? = null,
         val settlementFeeRoundingMode: String? = null,

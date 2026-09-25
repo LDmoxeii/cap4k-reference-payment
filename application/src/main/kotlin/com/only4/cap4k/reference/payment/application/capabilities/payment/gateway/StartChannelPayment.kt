@@ -38,10 +38,8 @@ object StartChannelPayment {
     ) : CapabilityCall<Response>
 
     data class Response(
-        /**
-         * 是否接受
-         */
-        val accepted: Boolean,
+        /** ACCEPTED, REJECTED, or RESULT_UNKNOWN. Submission acceptance is never payment success. */
+        val outcome: PaymentChannelSubmissionOutcome,
         /**
          * 渠道引用
          */
@@ -56,4 +54,10 @@ object StartChannelPayment {
         val diagnosticSummary: String?
     )
 
+}
+
+enum class PaymentChannelSubmissionOutcome {
+    ACCEPTED,
+    REJECTED,
+    RESULT_UNKNOWN,
 }

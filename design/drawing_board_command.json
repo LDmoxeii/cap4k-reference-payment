@@ -1,6 +1,63 @@
 [
   {
     "tag": "command",
+    "package": "manual_review",
+    "name": "ResolveManualReview",
+    "description": "Resolve a review through its originating aggregate and append one accountable ManualReview resolution",
+    "aggregates": ["ManualReviewItem", "Payment", "Refund", "ReconciliationBatch", "MerchantSettlement"],
+    "fields": [
+      { "name": "reviewId", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "merchantId", "type": "String?" },
+      { "name": "outcome", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "remediationReference", "type": "String?" },
+      { "name": "channelId", "type": "String?" },
+      { "name": "actorId", "type": "String" },
+      { "name": "actorRole", "type": "String" },
+      { "name": "resolvedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "reviewId", "type": "String" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_notification",
+    "name": "CreateMerchantNotificationForFact",
+    "description": "Create and deliver one idempotent merchant notification for an accepted business fact",
+    "aggregates": ["MerchantNotification"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "sourceKind", "type": "String" },
+      { "name": "sourceFactIdentity", "type": "String" },
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId?" },
+      { "name": "content", "type": "Map<String, String>" }
+    ],
+    "resultFields": [
+      { "name": "notificationId", "type": "String" },
+      { "name": "created", "type": "Boolean" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "merchant_notification",
+    "name": "RetryMerchantNotification",
+    "description": "Retry a failed notification with the same frozen notification and content identities",
+    "aggregates": ["MerchantNotification"],
+    "fields": [
+      { "name": "notificationId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.MerchantNotificationId" },
+      { "name": "idempotencyKey", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "notificationId", "type": "String" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
     "package": "merchant_settlement.adjustment",
     "name": "ReturnMerchantSettlementForAdjustment",
     "description": "Return an unconfirmed merchant settlement for adjustment and prepare a fresh effective replacement",
@@ -29,12 +86,20 @@
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
       { "name": "confirmedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "status", "type": "String" },
-      { "name": "netAmount", "type": "Big_decimal" }
+      { "name": "netAmount", "type": "Big_decimal" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" },
+      { "name": "confirmedAt", "type": "java.time.Instant" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "actorId", "type": "String" }
     ]
   },
   {
@@ -47,6 +112,8 @@
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
+      { "name": "executionChannelId", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
       { "name": "requestedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
@@ -56,7 +123,8 @@
       { "name": "requestIdentity", "type": "String?" },
       { "name": "status", "type": "String" },
       { "name": "providerAccepted", "type": "Boolean" },
-      { "name": "diagnosticSummary", "type": "String?" }
+      { "name": "diagnosticSummary", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -80,15 +148,18 @@
     "aggregates": ["MerchantSettlement"],
     "fields": [
       { "name": "merchantId", "type": "String" },
-      { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
-      { "name": "settlementDate", "type": "java.time.LocalDate" },
+      { "name": "periodStart", "type": "java.time.Instant" },
+      { "name": "periodEnd", "type": "java.time.Instant" },
+      { "name": "businessTimezone", "type": "String", "defaultValue": "\"Asia/Shanghai\"" },
       { "name": "requestedBy", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
       { "name": "requestedAt", "type": "java.time.Instant" },
       { "name": "predecessorSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" }
     ],
     "resultFields": [
-      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome" }
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementPreparationOutcome" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -111,10 +182,11 @@
       { "name": "resultCode", "type": "String?" },
       { "name": "occurredAt", "type": "java.time.Instant" },
       { "name": "receivedAt", "type": "java.time.Instant" },
-      { "name": "verificationMaterial", "type": "String" }
+      { "name": "rawPayload", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
-      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome" }
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -157,7 +229,6 @@
     "aggregates": ["MerchantSettlement"],
     "fields": [
       { "name": "merchantId", "type": "String" },
-      { "name": "channelId", "type": "String" },
       { "name": "currency", "type": "String" },
       { "name": "triggeredAt", "type": "java.time.Instant" }
     ],
@@ -176,13 +247,43 @@
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
       { "name": "voidedAt", "type": "java.time.Instant" },
       { "name": "createReplacement", "type": "Boolean" }
     ],
     "resultFields": [
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "status", "type": "String" },
-      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" }
+      { "name": "replacementSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" },
+      { "name": "voidedAt", "type": "java.time.Instant" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "actorId", "type": "String" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.attempt",
+    "name": "CreatePaymentAttempt",
+    "description": "Create one explicit payment attempt without submitting it to a channel",
+    "aggregates": ["Payment", "MerchantChannelConfiguration"],
+    "fields": [
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "riskReason", "type": "String?", "defaultValue": "null" }
+    ],
+    "resultFields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "paymentAttemptId", "type": "String" },
+      { "name": "paymentStatus", "type": "String" },
+      { "name": "attemptStatus", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "interactionInformation", "type": "String" },
+      { "name": "riskReason", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -205,6 +306,31 @@
   },
   {
     "tag": "command",
+    "package": "payment.attempt",
+    "name": "SubmitPaymentAttempt",
+    "description": "Freeze a stable submission identity then submit one created payment attempt to the reference channel",
+    "aggregates": ["Payment"],
+    "fields": [
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
+      { "name": "paymentAttemptId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentAttemptId" },
+      { "name": "idempotencyKey", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "paymentAttemptId", "type": "String" },
+      { "name": "paymentStatus", "type": "String" },
+      { "name": "attemptStatus", "type": "String" },
+      { "name": "submissionIdentity", "type": "String?" },
+      { "name": "channelId", "type": "String" },
+      { "name": "interactionInformation", "type": "String" },
+      { "name": "submissionOutcome", "type": "String?" },
+      { "name": "channelReference", "type": "String?" },
+      { "name": "diagnosticSummary", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
     "package": "payment.create",
     "name": "CreatePayment",
     "description": "Create an idempotent payment intent for a merchant order",
@@ -215,15 +341,15 @@
       { "name": "idempotencyKey", "type": "String" },
       { "name": "amount", "type": "Big_decimal" },
       { "name": "currency", "type": "String" },
-      { "name": "paymentMethod", "type": "String" },
-      { "name": "expiresAt", "type": "java.time.Instant" }
+      { "name": "paymentMethod", "type": "String" }
     ],
     "resultFields": [
       { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "status", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" },
       { "name": "rejectionCode", "type": "String?" },
-      { "name": "rejectionSummary", "type": "String?" }
+      { "name": "rejectionSummary", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -246,7 +372,7 @@
     "package": "payment.result",
     "name": "ConfirmPaymentResult",
     "description": "Record, verify, deduplicate, and adjudicate a channel payment result",
-    "aggregates": ["Payment"],
+    "aggregates": ["Payment", "PaymentChannelResultReceipt"],
     "fields": [
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
@@ -257,10 +383,11 @@
       { "name": "currency", "type": "String" },
       { "name": "result", "type": "String" },
       { "name": "occurredAt", "type": "java.time.Instant" },
-      { "name": "verificationMaterial", "type": "String" }
+      { "name": "rawPayload", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
-      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome" }
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.values.ChannelResultRecordingOutcome" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -273,10 +400,11 @@
       { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "reviewId", "type": "String" },
       { "name": "decisionIdentity", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "merchantId", "type": "String?", "defaultValue": "null" },
       { "name": "decision", "type": "String" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
-      { "name": "authorizationMaterial", "type": "String" },
       { "name": "reason", "type": "String" },
       { "name": "evidence", "type": "String" },
       { "name": "decidedAt", "type": "java.time.Instant" },
@@ -288,7 +416,67 @@
       { "name": "reviewStatus", "type": "String" },
       { "name": "decisionCount", "type": "Int" },
       { "name": "settlementEligible", "type": "Boolean" },
-      { "name": "notificationIntentState", "type": "String?" }
+      { "name": "notificationIntentState", "type": "String?" },
+      { "name": "decisionId", "type": "String" },
+      { "name": "decisionIdentity", "type": "String" },
+      { "name": "decision", "type": "String" },
+      { "name": "actorId", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "decidedAt", "type": "java.time.Instant" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reconciliation.bill",
+    "name": "ReceiveAuthoritativeBillAvailableSignal",
+    "description": "Record a stable bill-available signal and trigger the existing transactional reconciliation path",
+    "aggregates": ["AuthoritativeBill", "ReconciliationBatch"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "billIdentity", "type": "String" },
+      { "name": "businessDate", "type": "java.time.LocalDate" },
+      { "name": "currency", "type": "String" },
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "signalIdentity", "type": "String" },
+      { "name": "announcedRevision", "type": "String" },
+      { "name": "publishedAt", "type": "java.time.Instant" },
+      { "name": "correlationIdentity", "type": "String?", "defaultValue": "null" },
+      { "name": "causationIdentity", "type": "String?", "defaultValue": "null" }
+    ],
+    "resultFields": [
+      { "name": "billId", "type": "String" },
+      { "name": "signalId", "type": "String" },
+      { "name": "runId", "type": "String?" },
+      { "name": "runStatus", "type": "String" },
+      { "name": "idempotentReplay", "type": "Boolean" },
+      { "name": "diagnostic", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reconciliation.bill",
+    "name": "RegisterAuthoritativeBillRevision",
+    "description": "Persist one immutable provider bill revision and advance only the monotonic current pointer",
+    "aggregates": ["AuthoritativeBill"],
+    "fields": [
+      { "name": "channelId", "type": "String" },
+      { "name": "billIdentity", "type": "String" },
+      { "name": "businessDate", "type": "java.time.LocalDate" },
+      { "name": "currency", "type": "String" },
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "revision", "type": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.BillRevisionCreation" }
+    ],
+    "resultFields": [
+      { "name": "billId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "billIdentity", "type": "String" },
+      { "name": "currentRevision", "type": "String?" },
+      { "name": "revision", "type": "String" },
+      { "name": "revisionId", "type": "String" },
+      { "name": "idempotentReplay", "type": "Boolean" },
+      { "name": "becameCurrent", "type": "Boolean" }
     ]
   },
   {
@@ -303,10 +491,14 @@
       { "name": "merchantId", "type": "String?" },
       { "name": "channelId", "type": "String?" },
       { "name": "operatorIdentity", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "runId", "type": "String?", "defaultValue": "null" },
+      { "name": "confirmationOnly", "type": "Boolean", "defaultValue": "false" },
       { "name": "operatorRole", "type": "String" },
       { "name": "conclusion", "type": "String" },
       { "name": "settlementImpact", "type": "String" },
       { "name": "evidence", "type": "String" },
+      { "name": "reason", "type": "String" },
       { "name": "followUp", "type": "String?" },
       { "name": "disposedAt", "type": "java.time.Instant" }
     ],
@@ -317,7 +509,12 @@
       { "name": "confirmationFactId", "type": "String?" },
       { "name": "batchStatus", "type": "String" },
       { "name": "settlementBlocked", "type": "Boolean" },
-      { "name": "blockingReason", "type": "String?" }
+      { "name": "blockingReason", "type": "String?" },
+      { "name": "actorId", "type": "String" },
+      { "name": "reason", "type": "String" },
+      { "name": "evidence", "type": "String" },
+      { "name": "disposedAt", "type": "java.time.Instant" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -353,6 +550,8 @@
     "fields": [
       { "name": "reconciliationBatchId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.reconciliation_batch.ReconciliationBatchId" },
       { "name": "requestedBy", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "sourceRunId", "type": "String?", "defaultValue": "null" },
       { "name": "requestedAt", "type": "java.time.Instant" }
     ],
     "resultFields": [
@@ -361,7 +560,8 @@
       { "name": "batchStatus", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" },
       { "name": "statementIdentity", "type": "String?" },
-      { "name": "statementRevision", "type": "String?" }
+      { "name": "statementRevision", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -386,25 +586,136 @@
   },
   {
     "tag": "command",
-    "package": "refund.create",
-    "name": "CreateRefund",
-    "description": "Reserve payment refund budget, create a refund, and submit one channel attempt",
-    "aggregates": ["Payment", "Refund", "MerchantChannelConfiguration"],
+    "package": "reference_fixture.channel",
+    "name": "ConfigureReferenceMerchantChannel",
+    "description": "Persist deterministic reference merchant routing input through the aggregate Unit of Work",
+    "aggregates": ["MerchantChannelConfiguration"],
     "fields": [
       { "name": "merchantId", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "paymentMethod", "type": "String" },
+      { "name": "status", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.enums.MerchantChannelConfigurationStatus" },
+      { "name": "minimumAmount", "type": "Big_decimal" },
+      { "name": "maximumAmount", "type": "Big_decimal" },
+      { "name": "routingPriority", "type": "Int" },
+      { "name": "refundWindowDays", "type": "Int" },
+      { "name": "refundResultReviewAfterMinutes", "type": "Int" },
+      { "name": "settlementFeeBasisPoints", "type": "Int" },
+      { "name": "settlementFixedFeeAmount", "type": "Big_decimal" },
+      { "name": "settlementFeeRoundingMode", "type": "String" },
+      { "name": "settlementResultReviewAfterMinutes", "type": "Int" },
+      { "name": "changedAt", "type": "java.time.Instant" }
+    ],
+    "resultFields": [
+      { "name": "configurationId", "type": "String" },
+      { "name": "status", "type": "String" },
+      { "name": "updated", "type": "Boolean" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reference_fixture.operation",
+    "name": "CreateReferenceOperationFixture",
+    "description": "Create a deterministic reference operation through the production Operation aggregate",
+    "aggregates": ["Operation"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "commandType", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
+      { "name": "resourceType", "type": "String" },
+      { "name": "resourceId", "type": "String" },
+      { "name": "readAfterMode", "type": "String" },
+      { "name": "resourceUrl", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "reference_fixture.operation",
+    "name": "TransitionReferenceOperationFixture",
+    "description": "Transition a reference operation to an authoritative terminal or review state",
+    "aggregates": ["Operation"],
+    "fields": [
+      { "name": "operationId", "type": "String" },
+      { "name": "outcome", "type": "String" },
+      { "name": "resourceUrl", "type": "String?" },
+      { "name": "result", "type": "Map<String, Any?>?" },
+      { "name": "errorCode", "type": "String?" },
+      { "name": "errorMessage", "type": "String?" },
+      { "name": "errorDetails", "type": "Map<String, Any?>?" },
+      { "name": "retryable", "type": "Boolean?" },
+      { "name": "reviewId", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "operation", "type": "com.only4.cap4k.reference.payment.contract.common.OperationView" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "refund.attempt",
+    "name": "CreateRefundAttempt",
+    "description": "Select a currently eligible channel and create a durable refund attempt without submitting it",
+    "aggregates": ["Refund", "MerchantChannelConfiguration"],
+    "fields": [
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" },
+      { "name": "idempotencyKey", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "refundId", "type": "String" },
+      { "name": "refundAttemptId", "type": "String" },
+      { "name": "refundStatus", "type": "String" },
+      { "name": "attemptStatus", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "reusedExistingAttempt", "type": "Boolean" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "refund.attempt",
+    "name": "SubmitRefundAttempt",
+    "description": "Submit one created refund attempt to the reference channel without reserving budget again",
+    "aggregates": ["Payment", "Refund"],
+    "fields": [
+      { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" },
+      { "name": "refundAttemptId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundAttemptId" },
+      { "name": "idempotencyKey", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "refundId", "type": "String" },
+      { "name": "refundAttemptId", "type": "String" },
+      { "name": "refundStatus", "type": "String" },
+      { "name": "attemptStatus", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "requestIdentity", "type": "String" },
+      { "name": "diagnosticSummary", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "refund.request",
+    "name": "RequestRefund",
+    "description": "Accept an independent refund request and atomically reserve the payment refund budget",
+    "aggregates": ["Payment", "Refund"],
+    "fields": [
+      { "name": "merchantId", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" },
       { "name": "merchantRefundNumber", "type": "String" },
       { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
       { "name": "amount", "type": "Big_decimal" },
       { "name": "currency", "type": "String" },
-      { "name": "requestedAt", "type": "java.time.Instant" }
+      { "name": "reason", "type": "String" }
     ],
     "resultFields": [
       { "name": "refundId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId" },
-      { "name": "refundAttemptId", "type": "String" },
       { "name": "status", "type": "String" },
-      { "name": "requestIdentity", "type": "String" },
       { "name": "idempotentReplay", "type": "Boolean" },
-      { "name": "diagnosticSummary", "type": "String?" }
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {
@@ -423,10 +734,11 @@
       { "name": "currency", "type": "String" },
       { "name": "result", "type": "String" },
       { "name": "occurredAt", "type": "java.time.Instant" },
-      { "name": "verificationMaterial", "type": "String" }
+      { "name": "rawPayload", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
-      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.values.RefundResultRecordingOutcome" }
+      { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.refund.values.RefundResultRecordingOutcome" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
   {

@@ -1,0 +1,5 @@
+flowchart TD
+  N1["SubmitPaymentAttemptCmd.Request"]
+  N2["payment.attempt.submit [POST /api/payments/{paymentId}/attempts/{paymentAttemptId}/submissions]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

@@ -1,5 +1,26 @@
 [
   {
+    "name": "MerchantNotificationStatus",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.enums",
+    "aggregates": ["MerchantNotification"],
+    "items": [
+      {"value": 0, "name": "PENDING", "desc": "通知意图已形成，尚无最终投递结果"},
+      {"value": 1, "name": "DELIVERED", "desc": "通知已成功投递，不再重试"},
+      {"value": 2, "name": "FAILED", "desc": "最近一次投递明确失败，可按冻结策略重试"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "最近一次投递结果未知，不自动重试"}
+    ]
+  },
+  {
+    "name": "MerchantNotificationDeliveryOutcome",
+    "package": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_notification.enums",
+    "aggregates": ["MerchantNotification"],
+    "items": [
+      {"value": 0, "name": "SUCCESS", "desc": "发送方确认投递成功"},
+      {"value": 1, "name": "FAILURE", "desc": "发送方明确投递失败"},
+      {"value": 2, "name": "RESULT_UNKNOWN", "desc": "发送方结果未知，不可假定失败或成功"}
+    ]
+  },
+  {
     "name": "PaymentStatus",
     "package": "com.only4.cap4k.reference.payment.domain.aggregates.payment.enums",
     "aggregates": [
@@ -21,10 +42,13 @@
       "Payment"
     ],
     "items": [
-      {"value": 0, "name": "PROCESSING", "desc": "渠道支付尝试正在处理中"},
-      {"value": 1, "name": "SUCCEEDED", "desc": "渠道支付尝试已成功完成"},
-      {"value": 2, "name": "FAILED", "desc": "渠道支付尝试已失败完成"},
-      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "渠道支付尝试尚无最终结果，需要复核"}
+      {"value": 0, "name": "CREATED", "desc": "支付尝试已创建，尚未调用渠道"},
+      {"value": 1, "name": "SUBMITTED", "desc": "稳定提交身份已冻结并已调用渠道，等待受理结果"},
+      {"value": 2, "name": "ACCEPTED", "desc": "渠道已受理付款请求，尚未形成资金成功事实"},
+      {"value": 3, "name": "RESULT_UNKNOWN", "desc": "渠道提交或结果未知，需要收敛或人工核对"},
+      {"value": 4, "name": "SUCCEEDED", "desc": "渠道已返回并通过验证的成功结果"},
+      {"value": 5, "name": "FAILED", "desc": "渠道已返回并通过验证的失败结果"},
+      {"value": 6, "name": "REJECTED", "desc": "渠道在提交阶段明确拒绝请求"}
     ]
   },
   {
@@ -58,7 +82,9 @@
       {"value": 4, "name": "ACCEPTED_DUPLICATE", "desc": "重复通知重放了已接受的载荷", "group": "accepted", "terminal": true},
       {"value": 5, "name": "REJECTED_DUPLICATE", "desc": "重复通知重放了已拒绝的载荷", "group": "rejected", "terminal": true},
       {"value": 6, "name": "CONFLICT", "desc": "同一通知身份被重复使用且事实发生冲突", "group": "conflict", "terminal": true},
-      {"value": 7, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的支付尝试不属于当前支付单", "group": "rejected", "terminal": true}
+      {"value": 7, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的支付尝试不属于当前支付单", "group": "rejected", "terminal": true},
+      {"value": 8, "name": "LATE", "desc": "支付已关闭或失败后收到可信的迟到结果", "group": "conflict", "terminal": true},
+      {"value": 9, "name": "UNKNOWN_ACCEPTED", "desc": "已接受可信的未知结果并等待后续收敛", "group": "accepted", "terminal": true}
     ]
   },
   {
@@ -109,7 +135,8 @@
     "items": [
       {"value": 0, "name": "SUCCESS", "desc": "渠道已返回并通过验证的退款成功结果"},
       {"value": 1, "name": "FAILED", "desc": "渠道已返回并通过验证的退款失败结果"},
-      {"value": 2, "name": "GATEWAY_REJECTED", "desc": "网关在处理前拒绝了退款请求"}
+      {"value": 2, "name": "GATEWAY_REJECTED", "desc": "网关在处理前拒绝了退款请求"},
+      {"value": 3, "name": "RETRYABLE_FAILURE", "desc": "本次渠道尝试失败但 policy 允许使用新 attempt 重试"}
     ]
   },
   {
@@ -131,7 +158,8 @@
       {"value": 5, "name": "ACCEPTED_DUPLICATE", "desc": "重复通知重放了已接受的载荷", "group": "accepted", "terminal": true},
       {"value": 6, "name": "REJECTED_DUPLICATE", "desc": "重复通知重放了已拒绝的载荷", "group": "rejected", "terminal": true},
       {"value": 7, "name": "CONFLICT", "desc": "退款通知与不可变的既有结果发生冲突", "group": "conflict", "terminal": true},
-      {"value": 8, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的退款尝试不属于当前退款单", "group": "rejected", "terminal": true}
+      {"value": 8, "name": "ATTEMPT_NOT_FOUND", "desc": "引用的退款尝试不属于当前退款单", "group": "rejected", "terminal": true},
+      {"value": 9, "name": "RETRYABLE_FAILURE_ACCEPTED", "desc": "已接受可重试失败，原退款预算继续占用", "group": "accepted", "terminal": true}
     ]
   },
   {
@@ -348,7 +376,8 @@
       {"value": 3, "name": "SUCCESS_AFTER_FAILURE_CONFLICT", "desc": "已接受失败结果后又收到成功证据"},
       {"value": 4, "name": "FAILURE_OR_UNKNOWN_AFTER_SUCCESS", "desc": "已接受成功结果后又收到失败或未知证据"},
       {"value": 5, "name": "NOTIFICATION_PAYLOAD_CONFLICT", "desc": "同一通知身份被用于不同载荷"},
-      {"value": 6, "name": "MERCHANT_ORDER_SUCCESS_CONFLICT", "desc": "另一支付单已占有该商户订单的已接受成功声明"}
+      {"value": 6, "name": "MERCHANT_ORDER_SUCCESS_CONFLICT", "desc": "另一支付单已占有该商户订单的已接受成功声明"},
+      {"value": 7, "name": "CONCURRENT_ATTEMPT_RISK", "desc": "存在 in-flight 或 unknown 尝试时以显式风险说明创建新尝试"}
     ]
   },
   {

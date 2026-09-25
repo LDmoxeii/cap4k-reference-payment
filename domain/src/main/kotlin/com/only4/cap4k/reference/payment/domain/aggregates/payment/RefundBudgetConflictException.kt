@@ -1,8 +1,9 @@
 package com.only4.cap4k.reference.payment.domain.aggregates.payment
 
 /**
- * Signals that a refund reservation lost the current payment budget race.
+ * Signals that a refund reservation would exceed the current payment budget.
  *
- * The adapter maps this domain conflict to the stable HTTP concurrency code.
+ * This covers both a directly excessive request and the loser of a concurrent reservation race;
+ * the adapter maps both to the contract's stable REFUND_BUDGET_EXCEEDED code.
  */
 class RefundBudgetConflictException(message: String) : RuntimeException(message)

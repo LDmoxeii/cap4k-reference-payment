@@ -6,15 +6,19 @@ import com.only4.cap4k.ddd.endpoint.http.EndpointMvcResponsePolicy
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.ConfirmMerchantSettlementEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.ConfirmMerchantSettlementResultEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.GetMerchantSettlementEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.ListMerchantSettlementsEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.PrepareMerchantSettlementEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.StartMerchantSettlementExecutionEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.merchant_settlement.api.VoidMerchantSettlementEndpoint
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceActorContextResolver
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 
 @Configuration(proxyBeanMethods = false)
-class MerchantSettlementEndpointHttpConfiguration {
+class MerchantSettlementEndpointHttpConfiguration(
+    private val actorContextResolver: ReferenceActorContextResolver,
+) {
     @Bean
     fun prepareMerchantSettlementHttpBinding(): EndpointMvcBinding<PrepareMerchantSettlementEndpoint.Request, PrepareMerchantSettlementEndpoint.Response> =
         EndpointMvcBinding.special(
@@ -23,7 +27,9 @@ class MerchantSettlementEndpointHttpConfiguration {
             responseType = PrepareMerchantSettlementEndpoint.Response::class,
             method = HttpMethod.POST,
             path = "/api/merchant-settlements",
-            requestMapper = EndpointMvcRequestMapper { request -> request.body(PrepareMerchantSettlementEndpoint.Request::class) },
+            requestMapper = EndpointMvcRequestMapper { request ->
+                request.body(PrepareMerchantSettlementEndpoint.Request::class)
+            },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 201),
         )
 
@@ -36,8 +42,12 @@ class MerchantSettlementEndpointHttpConfiguration {
             method = HttpMethod.POST,
             path = "/api/merchant-settlements/{settlementId}/confirmations",
             requestMapper = EndpointMvcRequestMapper { request ->
-                request.body(ConfirmMerchantSettlementEndpoint.Request::class).copy(
-                    settlementId = request.path("settlementId", String::class)
+                val body = request.body(ConfirmMerchantSettlementEndpoint.Request::class)
+                actorContextResolver.bind(
+                    runCatching { request.header(ReferenceActorContextResolver.HEADER_NAME) }.getOrNull(),
+                )
+                body.copy(
+                    settlementId = request.path("settlementId", String::class),
                 )
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
@@ -52,8 +62,9 @@ class MerchantSettlementEndpointHttpConfiguration {
             method = HttpMethod.POST,
             path = "/api/merchant-settlements/{settlementId}/executions",
             requestMapper = EndpointMvcRequestMapper { request ->
-                request.body(StartMerchantSettlementExecutionEndpoint.Request::class).copy(
-                    settlementId = request.path("settlementId", String::class)
+                val body = request.body(StartMerchantSettlementExecutionEndpoint.Request::class)
+                body.copy(
+                    settlementId = request.path("settlementId", String::class),
                 )
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
@@ -78,7 +89,11 @@ class MerchantSettlementEndpointHttpConfiguration {
             method = HttpMethod.POST,
             path = "/api/merchant-settlements/{settlementId}/voids",
             requestMapper = EndpointMvcRequestMapper { request ->
-                request.body(VoidMerchantSettlementEndpoint.Request::class).copy(
+                val body = request.body(VoidMerchantSettlementEndpoint.Request::class)
+                actorContextResolver.bind(
+                    runCatching { request.header(ReferenceActorContextResolver.HEADER_NAME) }.getOrNull(),
+                )
+                body.copy(
                     settlementId = request.path("settlementId", String::class)
                 )
             },
@@ -97,5 +112,15 @@ class MerchantSettlementEndpointHttpConfiguration {
                 GetMerchantSettlementEndpoint.Request(request.path("settlementId", String::class))
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
+        )
+
+    @Bean
+    fun listMerchantSettlementsHttpBinding(): EndpointMvcBinding<ListMerchantSettlementsEndpoint.Request, ListMerchantSettlementsEndpoint.Response> =
+        EndpointMvcBinding.json(
+            operationName = ListMerchantSettlementsEndpoint.OPERATION_NAME,
+            requestType = ListMerchantSettlementsEndpoint.Request::class,
+            responseType = ListMerchantSettlementsEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/merchant-settlements/search",
         )
 }

@@ -53,7 +53,7 @@ class MerchantChannelConfigurationFactory : AggregateFactory<MerchantChannelConf
         val channelRuleSummary: String,
         val refundWindowDays: Int = 180,
         val refundResultReviewAfterMinutes: Int = 30,
-        val settlementFeeBasisPoints: Int = 200,
+        val settlementFeeBasisPoints: Int = 60,
         val settlementFixedFeeAmount: BigDecimal = BigDecimal.ZERO,
         val settlementFeeRoundingMode: String = "HALF_UP",
         val settlementResultReviewAfterMinutes: Int = 30,

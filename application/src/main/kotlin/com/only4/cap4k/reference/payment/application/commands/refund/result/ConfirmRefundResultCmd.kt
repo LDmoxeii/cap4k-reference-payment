@@ -7,6 +7,11 @@ import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.reference.payment.application.capabilities.refund.channel.VerifyRefundResult
 import com.only4.cap4k.reference.payment.application.errors.PaymentNotFoundException
 import com.only4.cap4k.reference.payment.application.errors.RefundNotFoundException
+import com.only4.cap4k.reference.payment.application.manual_review.ManualReviewSupport
+import com.only4.cap4k.reference.payment.application.manual_review.openRefundResultReview
+import com.only4.cap4k.reference.payment.application.commands.merchant_notification.MerchantNotificationService
+import com.only4.cap4k.reference.payment.application.operations.OperationSupport
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain._share.meta.refund.SRefund
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId
@@ -16,6 +21,8 @@ import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundAttemptI
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.RefundId
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.recordChannelResult
 import com.only4.cap4k.reference.payment.domain.aggregates.refund.values.RefundResultRecordingOutcome
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.enums.RefundResultDisposition
+import com.only4.cap4k.reference.payment.domain.aggregates.refund.enums.RefundStatus
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
@@ -34,10 +41,15 @@ import org.springframework.stereotype.Service
 object ConfirmRefundResultCmd {
 
     @Service
-    class Handler(private val clock: Clock) : CommandHandler<Request, Response> {
+    class Handler(
+        private val clock: Clock,
+        private val manualReviewSupport: ManualReviewSupport,
+        private val notifications: MerchantNotificationService,
+        private val operations: OperationSupport,
+    ) : CommandHandler<Request, Response> {
         /** 先调用退款结果核验 Capability，再由 Refund 聚合追加 receipt；结果返回后同步转换或释放 Payment 预算。 */
         override fun handle(command: Request): Response {
-            val payload = listOf(
+            val payload = command.rawPayload?.takeIf { it.isNotBlank() } ?: listOf(
                 command.channelId,
                 command.notificationId,
                 command.refundId,
@@ -48,17 +60,39 @@ object ConfirmRefundResultCmd {
                 command.result,
                 command.occurredAt.toString(),
             ).joinToString("|")
+            val operationIdentity = operations.canonicalHash(
+                command.channelId.trim(),
+                command.notificationId.trim(),
+                command.refundId.toString(),
+                command.refundAttemptId.trim(),
+                command.channelRefundId.trim(),
+                command.amount.stripTrailingZeros().toPlainString(),
+                command.currency.trim().uppercase(),
+                command.result.trim().uppercase(),
+                command.occurredAt.toString(),
+                payload,
+            )
             val verification = Mediator.capabilities.call(
                 VerifyRefundResult.Request(
                     channelId = command.channelId,
                     notificationId = command.notificationId,
                     payload = payload,
-                    verificationMaterial = command.verificationMaterial,
+                    refundId = command.refundId.toString(),
+                    refundAttemptId = command.refundAttemptId,
+                    channelRefundId = command.channelRefundId,
+                    amount = command.amount,
+                    currency = command.currency,
                 )
             )
             val refund = Mediator.repositories.findOne(
                 SRefund.predicateById(command.refundId)
             ) ?: throw RefundNotFoundException(command.refundId)
+            val acceptedOperation = operations.replayOrNull(
+                merchantId = refund.merchantId,
+                commandType = COMMAND_TYPE,
+                idempotencyKey = operationIdentity,
+                canonicalRequestHash = operationIdentity,
+            )
             val payment = Mediator.repositories.findOne(
                 SPayment.predicateById(refund.paymentId)
             ) ?: throw PaymentNotFoundException(refund.paymentId)
@@ -81,7 +115,51 @@ object ConfirmRefundResultCmd {
             if (outcome.reservationConvertedToSuccessNow) {
                 payment.convertRefundReservationToSuccess(refund.amount)
             }
-            return Response(outcome)
+            when {
+                outcome.disposition == RefundResultDisposition.CONFLICT -> manualReviewSupport.openRefundResultReview(
+                    refund, command.refundAttemptId, command.notificationId, "REFUND_RESULT_CONFLICT",
+                    outcome.conflictSummary ?: "退款渠道结果与既有事实冲突",
+                )
+                outcome.disposition == RefundResultDisposition.ATTEMPT_NOT_FOUND -> manualReviewSupport.openRefundResultReview(
+                    refund, command.refundAttemptId, command.notificationId, "REFUND_ATTEMPT_NOT_FOUND",
+                    outcome.rejectionSummary ?: "退款渠道结果引用了不存在的退款尝试",
+                )
+                outcome.refundStatus == RefundStatus.RESULT_UNKNOWN -> manualReviewSupport.openRefundResultReview(
+                    refund, command.refundAttemptId, command.notificationId, "REFUND_RESULT_UNKNOWN",
+                    "退款渠道结果未知；退款预算继续占用，等待同一退款尝试收敛",
+                )
+            }
+            if (outcome.reservationConvertedToSuccessNow || outcome.reservationReleasedNow) {
+                notifications.createAndDeliver(
+                    MerchantNotificationService.Intent(
+                        merchantId = refund.merchantId,
+                        sourceKind = "REFUND",
+                        sourceFactIdentity = "refund:${refund.id}:final:${refund.status.name}",
+                        paymentId = refund.paymentId,
+                        content = mapOf(
+                            "merchantId" to refund.merchantId,
+                            "paymentId" to refund.paymentId.toString(),
+                            "refundId" to refund.id.toString(),
+                            "merchantRefundNo" to refund.merchantRefundNumber,
+                            "channelRefundId" to requireNotNull(refund.channelRefundId),
+                            "amount" to refund.amount.toPlainString(),
+                            "currency" to refund.currency,
+                            "status" to refund.status.name,
+                        ),
+                    ),
+                )
+            }
+            val receipt = acceptedOperation?.let { operations.receipt(it, replay = true) }
+                ?: operations.accept(
+                    merchantId = refund.merchantId,
+                    commandType = COMMAND_TYPE,
+                    idempotencyKey = operationIdentity,
+                    canonicalRequestHash = operationIdentity,
+                    resourceType = "Refund",
+                    resourceId = refund.id.toString(),
+                    resourceUrl = "/api/refunds/${refund.id}",
+                )
+            return Response(outcome, receipt)
         }
     }
 
@@ -122,11 +200,14 @@ object ConfirmRefundResultCmd {
          * 发生时间
          */
         val occurredAt: Instant,
-        /**
-         * 核验材料
-         */
-        val verificationMaterial: String,
+        /** callback 的 canonical raw payload；验真结论不来自调用方。 */
+        val rawPayload: String? = null,
     ) : Command<Response>
 
-    data class Response(val outcome: RefundResultRecordingOutcome)
+    data class Response(
+        val outcome: RefundResultRecordingOutcome,
+        val receipt: OperationReceipt,
+    )
+
+    private const val COMMAND_TYPE = "ReceiveRefundChannelResult"
 }

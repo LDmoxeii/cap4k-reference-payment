@@ -14,29 +14,45 @@ class ReconciliationEndpointHttpConfigurationContractTest {
     @Test
     fun `handwritten reconciliation bindings retain factory method path status and mapper contracts`() {
         assertBinding(
-            functionName = "getReconciliationBatchHttpBinding",
+            functionName = "getReconciliationRunHttpBinding",
             method = "GET",
-            path = "/api/reconciliation-batches/{batchId}",
-            mapperEvidence = listOf("request.path(\"batchId\", String::class)"),
+            path = "/api/reconciliation-runs/{runId}",
+            mapperEvidence = listOf("request.path(\"runId\", String::class)"),
         )
+        val listBody = functionBody("listReconciliationRunsHttpBinding")
+        assertContains(listBody, "EndpointMvcBinding.json(")
+        assertContains(listBody, "path = \"/api/reconciliation-runs/search\"")
         assertBinding(
-            functionName = "rerunReconciliationBatchHttpBinding",
+            functionName = "rerunReconciliationRunHttpBinding",
             method = "POST",
-            path = "/api/reconciliation-batches/{batchId}/reruns",
+            path = "/api/reconciliation-runs/{runId}/reruns",
             mapperEvidence = listOf(
-                "request.body(RerunReconciliationBatchEndpoint.Request::class)",
-                "batchId = request.path(\"batchId\", String::class)",
+                "request.body(RerunReconciliationRunEndpoint.Request::class)",
+                "request.path(\"runId\", String::class)",
             ),
         )
+        assertTrue(!functionBody("rerunReconciliationRunHttpBinding").contains("actorContextResolver.bind("))
         assertBinding(
-            functionName = "disposeReconciliationDifferenceHttpBinding",
+            functionName = "disposeReconciliationRunDifferenceHttpBinding",
             method = "POST",
-            path = "/api/reconciliation-items/{itemId}/dispositions",
+            path = "/api/reconciliation-runs/{runId}/differences/{itemId}/dispositions",
             mapperEvidence = listOf(
-                "request.body(DisposeReconciliationDifferenceEndpoint.Request::class)",
+                "request.body(DisposeReconciliationRunDifferenceEndpoint.Request::class)",
+                "runId = request.path(\"runId\", String::class)",
                 "itemId = request.path(\"itemId\", String::class)",
             ),
         )
+        assertBinding(
+            functionName = "confirmReconciliationFactHttpBinding",
+            method = "POST",
+            path = "/api/reconciliation-runs/{runId}/differences/{itemId}/confirmations",
+            mapperEvidence = listOf(
+                "request.body(ConfirmReconciliationFactEndpoint.Request::class)",
+                "runId = request.path(\"runId\", String::class)",
+                "itemId = request.path(\"itemId\", String::class)",
+            ),
+        )
+        assertTrue(!source.contains("/api/reconciliation-batches"))
     }
 
     private fun assertBinding(

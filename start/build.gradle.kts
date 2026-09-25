@@ -33,6 +33,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // CAP4K providers and the reference H2 datasource are process-scoped. Isolate each test class
+    // so a closed Spring context cannot leak provider registrations or in-memory facts to the next class.
+    maxParallelForks = 1
+    forkEvery = 1L
     doFirst {
         val receiverPort = ServerSocket(0, 0, InetAddress.getLoopbackAddress()).use { it.localPort }
         systemProperty("payment.reference.test.integration-event-port", receiverPort)

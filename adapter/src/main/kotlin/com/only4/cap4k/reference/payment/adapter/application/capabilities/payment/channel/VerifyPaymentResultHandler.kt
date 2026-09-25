@@ -3,7 +3,9 @@ package com.only4.cap4k.reference.payment.adapter.application.capabilities.payme
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityHandler
 import com.only4.cap4k.reference.payment.application.capabilities.payment.channel.VerifyPaymentResult
-import org.springframework.beans.factory.annotation.Value
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackEvidenceInput
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackKind
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceCallbackVerifier
 import org.springframework.stereotype.Service
 
 @Service
@@ -16,18 +18,28 @@ import org.springframework.stereotype.Service
     family = "capability-handler"
 )
 class VerifyPaymentResultHandler(
-    @param:Value("\${payment.sandbox.channel-id}") private val trustedChannelId: String,
-    @param:Value("\${payment.sandbox.verification-secret}") private val verificationSecret: String,
+    private val verifier: ReferenceCallbackVerifier,
 ) : CapabilityHandler<VerifyPaymentResult.Request, VerifyPaymentResult.Response> {
 
     override fun call(request: VerifyPaymentResult.Request): VerifyPaymentResult.Response {
-        val verified = request.channelId == trustedChannelId &&
-            request.verificationMaterial == verificationSecret &&
-            request.notificationId.isNotBlank() &&
-            request.payload.isNotBlank()
+        val verification = verifier.verify(
+            ReferenceCallbackEvidenceInput(
+                kind = ReferenceCallbackKind.PAYMENT,
+                channelId = request.channelId,
+                externalIdentity = request.notificationId,
+                associationIdentity = listOf(
+                    request.paymentId,
+                    request.paymentAttemptId,
+                    request.channelTransactionId,
+                ).joinToString("|"),
+                amount = request.amount,
+                currency = request.currency,
+                canonicalPayload = request.payload,
+            ),
+        )
         return VerifyPaymentResult.Response(
-            verified = verified,
-            verificationSummary = if (verified) "沙箱签名核验通过" else "沙箱签名核验失败",
+            verified = verification.verified,
+            verificationSummary = verification.reason,
         )
     }
 }

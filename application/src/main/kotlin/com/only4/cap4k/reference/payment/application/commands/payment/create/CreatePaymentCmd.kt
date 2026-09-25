@@ -9,12 +9,14 @@ import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.ddd.domain.repo.schema.and
 import com.only4.cap4k.reference.payment.application.errors.NoEligibleChannelException
 import com.only4.cap4k.reference.payment.application.errors.PaymentConflictException
+import com.only4.cap4k.reference.payment.application.operations.OperationSupport
+import com.only4.cap4k.reference.payment.application.reference.ReferencePolicyService
+import com.only4.cap4k.reference.payment.contract.common.OperationReceipt
 import com.only4.cap4k.reference.payment.domain._share.meta.merchant_channel_configuration.SMerchantChannelConfiguration
 import com.only4.cap4k.reference.payment.domain._share.meta.payment.SPayment
 import com.only4.cap4k.reference.payment.domain.aggregates.merchant_channel_configuration.enums.MerchantChannelConfigurationStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.enums.PaymentStatus
 import com.only4.cap4k.reference.payment.domain.aggregates.payment.factory.PaymentFactory
-import com.only4.cap4k.reference.payment.domain.values.Money
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
@@ -35,6 +37,8 @@ object CreatePaymentCmd {
     @Service
     class Handler(
         private val clock: Clock,
+        private val operationSupport: OperationSupport,
+        private val referencePolicy: ReferencePolicyService,
     ) : CommandHandler<Request, Response> {
 
         /**
@@ -51,9 +55,26 @@ object CreatePaymentCmd {
             require(idempotencyKey.isNotBlank()) { "幂等键不能为空" }
             require(paymentMethod.isNotBlank()) { "支付方式不能为空" }
 
-            val money = Money.of(command.amount, command.currency)
+            val effectivePolicy = referencePolicy.current()
+            val money = referencePolicy.money(command.amount, command.currency, effectivePolicy)
             val now = Instant.now(clock)
-            require(command.expiresAt.isAfter(now)) { "支付到期时间必须晚于当前时间" }
+            val expiresAt = now.plus(effectivePolicy.paymentExpiry)
+            val requestHash = operationSupport.canonicalHash(
+                merchantOrderNumber,
+                money.amount.toPlainString(),
+                money.currency,
+                paymentMethod,
+            )
+            operationSupport.replayOrNull(
+                merchantId = merchantId,
+                commandType = COMMAND_TYPE,
+                idempotencyKey = idempotencyKey,
+                canonicalRequestHash = requestHash,
+            )?.let { operation ->
+                val payment = Mediator.repositories.findOne(SPayment.predicateById(PaymentId.parse(operation.resourceId)))
+                    ?: throw IllegalStateException("operation ${operation.id} refers to missing payment ${operation.resourceId}")
+                return response(payment, idempotentReplay = true, receipt = operationSupport.receipt(operation, replay = true))
+            }
 
             Mediator.repositories.findOne(
                 SMerchantChannelConfiguration.predicate { schema ->
@@ -76,33 +97,43 @@ object CreatePaymentCmd {
                 val sameIntent = existing.merchantOrderNumber == merchantOrderNumber &&
                     existing.amount.compareTo(money.amount) == 0 &&
                     existing.currency == money.currency &&
-                    existing.paymentMethod == paymentMethod &&
-                    existing.expiresAt == LocalDateTime.ofInstant(command.expiresAt, ZoneOffset.UTC)
+                    existing.paymentMethod == paymentMethod
                 if (!sameIntent) {
                     throw PaymentConflictException(
                         code = "IDEMPOTENCY_CONFLICT",
                         message = "幂等键已绑定到内容不同的支付意图",
                     )
                 }
-                return Response(
-                    paymentId = existing.id,
-                    status = existing.status.name,
+                return response(
+                    existing,
                     idempotentReplay = true,
-                    rejectionCode = null,
-                    rejectionSummary = null,
+                    receipt = operationSupport.accept(
+                        merchantId = merchantId,
+                        commandType = COMMAND_TYPE,
+                        idempotencyKey = idempotencyKey,
+                        canonicalRequestHash = requestHash,
+                        resourceType = "PaymentIntent",
+                        resourceId = existing.id.toString(),
+                        resourceUrl = "/api/payments/${existing.id}",
+                    ),
                 )
             }
 
-            Mediator.repositories.findOne(
+            Mediator.repositories.find(
                 SPayment.predicate { schema ->
                     (schema.merchantId eq merchantId) and
-                        (schema.merchantOrderNumber eq merchantOrderNumber) and
-                        (schema.status eq PaymentStatus.SUCCEEDED)
+                        (schema.merchantOrderNumber eq merchantOrderNumber)
                 }
-            )?.let {
+            ).firstOrNull { it.status !in setOf(PaymentStatus.FAILED, PaymentStatus.CLOSED) }?.let { orderPayment ->
+                if (orderPayment.status == PaymentStatus.SUCCEEDED) {
+                    throw PaymentConflictException(
+                        code = "ORDER_ALREADY_PAID",
+                        message = "商户订单 $merchantOrderNumber 已经存在成功支付",
+                    )
+                }
                 throw PaymentConflictException(
-                    code = "ORDER_ALREADY_PAID",
-                    message = "商户订单 $merchantOrderNumber 已经存在成功支付",
+                    code = "ORDER_ACTIVE_PAYMENT_EXISTS",
+                    message = "商户订单 $merchantOrderNumber 已经存在活动支付",
                 )
             }
 
@@ -115,7 +146,7 @@ object CreatePaymentCmd {
                     currency = money.currency,
                     paymentMethod = paymentMethod,
                     status = PaymentStatus.PENDING,
-                    expiresAt = LocalDateTime.ofInstant(command.expiresAt, ZoneOffset.UTC),
+                    expiresAt = LocalDateTime.ofInstant(expiresAt, ZoneOffset.UTC),
                     succeededAt = null,
                     channelTransactionId = null,
                     lastRejectionSummary = null,
@@ -124,14 +155,33 @@ object CreatePaymentCmd {
                     successfulRefundAmount = BigDecimal.ZERO,
                 )
             )
-            return Response(
-                paymentId = payment.id,
-                status = payment.status.name,
+            return response(
+                payment,
                 idempotentReplay = false,
-                rejectionCode = null,
-                rejectionSummary = null,
+                receipt = operationSupport.accept(
+                    merchantId = merchantId,
+                    commandType = COMMAND_TYPE,
+                    idempotencyKey = idempotencyKey,
+                    canonicalRequestHash = requestHash,
+                    resourceType = "PaymentIntent",
+                    resourceId = payment.id.toString(),
+                    resourceUrl = "/api/payments/${payment.id}",
+                ),
             )
         }
+
+        private fun response(
+            payment: com.only4.cap4k.reference.payment.domain.aggregates.payment.Payment,
+            idempotentReplay: Boolean,
+            receipt: OperationReceipt,
+        ) = Response(
+            paymentId = payment.id,
+            status = payment.status.name,
+            idempotentReplay = idempotentReplay,
+            rejectionCode = null,
+            rejectionSummary = null,
+            receipt = receipt,
+        )
     }
 
     data class Request(
@@ -159,10 +209,6 @@ object CreatePaymentCmd {
          * 支付方式
          */
         val paymentMethod: String,
-        /**
-         * 过期时间
-         */
-        val expiresAt: Instant
     ) : Command<Response>
 
     data class Response(
@@ -185,6 +231,9 @@ object CreatePaymentCmd {
         /**
          * 拒绝摘要
          */
-        val rejectionSummary: String?
+        val rejectionSummary: String?,
+        val receipt: OperationReceipt,
     )
+
+    private const val COMMAND_TYPE = "CreatePaymentIntent"
 }

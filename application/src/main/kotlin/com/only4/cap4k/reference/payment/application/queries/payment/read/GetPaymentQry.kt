@@ -68,6 +68,8 @@ object GetPaymentQry {
          * 渠道交易标识
          */
         val channelTransactionId: String?,
+        /** Immutable fee-policy snapshot captured with the first accepted payment success. */
+        val feeSnapshot: FeeSnapshot?,
         /**
          * 预留退款金额
          */
@@ -157,6 +159,16 @@ object GetPaymentQry {
          */
         val reviews: List<PaymentReviewSummary>,
     ) {
+        data class FeeSnapshot(
+            val feeRate: BigDecimal,
+            val basisPoints: Int,
+            val fixedFeeAmount: BigDecimal,
+            val roundingMode: String,
+            val currencyPrecision: Int,
+            val calculationAmount: BigDecimal,
+            val feeAmount: BigDecimal,
+            val formedAt: Instant,
+        )
         data class PaymentAttemptSummary(
             /**
              * 支付尝试标识
@@ -170,6 +182,12 @@ object GetPaymentQry {
              * 状态
              */
             val status: String,
+            val submissionIdentity: String?,
+            val submittedAt: Instant?,
+            val acceptedAt: Instant?,
+            val completedAt: Instant?,
+            val interactionInformation: String?,
+            val riskReason: String?,
             /**
              * 请求身份
              */
@@ -226,10 +244,20 @@ object GetPaymentQry {
              * 冲突摘要
              */
             val conflictSummary: String?,
+            val submissionReceipts: List<SubmissionReceiptSummary>,
             /**
              * 通知回执列表
              */
             val notificationReceipts: List<NotificationReceiptSummary>,
+        )
+        data class SubmissionReceiptSummary(
+            val submissionIdentity: String,
+            val requestIdentity: String,
+            val channelId: String,
+            val submittedAt: Instant,
+            val outcome: String,
+            val channelReference: String?,
+            val diagnosticSummary: String?,
         )
         data class NotificationReceiptSummary(
             /**

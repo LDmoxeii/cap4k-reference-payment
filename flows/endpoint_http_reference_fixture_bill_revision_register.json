@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:reference-fixture.bill-revision.register",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.reconciliation.bill.RegisterAuthoritativeBillRevisionCmd.Request",
+      "name": "RegisterAuthoritativeBillRevisionCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.reconciliation.bill.RegisterAuthoritativeBillRevisionCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:reference-fixture.bill-revision.register",
+      "name": "reference-fixture.bill-revision.register [POST /api/reference-fixtures/bills]",
+      "fullName": "endpoint-http:reference-fixture.bill-revision.register",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:reference-fixture.bill-revision.register",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.reconciliation.bill.RegisterAuthoritativeBillRevisionCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}
