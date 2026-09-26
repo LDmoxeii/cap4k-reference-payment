@@ -52,6 +52,7 @@
       { "name": "notificationId", "type": "String" },
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionId", "type": "String" },
       { "name": "executionGroupIdentity", "type": "String" },
       { "name": "requestIdentity", "type": "String" },
       { "name": "externalSettlementIdentity", "type": "String" },
@@ -77,6 +78,7 @@
     "fields": [
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
       { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionId", "type": "String" },
       { "name": "merchantId", "type": "String" },
       { "name": "channelId", "type": "String" },
       { "name": "executionGroupIdentity", "type": "String" },
@@ -88,7 +90,9 @@
       { "name": "accepted", "type": "Boolean" },
       { "name": "externalSettlementIdentity", "type": "String?" },
       { "name": "failureCode", "type": "String?" },
-      { "name": "diagnosticSummary", "type": "String?" }
+      { "name": "diagnosticSummary", "type": "String?" },
+      { "name": "executorScript", "type": "String", "defaultValue": "\"NO_RESULT\"" },
+      { "name": "observation", "type": "String", "defaultValue": "\"NO_RESULT\"" }
     ]
   },
   {

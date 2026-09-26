@@ -18,6 +18,7 @@ class ConfirmMerchantSettlementResultEndpointHandler : EndpointHandler<ConfirmMe
                 notificationId = request.notificationId,
                 merchantSettlementId = MerchantSettlementId.parse(request.settlementId),
                 executionAttemptId = request.executionAttemptId,
+                executionId = request.executionId,
                 executionGroupIdentity = request.executionGroupIdentity,
                 requestIdentity = request.requestIdentity,
                 externalSettlementIdentity = request.externalSettlementIdentity,
@@ -32,6 +33,7 @@ class ConfirmMerchantSettlementResultEndpointHandler : EndpointHandler<ConfirmMe
         )
         val outcome = commandResponse.outcome
         return ConfirmMerchantSettlementResultEndpoint.Response(
+            executionId = commandResponse.executionId,
             settlementStatus = MerchantSettlementContractStatus.publicStatus(outcome.settlementStatus),
             attemptStatus = outcome.attemptStatus?.let(MerchantSettlementContractStatus::publicExecutionStatus),
             notificationReceiveCount = outcome.notificationReceiveCount,

@@ -93,6 +93,11 @@ class GetMerchantSettlementEndpointHandler : EndpointHandler<GetMerchantSettleme
             },
             attempts = response.attempts.map { attempt ->
                 GetMerchantSettlementEndpoint.Response.SettlementExecutionAttemptSummary(
+                    executionId = attempt.executionId,
+                    idempotencyKey = attempt.idempotencyKey,
+                    executorScript = attempt.executorScript,
+                    executorObservation = attempt.executorObservation,
+                    diagnosticSummary = attempt.diagnosticSummary,
                     attemptId = attempt.attemptId,
                     attemptSequence = attempt.attemptSequence,
                     executionGroupIdentity = attempt.executionGroupIdentity,
@@ -114,6 +119,7 @@ class GetMerchantSettlementEndpointHandler : EndpointHandler<GetMerchantSettleme
                     conflictSummary = attempt.conflictSummary,
                     receipts = attempt.receipts.map { receipt ->
                         GetMerchantSettlementEndpoint.Response.SettlementResultReceiptSummary(
+                            executionId = attempt.executionId,
                             receiptId = receipt.receiptId,
                             notificationIdentity = receipt.notificationIdentity,
                             payloadFingerprint = receipt.payloadFingerprint,

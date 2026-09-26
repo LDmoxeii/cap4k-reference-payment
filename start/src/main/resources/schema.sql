@@ -95,6 +95,9 @@ alter table settlement_execution_attempt
     add constraint uk_settlement_execution_attempt_request unique (channel_id, request_identity);
 
 alter table settlement_execution_attempt
+    add constraint uk_settlement_execution_id unique (execution_id);
+
+alter table settlement_execution_attempt
     add constraint uk_settlement_execution_attempt_sequence unique (merchant_settlement_id, attempt_sequence);
 
 alter table settlement_result_receipt
@@ -641,6 +644,10 @@ comment on column settlement_execution_attempt.id is '记录唯一标识 @Manage
 comment on column settlement_execution_attempt.version is '并发更新版本号 @Managed=version;';
 comment on column settlement_execution_attempt.merchant_settlement_id is '所属商户结算单标识 @ParentRef;';
 comment on column settlement_execution_attempt.attempt_sequence is '结算执行尝试序号';
+comment on column settlement_execution_attempt.execution_id is '调用方提供的全局稳定执行身份';
+comment on column settlement_execution_attempt.idempotency_key is '本次执行命令幂等键快照';
+comment on column settlement_execution_attempt.executor_script is '首次消费的 reference executor 脚本';
+comment on column settlement_execution_attempt.executor_observation is '首次冻结的 executor 观察结果';
 comment on column settlement_execution_attempt.execution_group_identity is '执行批次身份';
 comment on column settlement_execution_attempt.request_identity is '执行请求幂等身份';
 comment on column settlement_execution_attempt.channel_id is '渠道标识';

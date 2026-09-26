@@ -189,7 +189,7 @@ fun ManualReviewSupport.openNegativeSettlementReview(settlement: MerchantSettlem
 
 fun ManualReviewSupport.openSettlementResultReview(
     settlement: MerchantSettlement,
-    executionAttemptId: String,
+    executionId: String,
     notificationId: String,
     type: String,
     summary: String,
@@ -197,15 +197,15 @@ fun ManualReviewSupport.openSettlementResultReview(
     val settlementId = settlement.id.toString()
     open(
         ManualReviewSupport.Opening(
-            reviewIdentity = "manual-review:settlement-result:${type.uppercase()}:$settlementId:$executionAttemptId:$notificationId",
+            reviewIdentity = "manual-review:settlement-result:${type.uppercase()}:$settlementId:$executionId:$notificationId",
             type = type,
             merchantId = settlement.merchantId,
             originKind = "SETTLEMENT_CALLBACK",
-            originIdentity = "$settlementId:$executionAttemptId:$notificationId",
+            originIdentity = "$settlementId:$executionId:$notificationId",
             summary = summary,
             relatedRefs = listOf(
                 ref("MERCHANT_SETTLEMENT", settlementId),
-                ref("SETTLEMENT_EXECUTION_ATTEMPT", executionAttemptId),
+                ref("SETTLEMENT_EXECUTION", executionId),
                 ref("SETTLEMENT_NOTIFICATION", notificationId),
             ),
             blockingScopes = listOf(
@@ -214,7 +214,7 @@ fun ManualReviewSupport.openSettlementResultReview(
             ),
             evidenceRefs = listOf(
                 evidence("SETTLEMENT_NOTIFICATION", notificationId, summary),
-                evidence("SETTLEMENT_EXECUTION_ATTEMPT", executionAttemptId),
+                evidence("SETTLEMENT_EXECUTION", executionId),
             ),
         ),
     )
@@ -225,24 +225,24 @@ fun ManualReviewSupport.openSettlementUnknownThresholdReview(
     attempt: SettlementExecutionAttempt,
 ) {
     val settlementId = settlement.id.toString()
-    val attemptId = attempt.id.toString()
+    val executionId = attempt.executionId
     open(
         ManualReviewSupport.Opening(
-            reviewIdentity = "manual-review:settlement-unknown-overdue:$settlementId:$attemptId",
+            reviewIdentity = "manual-review:settlement-unknown-overdue:$settlementId:$executionId",
             type = "SETTLEMENT_RESULT_UNKNOWN_OVERDUE",
             merchantId = settlement.merchantId,
-            originKind = "SETTLEMENT_EXECUTION_ATTEMPT",
-            originIdentity = "$settlementId:$attemptId",
-            summary = settlement.lastReviewSummary ?: "结算执行尝试 $attemptId 的结果未知且超过复核阈值",
+            originKind = "SETTLEMENT_EXECUTION",
+            originIdentity = "$settlementId:$executionId",
+            summary = settlement.lastReviewSummary ?: "结算执行 $executionId 的结果未知且超过复核阈值",
             relatedRefs = listOf(
                 ref("MERCHANT_SETTLEMENT", settlementId),
-                ref("SETTLEMENT_EXECUTION_ATTEMPT", attemptId),
+                ref("SETTLEMENT_EXECUTION", executionId),
             ),
             blockingScopes = listOf(
                 scope("SETTLEMENT_SCOPE", settlement.scopeIdentity),
                 scope("MERCHANT_SETTLEMENT", settlementId),
             ),
-            evidenceRefs = listOf(evidence("SETTLEMENT_EXECUTION_ATTEMPT", attemptId, attempt.verdictSummary)),
+            evidenceRefs = listOf(evidence("SETTLEMENT_EXECUTION", executionId, attempt.verdictSummary)),
             sortTime = attempt.reviewAfterAt.toInstant(ZoneOffset.UTC),
         ),
     )

@@ -170,7 +170,8 @@
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
       { "name": "settlementId", "type": "String" },
-      { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionId", "type": "String" },
+      { "name": "executionAttemptId", "type": "String?", "defaultValue": "null" },
       { "name": "executionGroupIdentity", "type": "String" },
       { "name": "requestIdentity", "type": "String" },
       { "name": "externalSettlementIdentity", "type": "String" },
@@ -182,6 +183,7 @@
       { "name": "rawPayload", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
+      { "name": "executionId", "type": "String" },
       { "name": "settlementStatus", "type": "String" },
       { "name": "attemptStatus", "type": "String?" },
       { "name": "notificationReceiveCount", "type": "Int" },
@@ -276,6 +278,11 @@
       { "name": "lines[].adjustmentSourceIdentity", "type": "String?" },
       { "name": "lines[].adjustmentEvidence", "type": "String?" },
       { "name": "attempts", "type": "List<SettlementExecutionAttemptSummary>" },
+      { "name": "attempts[].executionId", "type": "String" },
+      { "name": "attempts[].idempotencyKey", "type": "String" },
+      { "name": "attempts[].executorScript", "type": "String" },
+      { "name": "attempts[].executorObservation", "type": "String" },
+      { "name": "attempts[].diagnosticSummary", "type": "String?" },
       { "name": "attempts[].attemptId", "type": "String" },
       { "name": "attempts[].attemptSequence", "type": "Int" },
       { "name": "attempts[].executionGroupIdentity", "type": "String" },
@@ -294,6 +301,7 @@
       { "name": "attempts[].rejectionSummary", "type": "String?" },
       { "name": "attempts[].conflictSummary", "type": "String?" },
       { "name": "attempts[].receipts", "type": "List<SettlementResultReceiptSummary>" },
+      { "name": "attempts[].receipts[].executionId", "type": "String" },
       { "name": "attempts[].receipts[].receiptId", "type": "String" },
       { "name": "attempts[].receipts[].notificationIdentity", "type": "String" },
       { "name": "attempts[].receipts[].payloadFingerprint", "type": "String" },
@@ -404,17 +412,22 @@
     "operationName": "merchant-settlement.execution.start",
     "fields": [
       { "name": "settlementId", "type": "String", "defaultValue": "\"\"" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "executionId", "type": "String" },
       { "name": "executionChannelId", "type": "String" },
       { "name": "idempotencyKey", "type": "String" }
     ],
     "resultFields": [
       { "name": "settlementId", "type": "String" },
+      { "name": "executionId", "type": "String" },
       { "name": "attemptId", "type": "String?" },
       { "name": "executionGroupIdentity", "type": "String?" },
       { "name": "requestIdentity", "type": "String?" },
       { "name": "status", "type": "String" },
       { "name": "providerAccepted", "type": "Boolean" },
       { "name": "diagnosticSummary", "type": "String?" },
+      { "name": "executorScript", "type": "String" },
+      { "name": "executorObservation", "type": "String" },
       { "name": "actorId", "type": "String" },
       { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
@@ -490,6 +503,24 @@
       { "name": "reason", "type": "String" },
       { "name": "evidence", "type": "String" },
       { "name": "decidedAt", "type": "java.time.Instant" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "payment.api",
+    "name": "CloseExpiredPaymentEndpoint",
+    "description": "POST /api/payments/{paymentId}/close-expired",
+    "aggregates": [],
+    "operationName": "payment.expiry.close",
+    "fields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "paymentStatus", "type": "String" },
       { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
@@ -949,6 +980,29 @@
   {
     "tag": "endpoint",
     "package": "reconciliation.api",
+    "name": "GetAuthoritativeBillEndpoint",
+    "description": "GET /api/authoritative-bills/{billId}",
+    "aggregates": [],
+    "operationName": "authoritative-bill.get",
+    "fields": [
+      { "name": "billId", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "billId", "type": "String" },
+      { "name": "billIdentity", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "businessDate", "type": "java.time.LocalDate" },
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "createdAt", "type": "java.time.Instant" },
+      { "name": "currentRevision", "type": "String?" },
+      { "name": "currentRevisionId", "type": "String?" },
+      { "name": "revisions", "type": "List<com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.AuthoritativeBillRevisionView>" }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "reconciliation.api",
     "name": "GetReconciliationBatchEndpoint",
     "description": "GET /api/reconciliation-batches/{batchId}",
     "aggregates": [],
@@ -1072,6 +1126,29 @@
       { "name": "blockingReason", "type": "String?" },
       { "name": "failureSummary", "type": "String?" },
       { "name": "differences", "type": "List<com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.GetReconciliationBatchEndpoint.Response.ReconciliationItemSummary>" }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "reconciliation.api",
+    "name": "ListBillRevisionsEndpoint",
+    "description": "GET /api/authoritative-bills/{billId}/revisions",
+    "aggregates": [],
+    "operationName": "authoritative-bill.revisions.list",
+    "fields": [
+      { "name": "billId", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "billId", "type": "String" },
+      { "name": "billIdentity", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "businessDate", "type": "java.time.LocalDate" },
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "createdAt", "type": "java.time.Instant" },
+      { "name": "currentRevision", "type": "String?" },
+      { "name": "currentRevisionId", "type": "String?" },
+      { "name": "revisions", "type": "List<com.only4.cap4k.reference.payment.contract.endpoints.reconciliation.api.AuthoritativeBillRevisionView>" }
     ]
   },
   {
@@ -1292,6 +1369,26 @@
   {
     "tag": "endpoint",
     "package": "reference_fixture.api",
+    "name": "ConfigureReferenceSettlementExecutorEndpoint",
+    "description": "POST /api/reference-fixtures/settlement-executor-script",
+    "aggregates": [],
+    "operationName": "reference-fixture.settlement-executor.configure",
+    "fields": [
+      { "name": "executionId", "type": "String?" },
+      { "name": "script", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "executionId", "type": "String" },
+      { "name": "script", "type": "String" },
+      { "name": "configured", "type": "Boolean" },
+      { "name": "consumed", "type": "Boolean" },
+      { "name": "observation", "type": "String?" },
+      { "name": "diagnosticSummary", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "reference_fixture.api",
     "name": "CreateReferenceOperationFixtureEndpoint",
     "description": "POST /api/reference-fixtures/operations",
     "aggregates": ["Operation"],
@@ -1351,6 +1448,25 @@
     ],
     "resultFields": [
       { "name": "policy", "type": "com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ReferencePolicyFixtureView" }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "reference_fixture.api",
+    "name": "GetReferenceSettlementExecutorEndpoint",
+    "description": "GET /api/reference-fixtures/settlement-executor-script/{executionId}",
+    "aggregates": [],
+    "operationName": "reference-fixture.settlement-executor.get",
+    "fields": [
+      { "name": "executionId", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "executionId", "type": "String" },
+      { "name": "script", "type": "String" },
+      { "name": "configured", "type": "Boolean" },
+      { "name": "consumed", "type": "Boolean" },
+      { "name": "observation", "type": "String?" },
+      { "name": "diagnosticSummary", "type": "String?" }
     ]
   },
   {
@@ -1475,6 +1591,25 @@
     ],
     "resultFields": [
       { "name": "policy", "type": "com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ReferencePolicyFixtureView" }
+    ]
+  },
+  {
+    "tag": "endpoint",
+    "package": "reference_fixture.api",
+    "name": "ResetReferenceSettlementExecutorEndpoint",
+    "description": "POST /api/reference-fixtures/settlement-executor-script/reset",
+    "aggregates": [],
+    "operationName": "reference-fixture.settlement-executor.reset",
+    "fields": [
+      { "name": "executionId", "type": "String?" }
+    ],
+    "resultFields": [
+      { "name": "executionId", "type": "String" },
+      { "name": "script", "type": "String" },
+      { "name": "configured", "type": "Boolean" },
+      { "name": "consumed", "type": "Boolean" },
+      { "name": "observation", "type": "String?" },
+      { "name": "diagnosticSummary", "type": "String?" }
     ]
   },
   {

@@ -681,6 +681,7 @@ function Invoke-SettlementPayAcScenario {
             $first = Send-AcSettlementResult $Context $flow.Prepared.settlementId $flow.Execution $amount 'SUCCESS' 'success'
             $repeat = Invoke-AcHttp POST '/api/channel/settlement-results' @{
                 channelId='C-001';notificationId="SN-$($Context.Alias)-success-SUCCESS";settlementId=$flow.Prepared.settlementId
+                executionId=$flow.Execution.executionId
                 executionAttemptId=$flow.Execution.attemptId;executionGroupIdentity=$flow.Execution.executionGroupIdentity
                 requestIdentity=$flow.Execution.requestIdentity;externalSettlementIdentity="STL-$($flow.Execution.requestIdentity)"
                 money=@{currency='CNY';amountMinor=(ConvertTo-MinorString $amount)};result='SUCCESS';resultCode='SUCCESS'
@@ -702,6 +703,7 @@ function Invoke-SettlementPayAcScenario {
             Set-AcClock $Context.BaseInstant.AddHours(14) | Out-Null
             Invoke-AcHttp POST '/api/reference-fixtures/maintenance' @{action='SETTLEMENT_UNKNOWN_REVIEW'} @(200) | Out-Null
             $retry = Invoke-AcHttp POST "/api/merchant-settlements/$($flow.Prepared.settlementId)/executions" @{
+                merchantId=$Context.MerchantId;executionId="EXEC-$($Context.Alias)-unknown-new-execution"
                 executionChannelId='C-001';idempotencyKey="$($Context.Alias)-unknown-new-execution"
             } @(400,409)
             $detail = Get-SettlementDetail $flow.Prepared.settlementId
@@ -740,6 +742,7 @@ function Invoke-SettlementPayAcScenario {
             $prepared = New-AcPreparedSettlement $Context 'negative' $period
             $detail = Get-SettlementDetail $prepared.settlementId
             $execute = Invoke-AcHttp POST "/api/merchant-settlements/$($prepared.settlementId)/executions" @{
+                merchantId=$Context.MerchantId;executionId="EXEC-$($Context.Alias)-negative-execute"
                 executionChannelId='C-001';idempotencyKey="$($Context.Alias)-negative-execute"
             } @(400,409)
             Assert-AcEqual ([decimal]$payment.Detail.feeSnapshot.feeRate) ([decimal]0.30) 'payment freezes the scenario policy fee rate used by the negative-net fixture'
@@ -1502,7 +1505,7 @@ function Invoke-ProtocolClosurePayAcScenario {
             $retry=Start-AcSettlementExecution $failureContext $failure.Prepared.settlementId 'retry'
             $unknownContext=New-AcChildContext $Context 'unknown' 2;Set-AcClock $unknownContext.BaseInstant|Out-Null;$unknown=New-AcExecutableSettlement $unknownContext 100 'unknown';$unknownAmount=[decimal]$unknown.Detail.netMoney.amountMinor/100
             Send-AcSettlementResult $unknownContext $unknown.Prepared.settlementId $unknown.Execution $unknownAmount 'UNKNOWN' 'unknown'|Out-Null
-            $forbidden=Invoke-AcHttp POST "/api/merchant-settlements/$($unknown.Prepared.settlementId)/executions" @{executionChannelId='C-001';idempotencyKey="$($Context.Alias)-unknown-retry"} @(400,409)
+            $forbidden=Invoke-AcHttp POST "/api/merchant-settlements/$($unknown.Prepared.settlementId)/executions" @{merchantId=$unknownContext.MerchantId;executionId="EXEC-$($unknownContext.Alias)-unknown-retry";executionChannelId='C-001';idempotencyKey="$($Context.Alias)-unknown-retry"} @(400,409)
             $successDetail=Get-SettlementDetail $success.Prepared.settlementId;$failureDetail=Get-SettlementDetail $failure.Prepared.settlementId;$unknownDetail=Get-SettlementDetail $unknown.Prepared.settlementId
             Assert-Ac -Condition ([bool]$successDetail.settledFactFormed -and $successDetail.attempts.Count -eq 1) -Message 'SUCCESS forms one settlement fact under one identity' -Actual $successDetail
             Assert-Ac -Condition ($failureDetail.attempts.Count -eq 2 -and $retry.attemptId -ne $failure.Execution.attemptId) -Message 'explicit FAILURE permits controlled new attempt identity' -Actual $failureDetail
@@ -1815,6 +1818,7 @@ function Invoke-PayAcCleanLoop {
     Send-AcSettlementResult $Context $prepared.settlementId $execution ([decimal]$before.netMoney.amountMinor/100) 'SUCCESS' $Suffix|Out-Null
     $settlementResultReplay=Invoke-AcHttp POST '/api/channel/settlement-results' @{
         channelId='C-001';notificationId="SN-$($Context.Alias)-$Suffix-SUCCESS";settlementId=$prepared.settlementId
+        executionId=$execution.executionId
         executionAttemptId=$execution.attemptId;executionGroupIdentity=$execution.executionGroupIdentity;requestIdentity=$execution.requestIdentity
         externalSettlementIdentity="STL-$($execution.requestIdentity)";money=@{currency='CNY';amountMinor=$before.netMoney.amountMinor};result='SUCCESS';resultCode='SUCCESS'
         occurredAt=$Context.BaseInstant.AddHours(13).ToString('o');receivedAt=$Context.BaseInstant.AddHours(13).AddSeconds(30).ToString('o')

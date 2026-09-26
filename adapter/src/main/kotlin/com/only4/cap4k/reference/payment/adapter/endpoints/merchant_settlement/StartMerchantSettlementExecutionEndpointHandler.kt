@@ -19,6 +19,8 @@ class StartMerchantSettlementExecutionEndpointHandler(
         val response = Mediator.commands.send(
             StartMerchantSettlementExecutionCmd.Request(
                 merchantSettlementId = MerchantSettlementId.parse(request.settlementId),
+                merchantId = request.merchantId,
+                executionId = request.executionId,
                 operatorIdentity = REFERENCE_SYSTEM_ACTOR_ID,
                 operatorRole = REFERENCE_SETTLEMENT_EXECUTOR_ROLE,
                 executionChannelId = request.executionChannelId,
@@ -28,12 +30,15 @@ class StartMerchantSettlementExecutionEndpointHandler(
         )
         return StartMerchantSettlementExecutionEndpoint.Response(
             settlementId = response.merchantSettlementId.toString(),
+            executionId = response.executionId,
             attemptId = response.attemptId,
             executionGroupIdentity = response.executionGroupIdentity,
             requestIdentity = response.requestIdentity,
             status = MerchantSettlementContractStatus.publicStatus(MerchantSettlementStatus.valueOf(response.status)),
             providerAccepted = response.providerAccepted,
             diagnosticSummary = response.diagnosticSummary,
+            executorScript = response.executorScript,
+            executorObservation = response.executorObservation,
             actorId = REFERENCE_SYSTEM_ACTOR_ID,
             receipt = response.receipt,
         )

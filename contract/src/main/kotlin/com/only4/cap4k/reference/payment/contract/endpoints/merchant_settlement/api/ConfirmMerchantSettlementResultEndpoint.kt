@@ -34,10 +34,10 @@ object ConfirmMerchantSettlementResultEndpoint {
          * 结算标识
          */
         val settlementId: String,
-        /**
-         * 执行尝试标识
-         */
-        val executionAttemptId: String,
+        /** Caller-supplied stable execution identity. */
+        val executionId: String,
+        /** Internal attempt id retained only as optional compatibility diagnostics. */
+        val executionAttemptId: String? = null,
         /**
          * 执行组身份
          */
@@ -75,6 +75,7 @@ object ConfirmMerchantSettlementResultEndpoint {
     ) : EndpointRequest<Response>
 
     data class Response(
+        val executionId: String,
         /**
          * 结算状态
          */

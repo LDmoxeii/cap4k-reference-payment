@@ -6,6 +6,7 @@ import com.only4.cap4k.ddd.core.application.command.Command
 import com.only4.cap4k.ddd.core.application.command.CommandHandler
 import com.only4.cap4k.reference.payment.application.capabilities.merchant_settlement.result.VerifySettlementResult
 import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementNotFoundException
+import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementConflictException
 import com.only4.cap4k.reference.payment.application.manual_review.ManualReviewSupport
 import com.only4.cap4k.reference.payment.application.manual_review.openSettlementResultReview
 import com.only4.cap4k.reference.payment.application.operations.OperationSupport
@@ -39,11 +40,29 @@ object ConfirmMerchantSettlementResultCmd {
     ) : CommandHandler<Request, Response> {
         /** 先核验 callback，再把 notification/payload/attempt 交给聚合统一裁决；成功事件只能由聚合首次 settled fact 触发。 */
         override fun handle(command: Request): Response {
+            val settlement = Mediator.repositories.findOne(
+                SMerchantSettlement.predicateById(command.merchantSettlementId)
+            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
+            val attempt = settlement.settlementExecutionAttempts.firstOrNull {
+                it.executionId == command.executionId.trim()
+            } ?: throw MerchantSettlementConflictException(
+                "SETTLEMENT_EXECUTION_IDENTITY_CONFLICT",
+                "结算回调引用的 executionId 不属于结算单",
+                mapOf("executionId" to command.executionId),
+            )
+            if (!command.executionAttemptId.isNullOrBlank() && command.executionAttemptId != attempt.id.toString()
+            ) {
+                throw MerchantSettlementConflictException(
+                    "SETTLEMENT_EXECUTION_IDENTITY_CONFLICT",
+                    "结算回调 executionId 与 attemptId 不一致",
+                    mapOf("executionId" to attempt.executionId),
+                )
+            }
             val canonicalPayload = command.rawPayload?.takeIf { it.isNotBlank() } ?: listOf(
                 command.channelId,
                 command.notificationId,
                 command.merchantSettlementId,
-                command.executionAttemptId,
+                attempt.executionId,
                 command.executionGroupIdentity,
                 command.requestIdentity,
                 command.externalSettlementIdentity,
@@ -57,7 +76,7 @@ object ConfirmMerchantSettlementResultCmd {
                 command.channelId.trim(),
                 command.notificationId.trim(),
                 command.merchantSettlementId.toString(),
-                command.executionAttemptId.trim(),
+                attempt.executionId,
                 command.executionGroupIdentity.trim(),
                 command.requestIdentity.trim(),
                 command.externalSettlementIdentity.trim(),
@@ -73,7 +92,8 @@ object ConfirmMerchantSettlementResultCmd {
                     channelId = command.channelId,
                     notificationId = command.notificationId,
                     merchantSettlementId = command.merchantSettlementId,
-                    executionAttemptId = command.executionAttemptId,
+                    executionAttemptId = attempt.id.toString(),
+                    executionId = attempt.executionId,
                     executionGroupIdentity = command.executionGroupIdentity,
                     requestIdentity = command.requestIdentity,
                     externalSettlementIdentity = command.externalSettlementIdentity,
@@ -85,9 +105,6 @@ object ConfirmMerchantSettlementResultCmd {
                     payload = canonicalPayload,
                 )
             )
-            val settlement = Mediator.repositories.findOne(
-                SMerchantSettlement.predicateById(command.merchantSettlementId)
-            ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
             val acceptedOperation = operations.replayOrNull(
                 merchantId = settlement.merchantId,
                 commandType = COMMAND_TYPE,
@@ -96,7 +113,7 @@ object ConfirmMerchantSettlementResultCmd {
             )
             val payloadFingerprint = sha256(canonicalPayload)
             val outcome = settlement.recordSettlementResult(
-                attemptId = SettlementExecutionAttemptId.parse(command.executionAttemptId),
+                attemptId = attempt.id,
                 notificationIdentity = command.notificationId,
                 payloadFingerprint = payloadFingerprint,
                 channelId = command.channelId,
@@ -114,11 +131,11 @@ object ConfirmMerchantSettlementResultCmd {
             )
             when (outcome.disposition) {
                 SettlementResultDisposition.CONFLICT -> manualReviewSupport.openSettlementResultReview(
-                    settlement, command.executionAttemptId, command.notificationId, "SETTLEMENT_RESULT_CONFLICT",
+                    settlement, attempt.executionId, command.notificationId, "SETTLEMENT_RESULT_CONFLICT",
                     outcome.conflictSummary ?: "结算渠道结果与既有事实冲突",
                 )
                 SettlementResultDisposition.UNKNOWN_ACCEPTED -> manualReviewSupport.openSettlementResultReview(
-                    settlement, command.executionAttemptId, command.notificationId, "SETTLEMENT_RESULT_UNKNOWN",
+                    settlement, attempt.executionId, command.notificationId, "SETTLEMENT_RESULT_UNKNOWN",
                     outcome.reviewSummary ?: "结算渠道结果未知，禁止重复执行",
                 )
                 else -> Unit
@@ -133,7 +150,7 @@ object ConfirmMerchantSettlementResultCmd {
                     resourceId = settlement.id.toString(),
                     resourceUrl = "/api/merchant-settlements/${settlement.id}",
                 )
-            return Response(outcome, receipt)
+            return Response(attempt.executionId, outcome, receipt)
         }
 
         private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
@@ -154,10 +171,9 @@ object ConfirmMerchantSettlementResultCmd {
          * 结算标识
          */
         val merchantSettlementId: MerchantSettlementId,
-        /**
-         * 执行尝试标识
-         */
-        val executionAttemptId: String,
+        val executionId: String,
+        /** Internal attempt id retained only as optional compatibility diagnostics. */
+        val executionAttemptId: String? = null,
         /**
          * 执行组身份
          */
@@ -199,6 +215,7 @@ object ConfirmMerchantSettlementResultCmd {
     ) : Command<Response>
 
     data class Response(
+        val executionId: String,
         val outcome: SettlementResultRecordingOutcome,
         val receipt: OperationReceipt,
     )

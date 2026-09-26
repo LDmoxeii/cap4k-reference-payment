@@ -818,6 +818,10 @@ create table settlement_execution_attempt (
     version bigint not null default 0 comment '并发更新版本号 @Managed=version;',
     merchant_settlement_id varchar(36) not null comment '所属商户结算单标识 @ParentRef;',
     attempt_sequence integer not null comment '结算执行尝试序号',
+    execution_id varchar(128) not null comment '调用方提供的全局稳定执行身份',
+    idempotency_key varchar(128) not null comment '本次执行命令幂等键快照',
+    executor_script varchar(32) not null comment '首次消费的 reference executor 脚本',
+    executor_observation varchar(32) not null comment '首次冻结的 executor 观察结果',
     execution_group_identity varchar(128) not null comment '执行批次身份',
     request_identity varchar(128) not null comment '执行请求幂等身份',
     channel_id varchar(64) not null comment '渠道标识',
@@ -844,6 +848,7 @@ create table settlement_execution_attempt (
     created_by varchar(128) not null comment '记录创建者 @Managed=enrichment.audit-actor.created-by;',
     updated_at timestamp with time zone not null comment '记录最后更新时间 @Managed=enrichment.audit-time.updated-at;',
     updated_by varchar(128) not null comment '记录最后更新者 @Managed=enrichment.audit-actor.updated-by;',
+    constraint uk_settlement_execution_id unique (execution_id),
     constraint uk_settlement_execution_attempt_request unique (channel_id, request_identity),
     constraint uk_settlement_execution_attempt_sequence unique (merchant_settlement_id, attempt_sequence)
 );

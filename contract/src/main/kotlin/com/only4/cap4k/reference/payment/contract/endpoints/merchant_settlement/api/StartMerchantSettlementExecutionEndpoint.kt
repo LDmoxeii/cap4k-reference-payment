@@ -24,6 +24,8 @@ object StartMerchantSettlementExecutionEndpoint {
          * 结算标识
          */
         val settlementId: String = "",
+        val merchantId: String,
+        val executionId: String,
         /** 执行渠道是出款 evidence，不参与结算范围唯一性。 */
         val executionChannelId: String,
         val idempotencyKey: String,
@@ -34,6 +36,7 @@ object StartMerchantSettlementExecutionEndpoint {
          * 结算标识
          */
         val settlementId: String,
+        val executionId: String,
         /**
          * 尝试标识
          */
@@ -58,6 +61,8 @@ object StartMerchantSettlementExecutionEndpoint {
          * 诊断摘要
          */
         val diagnosticSummary: String?,
+        val executorScript: String,
+        val executorObservation: String,
         val actorId: String,
         val receipt: OperationReceipt,
     )

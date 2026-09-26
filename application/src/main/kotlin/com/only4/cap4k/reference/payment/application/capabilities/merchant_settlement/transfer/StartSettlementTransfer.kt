@@ -25,6 +25,7 @@ object StartSettlementTransfer {
          * 执行尝试标识
          */
         val executionAttemptId: String,
+        val executionId: String,
         /**
          * 商户标识
          */
@@ -68,6 +69,9 @@ object StartSettlementTransfer {
          * 诊断摘要
          */
         val diagnosticSummary: String?
+        ,
+        val executorScript: String = "NO_RESULT",
+        val observation: String = "NO_RESULT",
     )
 
 }

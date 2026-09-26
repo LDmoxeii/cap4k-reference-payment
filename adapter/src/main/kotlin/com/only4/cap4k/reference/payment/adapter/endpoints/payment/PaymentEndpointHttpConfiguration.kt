@@ -4,6 +4,7 @@ import com.only4.cap4k.ddd.endpoint.http.EndpointMvcBinding
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcRequestMapper
 import com.only4.cap4k.ddd.endpoint.http.EndpointMvcResponsePolicy
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.AdjudicatePaymentReviewEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.CloseExpiredPaymentEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.ConfirmPaymentResultEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.CreatePaymentAttemptEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.payment.api.CreatePaymentEndpoint
@@ -57,6 +58,25 @@ class PaymentEndpointHttpConfiguration(
                 )
             },
             responsePolicy = EndpointMvcResponsePolicy.response(status = 201),
+        )
+
+    @Bean
+    fun closeExpiredPaymentHttpBinding(): EndpointMvcBinding<CloseExpiredPaymentEndpoint.Request, CloseExpiredPaymentEndpoint.Response> =
+        EndpointMvcBinding.special(
+            operationName = CloseExpiredPaymentEndpoint.OPERATION_NAME,
+            requestType = CloseExpiredPaymentEndpoint.Request::class,
+            responseType = CloseExpiredPaymentEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/payments/{paymentId}/close-expired",
+            requestMapper = EndpointMvcRequestMapper { request ->
+                val body = request.body(CloseExpiredPaymentBody::class)
+                CloseExpiredPaymentEndpoint.Request(
+                    paymentId = request.path("paymentId", String::class),
+                    merchantId = body.merchantId,
+                    idempotencyKey = body.idempotencyKey,
+                )
+            },
+            responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
         )
 
     @Bean
@@ -178,6 +198,11 @@ class PaymentEndpointHttpConfiguration(
 }
 
 data class IdempotencyKeyBody(
+    val idempotencyKey: String,
+)
+
+data class CloseExpiredPaymentBody(
+    val merchantId: String,
     val idempotencyKey: String,
 )
 

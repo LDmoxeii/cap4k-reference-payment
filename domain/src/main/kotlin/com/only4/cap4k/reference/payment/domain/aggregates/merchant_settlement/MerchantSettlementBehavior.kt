@@ -81,6 +81,8 @@ fun MerchantSettlement.startExecutionAttempt(
     executionGroupIdentity: String,
     requestIdentity: String,
     executionChannelId: String,
+    executionId: String,
+    idempotencyKey: String,
 ): SettlementExecutionAttempt {
     requireAuthorized(operatorIdentity, operatorRole)
     require(compositionFrozen) { "结算单 $id 的组成尚未确认" }
@@ -102,6 +104,8 @@ fun MerchantSettlement.startExecutionAttempt(
     require(executionGroupIdentity.isNotBlank()) { "执行组身份不能为空" }
     require(requestIdentity.isNotBlank()) { "请求身份不能为空" }
     require(executionChannelId.isNotBlank()) { "执行渠道身份不能为空" }
+    require(executionId.isNotBlank()) { "executionId 不能为空" }
+    require(idempotencyKey.isNotBlank()) { "执行幂等键不能为空" }
     if (this.executionChannelId != null) {
         require(this.executionChannelId == executionChannelId) {
             "结算单 $id 的执行渠道快照不能改变"
@@ -119,6 +123,10 @@ fun MerchantSettlement.startExecutionAttempt(
 
     val attempt = SettlementExecutionAttempt(
         attemptSequence = settlementExecutionAttempts.size + 1,
+        executionId = executionId,
+        idempotencyKey = idempotencyKey,
+        executorScript = "NO_RESULT",
+        executorObservation = "NOT_CONSUMED",
         executionGroupIdentity = executionGroupIdentity,
         requestIdentity = requestIdentity,
         channelId = executionChannelId,
@@ -133,6 +141,28 @@ fun MerchantSettlement.startExecutionAttempt(
     return attempt
 }
 
+fun MerchantSettlement.recordExecutorObservation(
+    attemptId: SettlementExecutionAttemptId,
+    script: String,
+    observation: String,
+    diagnosticSummary: String?,
+) {
+    val attempt = requireAttempt(attemptId)
+    require(attempt.executorObservation == "NOT_CONSUMED") { "结算执行观察只能冻结一次" }
+    attempt.executorScript = script
+    attempt.executorObservation = observation
+    attempt.verdictSummary = diagnosticSummary
+}
+
+fun MerchantSettlement.markExecutionNoResult(attemptId: SettlementExecutionAttemptId) {
+    val attempt = requireAttempt(attemptId)
+    require(attempt.status == SettlementExecutionAttemptStatus.PROCESSING) { "结算执行状态不能记录无结果" }
+    attempt.status = SettlementExecutionAttemptStatus.RESULT_UNKNOWN
+    attempt.finalResult = SettlementExecutionFinalResult.UNKNOWN
+    attempt.verdictSummary = "出款请求已提交，但 executor 未返回业务结果"
+    status = MerchantSettlementStatus.RESULT_UNKNOWN
+    lastReviewSummary = "结算执行 ${attempt.executionId} 尚未收到结果，需要在 ${attempt.reviewAfterAt} 后复核"
+}
 fun MerchantSettlement.markExecutionAccepted(
     attemptId: SettlementExecutionAttemptId,
     externalSettlementIdentity: String,

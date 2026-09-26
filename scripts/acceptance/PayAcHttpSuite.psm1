@@ -362,6 +362,7 @@ function Confirm-AcSettlement {
 function Start-AcSettlementExecution {
     param([Parameter(Mandatory)]$Context, [Parameter(Mandatory)][string]$SettlementId, [string]$Suffix = 'main')
     return (Invoke-AcHttp POST "/api/merchant-settlements/$SettlementId/executions" @{
+        merchantId = $Context.MerchantId; executionId = "EXEC-$($Context.Alias)-$Suffix"
         executionChannelId = 'C-001'; idempotencyKey = "$($Context.Alias)-settlement-execute-$Suffix"
     } @(200)).Body
 }
@@ -371,10 +372,11 @@ function Send-AcSettlementResult {
     $externalIdentity = "STL-$($Execution.requestIdentity)"
     $notificationId = "SN-$($Context.Alias)-$Suffix-$Result"
     $rawPayload = "reference-settlement-$($Context.Alias)-$Suffix-$Result"
-    $association = "$SettlementId|$($Execution.attemptId)|$($Execution.executionGroupIdentity)|$($Execution.requestIdentity)|$externalIdentity"
+    $association = "$SettlementId|$($Execution.executionId)|$($Execution.executionGroupIdentity)|$($Execution.requestIdentity)|$externalIdentity"
     Register-AcCallbackEvidence $Context 'SETTLEMENT' $notificationId $association $Amount $rawPayload | Out-Null
     return (Invoke-AcHttp POST '/api/channel/settlement-results' @{
         channelId = 'C-001'; notificationId = $notificationId; settlementId = $SettlementId
+        executionId = $Execution.executionId
         executionAttemptId = $Execution.attemptId; executionGroupIdentity = $Execution.executionGroupIdentity
         requestIdentity = $Execution.requestIdentity; externalSettlementIdentity = $externalIdentity
         money = @{ currency = 'CNY'; amountMinor = ConvertTo-MinorString $Amount }

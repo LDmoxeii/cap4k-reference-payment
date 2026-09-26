@@ -110,6 +110,8 @@
     "aggregates": ["MerchantSettlement"],
     "fields": [
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "executionId", "type": "String" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "executionChannelId", "type": "String" },
@@ -118,12 +120,15 @@
     ],
     "resultFields": [
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
+      { "name": "executionId", "type": "String" },
       { "name": "attemptId", "type": "String?" },
       { "name": "executionGroupIdentity", "type": "String?" },
       { "name": "requestIdentity", "type": "String?" },
       { "name": "status", "type": "String" },
       { "name": "providerAccepted", "type": "Boolean" },
       { "name": "diagnosticSummary", "type": "String?" },
+      { "name": "executorScript", "type": "String" },
+      { "name": "executorObservation", "type": "String" },
       { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },
@@ -172,7 +177,8 @@
       { "name": "channelId", "type": "String" },
       { "name": "notificationId", "type": "String" },
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
-      { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionId", "type": "String" },
+      { "name": "executionAttemptId", "type": "String?", "defaultValue": "null" },
       { "name": "executionGroupIdentity", "type": "String" },
       { "name": "requestIdentity", "type": "String" },
       { "name": "externalSettlementIdentity", "type": "String" },
@@ -185,6 +191,7 @@
       { "name": "rawPayload", "type": "String?", "defaultValue": "null" }
     ],
     "resultFields": [
+      { "name": "executionId", "type": "String" },
       { "name": "outcome", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.values.SettlementResultRecordingOutcome" },
       { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
@@ -197,7 +204,7 @@
     "aggregates": ["MerchantSettlement"],
     "fields": [
       { "name": "merchantSettlementId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.merchant_settlement.MerchantSettlementId" },
-      { "name": "executionAttemptId", "type": "String" },
+      { "name": "executionId", "type": "String" },
       { "name": "operatorIdentity", "type": "String" },
       { "name": "operatorRole", "type": "String" },
       { "name": "finalResult", "type": "String" },
@@ -349,6 +356,23 @@
       { "name": "idempotentReplay", "type": "Boolean" },
       { "name": "rejectionCode", "type": "String?" },
       { "name": "rejectionSummary", "type": "String?" },
+      { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
+    ]
+  },
+  {
+    "tag": "command",
+    "package": "payment.expiry",
+    "name": "CloseExpiredPayment",
+    "description": "Close one expired payment or retain pending attempts for result review",
+    "aggregates": ["Payment"],
+    "fields": [
+      { "name": "paymentId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.payment.PaymentId" },
+      { "name": "merchantId", "type": "String" },
+      { "name": "idempotencyKey", "type": "String" }
+    ],
+    "resultFields": [
+      { "name": "paymentId", "type": "String" },
+      { "name": "paymentStatus", "type": "String" },
       { "name": "receipt", "type": "com.only4.cap4k.reference.payment.contract.common.OperationReceipt" }
     ]
   },

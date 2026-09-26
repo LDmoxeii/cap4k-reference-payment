@@ -3,6 +3,7 @@ package com.only4.cap4k.reference.payment.adapter.application.capabilities.merch
 import com.only4.cap4k.analysis.metadata.DesignBlockMetadata
 import com.only4.cap4k.ddd.core.application.capability.CapabilityHandler
 import com.only4.cap4k.reference.payment.application.capabilities.merchant_settlement.transfer.StartSettlementTransfer
+import com.only4.cap4k.reference.payment.adapter.reference.ReferenceSettlementExecutorScriptRegistry
 import org.springframework.stereotype.Service
 
 @Service
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service
     aggregates = ["MerchantSettlement"],
     family = "capability-handler"
 )
-class StartSettlementTransferHandler : CapabilityHandler<StartSettlementTransfer.Request, StartSettlementTransfer.Response> {
+class StartSettlementTransferHandler(
+    private val scripts: ReferenceSettlementExecutorScriptRegistry,
+) : CapabilityHandler<StartSettlementTransfer.Request, StartSettlementTransfer.Response> {
     override fun call(request: StartSettlementTransfer.Request): StartSettlementTransfer.Response {
         if (request.channelId == "C-THROW") error("reference 结算 provider 故障")
         if (request.channelId != "C-001") {
@@ -26,11 +29,14 @@ class StartSettlementTransferHandler : CapabilityHandler<StartSettlementTransfer
             )
         }
         require(request.amount.signum() > 0) { "结算划拨金额必须为正数" }
+        val observation = scripts.consume(request.executionId)
         return StartSettlementTransfer.Response(
             accepted = true,
             externalSettlementIdentity = "STL-${request.requestIdentity}",
             failureCode = null,
-            diagnosticSummary = "reference 资金划拨 provider 已受理请求",
+            diagnosticSummary = observation.diagnosticSummary,
+            executorScript = observation.script.name,
+            observation = requireNotNull(observation.observation),
         )
     }
 }

@@ -1,0 +1,27 @@
+{
+  "entryId": "endpoint-http:payment.expiry.close",
+  "entryType": "endpointhttpbinding",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "nodes": [
+    {
+      "id": "com.only4.cap4k.reference.payment.application.commands.payment.expiry.CloseExpiredPaymentCmd.Request",
+      "name": "CloseExpiredPaymentCmd.Request",
+      "fullName": "com.only4.cap4k.reference.payment.application.commands.payment.expiry.CloseExpiredPaymentCmd.Request",
+      "type": "command"
+    },
+    {
+      "id": "endpoint-http:payment.expiry.close",
+      "name": "payment.expiry.close [POST /api/payments/{paymentId}/close-expired]",
+      "fullName": "endpoint-http:payment.expiry.close",
+      "type": "endpointhttpbinding"
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "endpoint-http:payment.expiry.close",
+      "toId": "com.only4.cap4k.reference.payment.application.commands.payment.expiry.CloseExpiredPaymentCmd.Request",
+      "type": "EndpointHttpBindingToCommand"
+    }
+  ]
+}

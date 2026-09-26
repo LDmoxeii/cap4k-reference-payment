@@ -208,7 +208,7 @@ class MerchantSettlementReferenceApplicationTests(
             ),
             expectedStatus = 200,
         )
-        assertThat(execution.requiredText("status")).isEqualTo("EXECUTING")
+        assertThat(execution.requiredText("status")).isEqualTo("RESULT_UNKNOWN")
         assertThat(execution["providerAccepted"].asBoolean()).isTrue()
         val attemptId = execution.requiredText("attemptId")
         val groupIdentity = execution.requiredText("executionGroupIdentity")
@@ -218,6 +218,7 @@ class MerchantSettlementReferenceApplicationTests(
         val successPayload = settlementResultRequest(
             settlementId = settlementId,
             attemptId = attemptId,
+            executionId = execution.requiredText("executionId"),
             groupIdentity = groupIdentity,
             requestIdentity = requestIdentity,
             externalIdentity = externalIdentity,
@@ -263,6 +264,7 @@ class MerchantSettlementReferenceApplicationTests(
             settlementResultRequest(
                 settlementId = settlementId,
                 attemptId = attemptId,
+                executionId = execution.requiredText("executionId"),
                 groupIdentity = groupIdentity,
                 requestIdentity = requestIdentity,
                 externalIdentity = externalIdentity,
@@ -380,6 +382,7 @@ class MerchantSettlementReferenceApplicationTests(
             settlementResultRequest(
                 settlementId = settlementId,
                 attemptId = execution.requiredText("attemptId"),
+                executionId = execution.requiredText("executionId"),
                 groupIdentity = execution.requiredText("executionGroupIdentity"),
                 requestIdentity = execution.requiredText("requestIdentity"),
                 externalIdentity = "STL-${execution.requiredText("requestIdentity")}",
@@ -431,6 +434,7 @@ class MerchantSettlementReferenceApplicationTests(
             settlementResultRequest(
                 settlementId = settlementId,
                 attemptId = attemptId,
+                executionId = execution.requiredText("executionId"),
                 groupIdentity = groupIdentity,
                 requestIdentity = requestIdentity,
                 externalIdentity = "STL-$requestIdentity",
@@ -443,7 +447,7 @@ class MerchantSettlementReferenceApplicationTests(
             expectedStatus = 200,
         )
         assertThat(unknown.requiredText("settlementStatus")).isEqualTo("RESULT_UNKNOWN")
-        assertThat(unknown.requiredText("disposition")).isEqualTo("UNKNOWN_ACCEPTED")
+        assertThat(unknown.requiredText("disposition")).isEqualTo("ACCEPTED_DUPLICATE")
 
         val retry = postJson(
             "/api/merchant-settlements/$settlementId/executions",
@@ -466,7 +470,7 @@ class MerchantSettlementReferenceApplicationTests(
         val adjudicated = Mediator.commands.send(
             AdjudicateMerchantSettlementResultCmd.Request(
                 merchantSettlementId = MerchantSettlementId.parse(settlementId),
-                executionAttemptId = attemptId,
+                executionId = execution.requiredText("executionId"),
                 operatorIdentity = "settlement-operator-2",
                 operatorRole = "SETTLEMENT_OPERATOR",
                 finalResult = "SUCCESS",
@@ -505,6 +509,7 @@ class MerchantSettlementReferenceApplicationTests(
         val unknownPayload = settlementResultRequest(
             settlementId = settlementId,
             attemptId = attemptId,
+            executionId = execution.requiredText("executionId"),
             groupIdentity = groupIdentity,
             requestIdentity = requestIdentity,
             externalIdentity = externalIdentity,
@@ -518,7 +523,7 @@ class MerchantSettlementReferenceApplicationTests(
         val unknownReplay = postJson("/api/channel/settlement-results", unknownPayload, expectedStatus = 200)
 
         assertThat(unknown.requiredText("settlementStatus")).isEqualTo("RESULT_UNKNOWN")
-        assertThat(unknown.requiredText("disposition")).isEqualTo("UNKNOWN_ACCEPTED")
+        assertThat(unknown.requiredText("disposition")).isEqualTo("ACCEPTED_DUPLICATE")
         assertThat(unknownReplay.requiredText("disposition")).isEqualTo("ACCEPTED_DUPLICATE")
         val beforeConvergence = getJson("/api/merchant-settlements/$settlementId")
         assertThat(beforeConvergence["attempts"]).hasSize(1)
@@ -529,6 +534,7 @@ class MerchantSettlementReferenceApplicationTests(
         val successPayload = settlementResultRequest(
             settlementId = settlementId,
             attemptId = attemptId,
+            executionId = execution.requiredText("executionId"),
             groupIdentity = groupIdentity,
             requestIdentity = requestIdentity,
             externalIdentity = externalIdentity,
@@ -579,6 +585,7 @@ class MerchantSettlementReferenceApplicationTests(
                 settlementResultRequest(
                     settlementId = settlementId,
                     attemptId = execution.requiredText("attemptId"),
+                    executionId = execution.requiredText("executionId"),
                     groupIdentity = execution.requiredText("executionGroupIdentity"),
                     requestIdentity = execution.requiredText("requestIdentity"),
                     externalIdentity = "STL-${execution.requiredText("requestIdentity")}",
@@ -595,10 +602,10 @@ class MerchantSettlementReferenceApplicationTests(
         assertThat(result.status).isNotIn(200, 201)
 
         val settlement = getJson("/api/merchant-settlements/$settlementId")
-        assertThat(settlement.requiredText("status")).isEqualTo("EXECUTING")
+        assertThat(settlement.requiredText("status")).isEqualTo("RESULT_UNKNOWN")
         assertThat(settlement["settledFactFormed"].asBoolean()).isFalse()
-        assertThat(settlement["attempts"][0].requiredText("status")).isEqualTo("SUBMITTED")
-        assertThat(settlement["attempts"][0]["finalResult"].isNull).isTrue()
+        assertThat(settlement["attempts"][0].requiredText("status")).isEqualTo("UNKNOWN")
+        assertThat(settlement["attempts"][0].requiredText("finalResult")).isEqualTo("UNKNOWN")
         assertThat(completedEventCount(settlementId)).isZero()
         assertThat(
             jdbcTemplate.queryForObject(
@@ -1336,7 +1343,7 @@ class MerchantSettlementReferenceApplicationTests(
         val conflict = results.single { it.status == 409 }.body
         assertThat(conflict.requiredText("code")).isEqualTo("CONCURRENT_MODIFICATION")
         val settlement = getJson("/api/merchant-settlements/$settlementId")
-        assertThat(settlement.requiredText("status")).isEqualTo("EXECUTING")
+        assertThat(settlement.requiredText("status")).isEqualTo("RESULT_UNKNOWN")
         assertThat(settlement["attempts"]).hasSize(1)
         assertThat(
             jdbcTemplate.queryForObject(
@@ -1654,6 +1661,7 @@ class MerchantSettlementReferenceApplicationTests(
     private fun settlementResultRequest(
         settlementId: String,
         attemptId: String,
+        executionId: String,
         groupIdentity: String,
         requestIdentity: String,
         externalIdentity: String,
@@ -1667,7 +1675,7 @@ class MerchantSettlementReferenceApplicationTests(
         registerCallbackEvidence(
             kind = "SETTLEMENT",
             notificationId = notificationId,
-            associationIdentity = "$settlementId|$attemptId|$groupIdentity|$requestIdentity|$externalIdentity",
+            associationIdentity = "$settlementId|$executionId|$groupIdentity|$requestIdentity|$externalIdentity",
             amount = amount,
             rawPayload = rawPayload,
         )
@@ -1675,6 +1683,7 @@ class MerchantSettlementReferenceApplicationTests(
             "channelId" to "C-001",
             "notificationId" to notificationId,
             "settlementId" to settlementId,
+            "executionId" to executionId,
             "executionAttemptId" to attemptId,
             "executionGroupIdentity" to groupIdentity,
             "requestIdentity" to requestIdentity,
@@ -1797,6 +1806,10 @@ class MerchantSettlementReferenceApplicationTests(
         if (!path.startsWith("/api/merchant-settlements") || path.endsWith("/search") || payload !is Map<*, *>) return payload
         val fields = payload.entries.associate { it.key.toString() to it.value }.toMutableMap()
         fields.putIfAbsent("idempotencyKey", "settlement-${java.util.UUID.randomUUID()}")
+        if (path.endsWith("/executions")) {
+            fields.putIfAbsent("merchantId", "M-001")
+            fields.putIfAbsent("executionId", "EXEC-${fields.getValue("idempotencyKey")}")
+        }
         if (path.endsWith("/confirmations")) {
             fields.putIfAbsent("reason", "reviewed settlement composition")
             fields.putIfAbsent("evidence", "reference ledger evidence")

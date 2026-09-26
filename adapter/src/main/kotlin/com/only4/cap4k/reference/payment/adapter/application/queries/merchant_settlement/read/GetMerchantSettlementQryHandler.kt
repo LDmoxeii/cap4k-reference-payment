@@ -102,6 +102,11 @@ class GetMerchantSettlementQryHandler : QueryHandler<GetMerchantSettlementQry.Re
             },
             attempts = settlement.settlementExecutionAttempts.map { attempt ->
                 GetMerchantSettlementQry.Response.SettlementExecutionAttemptSummary(
+                    executionId = attempt.executionId,
+                    idempotencyKey = attempt.idempotencyKey,
+                    executorScript = attempt.executorScript,
+                    executorObservation = attempt.executorObservation,
+                    diagnosticSummary = attempt.verdictSummary,
                     attemptId = attempt.id.toString(),
                     attemptSequence = attempt.attemptSequence,
                     executionGroupIdentity = attempt.executionGroupIdentity,
@@ -122,6 +127,7 @@ class GetMerchantSettlementQryHandler : QueryHandler<GetMerchantSettlementQry.Re
                     conflictSummary = attempt.conflictSummary,
                     receipts = attempt.settlementResultReceipts.map { receipt ->
                         GetMerchantSettlementQry.Response.SettlementResultReceiptSummary(
+                            executionId = attempt.executionId,
                             receiptId = receipt.id.toString(),
                             notificationIdentity = receipt.notificationIdentity,
                             payloadFingerprint = receipt.payloadFingerprint,

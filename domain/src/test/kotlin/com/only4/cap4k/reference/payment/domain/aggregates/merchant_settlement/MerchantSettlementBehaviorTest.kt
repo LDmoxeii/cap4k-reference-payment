@@ -339,6 +339,8 @@ class MerchantSettlementBehaviorTest {
             executionGroupIdentity = "GROUP-1",
             requestIdentity = requestIdentity,
             executionChannelId = "C-001",
+            executionId = "EXEC-$requestIdentity",
+            idempotencyKey = "IDEM-$requestIdentity",
         ).also { attempt ->
             attempt.id = SettlementExecutionAttemptId.parse("018f22a0-0000-7000-8000-000000000010")
         }

@@ -1,6 +1,7 @@
 package com.only4.cap4k.reference.payment.adapter.endpoints.payment
 
 import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementConflictException
+import com.only4.cap4k.reference.payment.application.errors.AuthoritativeBillNotFoundException
 import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementNotFoundException
 import com.only4.cap4k.reference.payment.application.errors.MerchantSettlementRejectedException
 import com.only4.cap4k.reference.payment.application.errors.InvalidCursorException
@@ -66,6 +67,7 @@ class PaymentHttpErrorAdvice {
 
     @ExceptionHandler(
         PaymentNotFoundException::class,
+        AuthoritativeBillNotFoundException::class,
         RefundNotFoundException::class,
         ReconciliationBatchNotFoundException::class,
         MerchantSettlementNotFoundException::class,

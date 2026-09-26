@@ -31,7 +31,7 @@ class VerifySettlementResultHandler(
                     externalIdentity = request.notificationId,
                     associationIdentity = listOf(
                         request.merchantSettlementId,
-                        request.executionAttemptId,
+                        request.executionId,
                         request.executionGroupIdentity,
                         request.requestIdentity,
                         request.externalSettlementIdentity,

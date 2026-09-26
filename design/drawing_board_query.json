@@ -81,6 +81,11 @@
       { "name": "lines[].adjustmentSourceIdentity", "type": "String?" },
       { "name": "lines[].adjustmentEvidence", "type": "String?" },
       { "name": "attempts", "type": "List<SettlementExecutionAttemptSummary>" },
+      { "name": "attempts[].executionId", "type": "String" },
+      { "name": "attempts[].idempotencyKey", "type": "String" },
+      { "name": "attempts[].executorScript", "type": "String" },
+      { "name": "attempts[].executorObservation", "type": "String" },
+      { "name": "attempts[].diagnosticSummary", "type": "String?" },
       { "name": "attempts[].attemptId", "type": "String" },
       { "name": "attempts[].attemptSequence", "type": "Int" },
       { "name": "attempts[].executionGroupIdentity", "type": "String" },
@@ -100,6 +105,7 @@
       { "name": "attempts[].rejectionSummary", "type": "String?" },
       { "name": "attempts[].conflictSummary", "type": "String?" },
       { "name": "attempts[].receipts", "type": "List<SettlementResultReceiptSummary>" },
+      { "name": "attempts[].receipts[].executionId", "type": "String" },
       { "name": "attempts[].receipts[].receiptId", "type": "String" },
       { "name": "attempts[].receipts[].notificationIdentity", "type": "String" },
       { "name": "attempts[].receipts[].payloadFingerprint", "type": "String" },
@@ -261,6 +267,58 @@
       { "name": "reviews[].decisions[].decidedAt", "type": "java.time.Instant" },
       { "name": "reviews[].decisions[].eligibilityImpact", "type": "String" },
       { "name": "reviews[].decisions[].remediationReference", "type": "String?" }
+    ]
+  },
+  {
+    "tag": "query",
+    "package": "reconciliation.bill",
+    "name": "GetAuthoritativeBill",
+    "description": "Read the authoritative bill and its complete immutable revision history",
+    "aggregates": ["AuthoritativeBill"],
+    "fields": [
+      { "name": "billId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.AuthoritativeBillId" }
+    ],
+    "resultFields": [
+      { "name": "billId", "type": "String" },
+      { "name": "billIdentity", "type": "String" },
+      { "name": "channelId", "type": "String" },
+      { "name": "currency", "type": "String" },
+      { "name": "businessDate", "type": "java.time.LocalDate" },
+      { "name": "businessTimezone", "type": "String" },
+      { "name": "createdAt", "type": "java.time.Instant" },
+      { "name": "currentRevision", "type": "String?" },
+      { "name": "currentRevisionId", "type": "String?" },
+      { "name": "revisions", "type": "List<Revision>" },
+      { "name": "revisions[].revisionId", "type": "String" },
+      { "name": "revisions[].revision", "type": "String" },
+      { "name": "revisions[].publishedAt", "type": "java.time.Instant" },
+      { "name": "revisions[].completeness", "type": "String" },
+      { "name": "revisions[].rawEvidence", "type": "String" },
+      { "name": "revisions[].payloadFingerprint", "type": "String" },
+      { "name": "revisions[].records", "type": "List<Record>" },
+      { "name": "revisions[].records[].recordId", "type": "String" },
+      { "name": "revisions[].records[].recordIdentity", "type": "String" },
+      { "name": "revisions[].records[].transactionKind", "type": "String" },
+      { "name": "revisions[].records[].externalTransactionIdentity", "type": "String" },
+      { "name": "revisions[].records[].amount", "type": "Big_decimal" },
+      { "name": "revisions[].records[].currency", "type": "String" },
+      { "name": "revisions[].records[].rawStatus", "type": "String" },
+      { "name": "revisions[].records[].occurredAt", "type": "java.time.Instant?" },
+      { "name": "revisions[].records[].receivedAt", "type": "java.time.Instant" },
+      { "name": "revisions[].records[].rawEvidence", "type": "String" }
+    ]
+  },
+  {
+    "tag": "query",
+    "package": "reconciliation.bill",
+    "name": "ListBillRevisions",
+    "description": "List every persisted authoritative bill revision in ascending revision order",
+    "aggregates": ["AuthoritativeBill"],
+    "fields": [
+      { "name": "billId", "type": "com.only4.cap4k.reference.payment.domain.aggregates.authoritative_bill.AuthoritativeBillId" }
+    ],
+    "resultFields": [
+      { "name": "bill", "type": "com.only4.cap4k.reference.payment.application.queries.reconciliation.bill.GetAuthoritativeBillQry.Response" }
     ]
   },
   {

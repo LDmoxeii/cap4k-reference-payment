@@ -9,6 +9,9 @@ import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.ap
 import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ConfigureReferenceMerchantChannelEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ConfigureReferencePolicyEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ConfigureReferencePaymentChannelEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ConfigureReferenceSettlementExecutorEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.GetReferenceSettlementExecutorEndpoint
+import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.ResetReferenceSettlementExecutorEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.CreateReferenceOperationFixtureEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.GetReferenceClockEndpoint
 import com.only4.cap4k.reference.payment.contract.endpoints.reference_fixture.api.GetReferenceOperationFixtureResourceEndpoint
@@ -30,6 +33,43 @@ import org.springframework.http.HttpMethod
 /** HTTP bindings whose route names intentionally make their reference-fixture-only scope explicit. */
 @Configuration(proxyBeanMethods = false)
 class ReferenceFixtureHttpConfiguration {
+    @Bean
+    fun configureReferenceSettlementExecutorHttpBinding():
+        EndpointMvcBinding<ConfigureReferenceSettlementExecutorEndpoint.Request, ConfigureReferenceSettlementExecutorEndpoint.Response> =
+        EndpointMvcBinding.json(
+            operationName = ConfigureReferenceSettlementExecutorEndpoint.OPERATION_NAME,
+            requestType = ConfigureReferenceSettlementExecutorEndpoint.Request::class,
+            responseType = ConfigureReferenceSettlementExecutorEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/reference-fixtures/settlement-executor-script",
+        )
+
+    @Bean
+    fun resetReferenceSettlementExecutorHttpBinding():
+        EndpointMvcBinding<ResetReferenceSettlementExecutorEndpoint.Request, ResetReferenceSettlementExecutorEndpoint.Response> =
+        EndpointMvcBinding.json(
+            operationName = ResetReferenceSettlementExecutorEndpoint.OPERATION_NAME,
+            requestType = ResetReferenceSettlementExecutorEndpoint.Request::class,
+            responseType = ResetReferenceSettlementExecutorEndpoint.Response::class,
+            method = HttpMethod.POST,
+            path = "/api/reference-fixtures/settlement-executor-script/reset",
+        )
+
+    @Bean
+    fun getReferenceSettlementExecutorHttpBinding():
+        EndpointMvcBinding<GetReferenceSettlementExecutorEndpoint.Request, GetReferenceSettlementExecutorEndpoint.Response> =
+        EndpointMvcBinding.special(
+            operationName = GetReferenceSettlementExecutorEndpoint.OPERATION_NAME,
+            requestType = GetReferenceSettlementExecutorEndpoint.Request::class,
+            responseType = GetReferenceSettlementExecutorEndpoint.Response::class,
+            method = HttpMethod.GET,
+            path = "/api/reference-fixtures/settlement-executor-script/{executionId}",
+            requestMapper = EndpointMvcRequestMapper { request ->
+                GetReferenceSettlementExecutorEndpoint.Request(request.path("executionId", String::class))
+            },
+            responsePolicy = EndpointMvcResponsePolicy.response(status = 200),
+        )
+
     @Bean
     fun configureReferenceMerchantChannelHttpBinding(): EndpointMvcBinding<
         ConfigureReferenceMerchantChannelEndpoint.Request,

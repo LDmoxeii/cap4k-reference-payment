@@ -304,6 +304,11 @@ object GetMerchantSettlementEndpoint {
             val adjustmentEvidence: String?
         )
         data class SettlementExecutionAttemptSummary(
+            val executionId: String,
+            val idempotencyKey: String,
+            val executorScript: String,
+            val executorObservation: String,
+            val diagnosticSummary: String?,
             /**
              * 尝试列表尝试标识
              */
@@ -378,6 +383,7 @@ object GetMerchantSettlementEndpoint {
             val receipts: List<SettlementResultReceiptSummary>
         )
         data class SettlementResultReceiptSummary(
+            val executionId: String,
             /**
              * 尝试列表回执列表回执标识
              */

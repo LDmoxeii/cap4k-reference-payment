@@ -1,0 +1,5 @@
+flowchart TD
+  N1["CloseExpiredPaymentCmd.Request"]
+  N2["payment.expiry.close [POST /api/payments/{paymentId}/close-expired]"]
+  N2 -->|EndpointHttpBindingToCommand| N1
+

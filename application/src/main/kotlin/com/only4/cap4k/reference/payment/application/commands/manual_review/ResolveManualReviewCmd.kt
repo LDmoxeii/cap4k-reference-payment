@@ -129,7 +129,7 @@ object ResolveManualReviewCmd {
                 "PAYMENT_REVIEW" -> resolvePaymentReview(item, command, resolutionIdentity)
                 "RECONCILIATION_ITEM" -> resolveReconciliationItem(item, command)
                 "REFUND_CALLBACK", "REFUND_ATTEMPT" -> resolveRefund(item, command, resolutionIdentity)
-                "SETTLEMENT_CALLBACK", "SETTLEMENT_EXECUTION_ATTEMPT" -> resolveSettlement(item, command)
+                "SETTLEMENT_CALLBACK", "SETTLEMENT_EXECUTION_ATTEMPT", "SETTLEMENT_EXECUTION" -> resolveSettlement(item, command)
                 else -> throw IllegalArgumentException(
                     "人工事项 ${item.id} 的来源 ${item.originKind} 没有可复用的最终裁决；请通过其权威业务命令处理"
                 )
@@ -227,7 +227,8 @@ object ResolveManualReviewCmd {
             val settlementId = item.relatedRef("MERCHANT_SETTLEMENT")
                 ?: item.originIdentity.substringBefore(':').takeIf(String::isNotBlank)
                 ?: throw IllegalArgumentException("结算人工事项缺少结算引用")
-            val attemptId = item.relatedRef("SETTLEMENT_EXECUTION_ATTEMPT")
+            val executionId = item.relatedRef("SETTLEMENT_EXECUTION")
+                ?: item.relatedRef("SETTLEMENT_EXECUTION_ATTEMPT")
                 ?: item.originIdentity.split(':').getOrNull(1)?.takeIf(String::isNotBlank)
                 ?: throw IllegalArgumentException("结算人工事项缺少执行尝试引用")
             val finalResult = when (command.outcome) {
@@ -238,7 +239,7 @@ object ResolveManualReviewCmd {
             Mediator.commands.send(
                 AdjudicateMerchantSettlementResultCmd.Request(
                     merchantSettlementId = MerchantSettlementId.parse(settlementId),
-                    executionAttemptId = attemptId,
+                    executionId = executionId,
                     operatorIdentity = command.actorId,
                     operatorRole = command.actorRole,
                     finalResult = finalResult,

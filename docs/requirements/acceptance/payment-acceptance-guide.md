@@ -1,6 +1,6 @@
 # CAP4K 统一支付 Reference 验收指南
 
-本指南是 `align-unified-reference-contract` 的验收入口。业务真源固定为 `payment-product-template` 提交 `3b66db675356e77c720081e0410baf444b7baa9c`；本仓库的[完整目标 Spec](../../comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md)是 CAP4K 实现约束，[traceability](../traceability.yaml)维护 62 条 PAY-BR 与 67 条 PAY-AC 的映射。
+本指南是统一支付 Reference 的验收入口。业务真源固定为 `payment-product-template` 提交 `3b66db675356e77c720081e0410baf444b7baa9c`；本仓库的[完整目标 Spec](../../comet/specs/payment-reference-build/spec.md)是 CAP4K 实现约束，[traceability](../traceability.yaml)维护 62 条 PAY-BR 与 67 条 PAY-AC 的映射。
 
 ## 1. 验收结论与边界
 

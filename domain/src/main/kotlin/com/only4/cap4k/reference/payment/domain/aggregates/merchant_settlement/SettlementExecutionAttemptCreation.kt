@@ -7,6 +7,10 @@ import java.time.LocalDateTime
 
 data class SettlementExecutionAttemptCreation(
     val attemptSequence: Int,
+    val executionId: String,
+    val idempotencyKey: String,
+    val executorScript: String,
+    val executorObservation: String,
     val executionGroupIdentity: String,
     val requestIdentity: String,
     val channelId: String,

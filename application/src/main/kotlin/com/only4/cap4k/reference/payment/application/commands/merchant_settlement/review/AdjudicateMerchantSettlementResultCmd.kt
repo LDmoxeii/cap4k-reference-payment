@@ -31,9 +31,12 @@ object AdjudicateMerchantSettlementResultCmd {
             val settlement = Mediator.repositories.findOne(
                 SMerchantSettlement.predicateById(command.merchantSettlementId)
             ) ?: throw MerchantSettlementNotFoundException(command.merchantSettlementId)
+            val attempt = settlement.settlementExecutionAttempts.firstOrNull {
+                it.executionId == command.executionId || it.id.toString() == command.executionId
+            } ?: throw IllegalArgumentException("结算执行 ${command.executionId} 不属于结算单")
             return Response(
                 settlement.adjudicateUnknownResult(
-                    attemptId = SettlementExecutionAttemptId.parse(command.executionAttemptId),
+                    attemptId = attempt.id,
                     operatorIdentity = command.operatorIdentity,
                     operatorRole = command.operatorRole,
                     finalResult = command.finalResult,
@@ -52,7 +55,7 @@ object AdjudicateMerchantSettlementResultCmd {
         /**
          * 执行尝试标识
          */
-        val executionAttemptId: String,
+        val executionId: String,
         /**
          * 操作员身份
          */

@@ -109,6 +109,10 @@ class MerchantSettlementFactory : AggregateFactory<MerchantSettlementFactory.Pay
     private fun createSettlementExecutionAttempt(creation: SettlementExecutionAttemptCreation): SettlementExecutionAttempt =
         SettlementExecutionAttempt(
             attemptSequence = creation.attemptSequence,
+            executionId = creation.executionId,
+            idempotencyKey = creation.idempotencyKey,
+            executorScript = creation.executorScript,
+            executorObservation = creation.executorObservation,
             executionGroupIdentity = creation.executionGroupIdentity,
             requestIdentity = creation.requestIdentity,
             channelId = creation.channelId,

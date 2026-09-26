@@ -218,63 +218,63 @@ requirements:
     acceptance_ids: [PAY-AC-084]
     status: verified
   PAY-BR-065:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-090]
     status: verified
   PAY-BR-066:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-091, PAY-AC-092]
     status: verified
   PAY-BR-067:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-093]
     status: verified
   PAY-BR-068:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-100]
     status: verified
   PAY-BR-069:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-099]
     status: verified
   PAY-BR-070:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-087, PAY-AC-094]
     status: verified
   PAY-BR-071:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-045, PAY-AC-094]
     status: verified
   PAY-BR-072:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-095]
     status: verified
   PAY-BR-073:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-096]
     status: verified
   PAY-BR-074:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-063, PAY-AC-064, PAY-AC-097]
     status: verified
   PAY-BR-075:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-068, PAY-AC-098]
     status: verified
   PAY-BR-076:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-081, PAY-AC-088]
     status: verified
   PAY-BR-077:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-083]
     status: verified
   PAY-BR-078:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-101, PAY-AC-102]
     status: verified
   PAY-BR-079:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     acceptance_ids: [PAY-AC-103]
     status: verified
 
@@ -614,72 +614,72 @@ acceptance:
     evidence_ids: [PAY-EV-017, PAY-EV-018, PAY-EV-020, PAY-EV-037]
     status: verified
   PAY-AC-090:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-091:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-092:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-093:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-094:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-095:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-096:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-097:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-098:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-099:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-100:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-101:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-102:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
   PAY-AC-103:
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     projection_ids: [PAY-CP-017]
     evidence_ids: [PAY-EV-037]
     status: verified
@@ -811,7 +811,7 @@ projections:
     status: planned
   PAY-CP-017:
     title: Unified reference backend contract closure
-    source: docs/comet/changes/align-unified-reference-contract/specs/payment-reference-build/spec.md
+    source: docs/comet/specs/payment-reference-build/spec.md
     business_requirement_ids: [PAY-BR-001, PAY-BR-002, PAY-BR-003, PAY-BR-004, PAY-BR-005, PAY-BR-006, PAY-BR-010, PAY-BR-011, PAY-BR-012, PAY-BR-013, PAY-BR-014, PAY-BR-015, PAY-BR-020, PAY-BR-021, PAY-BR-022, PAY-BR-023, PAY-BR-024, PAY-BR-025, PAY-BR-026, PAY-BR-027, PAY-BR-028, PAY-BR-030, PAY-BR-031, PAY-BR-032, PAY-BR-033, PAY-BR-034, PAY-BR-035, PAY-BR-036, PAY-BR-040, PAY-BR-041, PAY-BR-042, PAY-BR-043, PAY-BR-044, PAY-BR-045, PAY-BR-046, PAY-BR-050, PAY-BR-051, PAY-BR-052, PAY-BR-053, PAY-BR-054, PAY-BR-055, PAY-BR-056, PAY-BR-060, PAY-BR-061, PAY-BR-062, PAY-BR-063, PAY-BR-064, PAY-BR-065, PAY-BR-066, PAY-BR-067, PAY-BR-068, PAY-BR-069, PAY-BR-070, PAY-BR-071, PAY-BR-072, PAY-BR-073, PAY-BR-074, PAY-BR-075, PAY-BR-076, PAY-BR-077, PAY-BR-078, PAY-BR-079]
     acceptance_ids: [PAY-AC-001, PAY-AC-002, PAY-AC-003, PAY-AC-004, PAY-AC-005, PAY-AC-006, PAY-AC-007, PAY-AC-008, PAY-AC-009, PAY-AC-010, PAY-AC-011, PAY-AC-012, PAY-AC-013, PAY-AC-014, PAY-AC-015, PAY-AC-016, PAY-AC-017, PAY-AC-020, PAY-AC-021, PAY-AC-022, PAY-AC-023, PAY-AC-024, PAY-AC-025, PAY-AC-026, PAY-AC-027, PAY-AC-028, PAY-AC-029, PAY-AC-040, PAY-AC-041, PAY-AC-042, PAY-AC-043, PAY-AC-044, PAY-AC-045, PAY-AC-046, PAY-AC-047, PAY-AC-060, PAY-AC-061, PAY-AC-062, PAY-AC-063, PAY-AC-064, PAY-AC-065, PAY-AC-066, PAY-AC-067, PAY-AC-068, PAY-AC-080, PAY-AC-081, PAY-AC-082, PAY-AC-083, PAY-AC-084, PAY-AC-085, PAY-AC-086, PAY-AC-087, PAY-AC-088, PAY-AC-090, PAY-AC-091, PAY-AC-092, PAY-AC-093, PAY-AC-094, PAY-AC-095, PAY-AC-096, PAY-AC-097, PAY-AC-098, PAY-AC-099, PAY-AC-100, PAY-AC-101, PAY-AC-102, PAY-AC-103]
     target_surfaces: [Runtime, Endpoint, Evidence]

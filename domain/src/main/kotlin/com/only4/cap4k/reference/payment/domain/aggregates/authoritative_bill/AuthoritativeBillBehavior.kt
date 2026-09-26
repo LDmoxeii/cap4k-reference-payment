@@ -40,8 +40,27 @@ fun AuthoritativeBill.appendRevision(creation: BillRevisionCreation): BillRevisi
     }
 
     billRevisions.firstOrNull { it.revision == creation.revision }?.let { existing ->
-        require(existing.payloadFingerprint == creation.payloadFingerprint) {
-            "相同账单 revision 的正文指纹冲突"
+        require(
+            existing.payloadFingerprint == creation.payloadFingerprint &&
+                existing.completeness == creation.completeness &&
+                existing.rawEvidence == creation.rawEvidence &&
+                existing.publishedAt == LocalDateTime.ofInstant(creation.publishedAt, ZoneOffset.UTC) &&
+                existing.records.size == creation.records.size &&
+                creation.records.all { incoming ->
+                    val record = existing.records.firstOrNull { it.recordIdentity == incoming.recordIdentity }
+                        ?: return@all false
+                    record.recordIdentity == incoming.recordIdentity &&
+                        record.channelTransactionIdentity == incoming.channelTransactionIdentity &&
+                        record.transactionKind == incoming.transactionKind &&
+                        record.amount.compareTo(incoming.amount) == 0 &&
+                        record.currency.equals(incoming.currency, ignoreCase = true) &&
+                        record.rawStatus == incoming.rawStatus &&
+                        record.occurredAt == incoming.occurredAt?.let { LocalDateTime.ofInstant(it, ZoneOffset.UTC) } &&
+                        record.receivedAt == LocalDateTime.ofInstant(incoming.receivedAt, ZoneOffset.UTC) &&
+                        record.rawEvidence == incoming.rawEvidence
+                }
+        ) {
+            "相同账单 revision 的正文指纹冲突或证据冲突"
         }
         return BillRevisionAppendResult(existing, idempotentReplay = true, becameCurrent = false)
     }

@@ -170,13 +170,16 @@ class PaymentTimelineReferenceApplicationTests(
                 "evidence" to "evidence://timeline/settlement/$marker",
             ), actor = true,
         )
+        val executionId = "timeline-settlement-execution-$marker"
         val execution = postJson(
             "/api/merchant-settlements/$settlementId/executions",
             mapOf(
                 "idempotencyKey" to "timeline-settlement-execute-$marker",
-                "settlementId" to settlementId, "executionChannelId" to "C-001",
+                "merchantId" to "M-001", "settlementId" to settlementId,
+                "executionId" to executionId, "executionChannelId" to "C-001",
             ), actor = true,
         )
+        assertThat(execution["executionId"].asText()).isEqualTo(executionId)
         val settlementAttemptId = execution["attemptId"].asText()
         val groupIdentity = execution["executionGroupIdentity"].asText()
         val requestIdentity = execution["requestIdentity"].asText()
@@ -185,14 +188,15 @@ class PaymentTimelineReferenceApplicationTests(
         val settlementAmount = BigDecimal(settlementMoney["amountMinor"].asText()).movePointLeft(2)
         registerCallbackEvidence(
             "SETTLEMENT", "settlement-$marker",
-            "$settlementId|$settlementAttemptId|$groupIdentity|$requestIdentity|$externalIdentity",
+            "$settlementId|$executionId|$groupIdentity|$requestIdentity|$externalIdentity",
             settlementAmount.toPlainString(),
         )
         postJson(
             "/api/channel/settlement-results",
             mapOf(
                 "channelId" to "C-001", "notificationId" to "settlement-$marker",
-                "settlementId" to settlementId, "executionAttemptId" to settlementAttemptId,
+                "settlementId" to settlementId, "executionId" to executionId,
+                "executionAttemptId" to settlementAttemptId,
                 "executionGroupIdentity" to groupIdentity, "requestIdentity" to requestIdentity,
                 "externalSettlementIdentity" to externalIdentity, "money" to money(settlementAmount.toPlainString()),
                 "result" to "SUCCESS", "resultCode" to "SUCCESS",
@@ -201,6 +205,10 @@ class PaymentTimelineReferenceApplicationTests(
                 "rawPayload" to "reference-timeline-settlement",
             ), actor = true,
         )
+        val settlementAttempt = getJson("/api/merchant-settlements/$settlementId")["attempts"]
+            .single { it["attemptId"].asText() == settlementAttemptId }
+        assertThat(settlementAttempt["executionId"].asText()).isEqualTo(executionId)
+        assertThat(settlementAttempt["receipts"].single()["executionId"].asText()).isEqualTo(executionId)
 
         Mediator.commands.send(ManualReviewSupportTestCommand.Request(
             ManualReviewSupport.Opening(
@@ -240,6 +248,8 @@ class PaymentTimelineReferenceApplicationTests(
             .isIn("SUCCESS", "FAILURE", "RESULT_UNKNOWN")
         assertThat(all.first { it["eventType"].asText() == "SETTLEMENT_EXECUTION" }["outcome"].asText())
             .isEqualTo("SUCCEEDED")
+        assertThat(all.first { it["eventType"].asText() == "SETTLEMENT_EXECUTION" }["refs"]["executionId"].asText())
+            .isEqualTo(executionId)
         assertThat(all.first { it["eventType"].asText() == "MANUAL_REVIEW" }["outcome"].asText())
             .isEqualTo("OPEN")
         assertThat(all.first { it["eventType"].asText() == "PAYMENT_ATTEMPT_TERMINAL" }["outcome"].asText())

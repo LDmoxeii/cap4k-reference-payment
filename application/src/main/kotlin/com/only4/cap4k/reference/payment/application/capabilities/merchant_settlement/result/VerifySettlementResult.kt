@@ -34,6 +34,7 @@ object VerifySettlementResult {
          * 执行尝试标识
          */
         val executionAttemptId: String,
+        val executionId: String,
         /**
          * 执行组身份
          */
